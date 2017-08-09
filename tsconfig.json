@@ -1,0 +1,23 @@
+{
+    "compilerOptions": {
+        "allowJs": true,
+        "alwaysStrict": true,
+        "module": "commonjs",
+        "sourceMap": true,
+        "target": "esnext",
+        "lib": [
+            "es2017",
+            "esnext",
+            "esnext.asynciterable",
+            "dom",
+            "dom.iterable"
+        ]
+    },
+    "exclude": [
+        "node_modules"
+    ],
+    "include": [
+        "src/**/*.ts",
+        "tests/**/*.ts"
+    ]
+}
