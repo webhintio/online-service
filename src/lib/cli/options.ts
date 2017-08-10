@@ -18,38 +18,24 @@ export const options = optionator({
         mergeRepeatedObjects: true
     },
     options: [
-        {heading: 'Basic configuration'},
+        { heading: 'Basic configuration' },
         {
-            alias: 'k',
-            description: 'Key file for certificate',
-            option: 'key',
-            type: 'path::String'
-        },
-        {
-            alias: 'c',
-            description: 'Certificate file',
-            option: 'cert',
-            type: 'path::String'
-        },
-        {
-            alias: 'p',
-            description: 'PFX file',
-            option: 'pfx',
-            type: 'path::String'
-        },
-        {
-            alias: 'pp',
-            description: 'Passphrase for PFX file',
-            option: 'pass',
-            type: 'String'
-        },
-        {
-            alias: 'ms',
+            alias: 'm',
             description: 'Microservice to run',
-            enum: ['job-manager', 'config-manager', 'sync', 'worker'],
+            enum: ['job-manager', 'config-manager', 'sync', 'worker', 'all'],
             option: 'microservice',
             type: 'String'
+        }, {
+            alias: 'v',
+            description: 'Output the version number',
+            option: 'version',
+            type: 'Boolean'
+        }, {
+            alias: 'h',
+            description: 'Show help',
+            option: 'help',
+            type: 'Boolean'
         }
     ],
-    prepend: 'online-service --microservice job-manager|config-manager|sync|worker [options]'
+    prepend: 'online-service --microservice job-manager|config-manager|sync|worker|all'
 });

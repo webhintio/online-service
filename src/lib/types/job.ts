@@ -1,19 +1,26 @@
-import { status } from '../enums/status';
+import { JobStatus, RuleStatus } from '../enums/status';
 
-// TODO: add types.
+export type Rule = {
+    name: string;
+    status: RuleStatus;
+    messages: Array<string>;
+};
+
 export interface IJob {
-    /** Job ID */
-    id: string;
+    /** Job Url */
+    url: string;
     /** Job Status */
-    status: status;
+    status: JobStatus;
     /** Configuration to run sonar */
     config;
     /** List of rules to run */
-    rules;
+    rules: Array<Rule>;
     /** Timestamp when it was queued */
-    queued: string;
+    queued: Date;
     /** Timestamp when it was queued */
-    started: string;
+    started: Date;
     /** Timestamp when it was queued */
-    finished: string;
+    finished: Date;
+    /** Error message in case there is an error runing the job*/
+    error: string;
 }

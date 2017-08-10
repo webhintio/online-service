@@ -11,6 +11,7 @@
     "parser": "typescript-eslint-parser",
     "plugins": [
         "import",
+        "markdown",
         "typescript"
     ],
     "rules": {
@@ -55,7 +56,7 @@
         "handle-callback-err": "error",
         "id-length": "off",
         "id-match": "off",
-        "indent": ["error", 4, {
+        "indent-legacy": ["error", 4, {
             "SwitchCase": 1,
             "VariableDeclarator": 1
         }],
@@ -251,6 +252,17 @@
         "wrap-regex": "error",
         "yoda": ["error", "never"],
 
+        "typescript/class-name-casing": "error",
+        "typescript/explicit-member-accessibility": "error",
+        "typescript/interface-name-prefix": [ "error", "always" ],
+        "typescript/member-delimiter-style": "error",
+        "typescript/no-angle-bracket-type-assertion": "error",
+        "typescript/no-namespace": "error",
+        "typescript/no-parameter-properties": "error",
+        "typescript/no-triple-slash-reference": "error",
+        "typescript/no-unused-vars": "error",
+        "typescript/no-use-before-define": "error",
+        "typescript/prefer-namespace-keyword": "error",
         "typescript/type-annotation-spacing": "error"
     }
 }
