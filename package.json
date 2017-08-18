@@ -5,7 +5,7 @@
     "build": "npm run clean && npm-run-all build:*",
     "build:ts": "tsc --outDir dist",
     "clean": "rimraf dist",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npm run build",
     "watch:ts": "npm run build:ts -- --watch"
   },
   "devDependencies": {
