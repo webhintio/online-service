@@ -1,1 +1,1 @@
-# sonar-service [![Build Status](https://travis-ci.org/sonarwhal/sonar-service.svg?branch=master)](https://travis-ci.org/sonarwhal/sonar-service) [![Greenkeeper badge](https://badges.greenkeeper.io/sonarwhal/sonar-service.svg)](https://greenkeeper.io/)
+# online-service [![Build Status](https://travis-ci.org/sonarwhal/online-service.svg?branch=master)](https://travis-ci.org/sonarwhal/online-service) [![Greenkeeper badge](https://badges.greenkeeper.io/sonarwhal/online-service.svg)](https://greenkeeper.io/)

@@ -51,5 +51,5 @@ export const options = optionator({
             type: 'String'
         }
     ],
-    prepend: 'sonar-service --microservice job-manager|config-manager|sync|worker [options]'
+    prepend: 'online-service --microservice job-manager|config-manager|sync|worker [options]'
 });
