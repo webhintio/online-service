@@ -10,11 +10,13 @@
 import * as path from 'path';
 
 import { options } from './cli/options';
+import * as database from './common/database/database';
 import { Microservice } from './enums/microservice';
+import * as configManagerCLI from './microservices/config-manager/config-manager-cli';
+import * as jobManagerServer from './microservices/job-manager/job-manager-server';
 import { CLIOptions } from './types/clioptions'; // eslint-disable-line no-unused-vars
 import * as logger from './utils/logging';
 import { loadJSONFile } from './utils/misc';
-import * as jobManagerServer from './microservices/job-manager/job-manager-server';
 
 const pkg = loadJSONFile(path.join(__dirname, '../../../package.json'));
 
@@ -23,7 +25,7 @@ const pkg = loadJSONFile(path.join(__dirname, '../../../package.json'));
 // ------------------------------------------------------------------------------
 
 /** Executes the CLI based on an array of arguments that is passed in. */
-export const execute = (args: string | Array<string> | object) => {
+export const execute = async (args: string | Array<string> | object): Promise<number> => {
     const currentOptions: CLIOptions = options.parse(args);
 
     if (currentOptions.version) {
@@ -38,9 +40,19 @@ export const execute = (args: string | Array<string> | object) => {
         return 0;
     }
 
-    if (currentOptions.microservice === Microservice.jobManager) {
-        jobManagerServer.init();
-    }
+    try {
+        if (currentOptions.microservice === Microservice.jobManager) {
+            await jobManagerServer.init();
+        } else if (currentOptions.microservice === Microservice.configManager) {
+            await configManagerCLI.run(currentOptions);
+        }
 
-    return 0;
+        return 0;
+    } catch (err) {
+        logger.error(err);
+
+        return 1;
+    } finally {
+        database.disconnect();
+    }
 };

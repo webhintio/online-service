@@ -1,8 +1,12 @@
 import test from 'ava';
 import * as sinon from 'sinon';
 import * as proxyquire from 'proxyquire';
+import { IConfig } from '@sonarwhal/sonar/dist/src/lib/types'; // eslint-disable-line no-unused-vars    
 
-const mongoose = { connect() { } };
+const mongoose = {
+    connect() { },
+    disconnect() { }
+};
 
 const dbLock = {
     acquire(callback) {
@@ -18,19 +22,29 @@ const mongoDBLock = () => {
 
 const query = { exec() { } };
 
-const jobObject = { save() { } };
+const modelObject = { save() { } };
 
 const Job: any = function () {
-    return jobObject;
+    return modelObject;
 };
 
 Job.find = () => { };
 Job.findOne = () => { };
 
-const models = { Job };
+const jobModels = { Job };
+
+const ServiceConfig: any = function () {
+    return modelObject;
+};
+
+ServiceConfig.find = () => { };
+ServiceConfig.findOne = () => { };
+
+const serviceConfigModels = { ServiceConfig };
 
 proxyquire('../../../../src/lib/common/database/database', {
-    './models/job': models,
+    './models/job': jobModels,
+    './models/serviceconfig': serviceConfigModels,
     'mongodb-lock': mongoDBLock,
     mongoose
 });
@@ -50,11 +64,22 @@ const jobResult: Array<IJob> = [{
     url: 'url'
 }];
 
+const connectDatabase = async () => {
+    sinon.stub(mongoose, 'connect').resolves({});
+    sinon.stub(dbLock, 'ensureIndexes').callsArg(0);
+
+    // We need to be connected to the database before lock it
+    await database.connect('connectionString');
+};
+
 test.beforeEach((t) => {
     sinon.stub(Job, 'find').returns(query);
     sinon.stub(Job, 'findOne').returns(query);
+    sinon.stub(ServiceConfig, 'find').returns(query);
+    sinon.stub(ServiceConfig, 'findOne').returns(query);
 
     t.context.mongoose = mongoose;
+    t.context.ServiceConfig = ServiceConfig;
     t.context.dbLock = dbLock;
     t.context.Job = Job;
     t.context.query = query;
@@ -65,16 +90,23 @@ test.afterEach.always((t) => {
         t.context.mongoose.connect.restore();
     }
 
+    if (t.context.mongoose.disconnect.restore) {
+        t.context.mongoose.disconnect.restore();
+    }
+
     if (t.context.dbLock.ensureIndexes.restore) {
         t.context.dbLock.ensureIndexes.restore();
     }
 
     t.context.Job.find.restore();
     t.context.Job.findOne.restore();
+    t.context.ServiceConfig.find.restore();
+    t.context.ServiceConfig.findOne.restore();
 });
 
 test.serial('unlock should fail if database is not connected', async (t) => {
     t.plan(1);
+
     try {
         await database.lock('url');
     } catch (err) {
@@ -84,6 +116,7 @@ test.serial('unlock should fail if database is not connected', async (t) => {
 
 test.serial('lock should fail if database is not connected', async (t) => {
     t.plan(1);
+
     try {
         await database.lock('url');
     } catch (err) {
@@ -112,21 +145,60 @@ test.serial('getJob should fail if database is not connected', async (t) => {
 test.serial('newJob should fail if database is not connected', async (t) => {
     t.plan(1);
     try {
-        await database.newJob('url', JobStatus.pending, [], []);
+        await database.newJob('url', JobStatus.pending, [], {} as IConfig);
     } catch (err) {
         t.is(err.message, 'Database not connected');
     }
 });
 
+test.serial('newConfig should fail if database is not connected', async (t) => {
+    t.plan(1);
+    try {
+        await database.newConfig('configName', 120, {} as IConfig);
+    } catch (err) {
+        t.is(err.message, 'Database not connected');
+    }
+});
+
+test.serial('activateConfiguration should fail if database is not connected', async (t) => {
+    t.plan(1);
+    try {
+        await database.activateConfiguration('configName');
+    } catch (err) {
+        t.is(err.message, 'Database not connected');
+    }
+});
+
+test.serial('listConfigurations  should fail if database is not connected', async (t) => {
+    t.plan(1);
+    try {
+        await database.listConfigurations();
+    } catch (err) {
+        t.is(err.message, 'Database not connected');
+    }
+});
+
+test.serial('getActiveConfiguration should fail if database is not connected', async (t) => {
+    t.plan(1);
+    try {
+        await database.getActiveConfiguration();
+    } catch (err) {
+        t.is(err.message, 'Database not connected');
+    }
+});
+
+test.serial('disconnect should do nothing if database is not connected', async (t) => {
+    sinon.spy(mongoose, 'disconnect');
+
+    await database.disconnect();
+
+    t.false(t.context.mongoose.disconnect.called);
+});
 
 test.serial('unlock should call to releaseAsync', async (t) => {
-    sinon.stub(mongoose, 'connect').resolves({});
-    sinon.stub(dbLock, 'ensureIndexes').callsArg(0);
-
     const lock = { releaseAsync() { } };
 
-     // We need to be connected to the database before lock it
-    await database.connect('conectionString');
+    await connectDatabase();
 
     t.context.lock = lock;
     sinon.stub(lock, 'releaseAsync').resolves([]);
@@ -139,10 +211,7 @@ test.serial('unlock should call to releaseAsync', async (t) => {
 });
 
 test.serial('connect should connect to mongoose and create an index', async (t) => {
-    sinon.stub(mongoose, 'connect').resolves({});
-    sinon.stub(dbLock, 'ensureIndexes').callsArg(0);
-
-    await database.connect('conectionString');
+    await connectDatabase();
 
     t.true(t.context.mongoose.connect.calledOnce);
     t.true(t.context.dbLock.ensureIndexes.calledOnce);
@@ -181,11 +250,7 @@ test.serial('if ensureIndexes fail, it should throw an error', async (t) => {
 });
 
 test.serial('lock should lock the database', async (t) => {
-    sinon.stub(mongoose, 'connect').resolves({});
-    sinon.stub(dbLock, 'ensureIndexes').callsArg(0);
-
-    // We need to be connected to the database before lock it
-    await database.connect('connectionString');
+    await connectDatabase();
 
     sinon.stub(dbLock, 'acquire').callsFake((callback) => {
         callback(null, 'code');
@@ -199,11 +264,7 @@ test.serial('lock should lock the database', async (t) => {
 });
 
 test.serial('if database is locked, it should retry to lock the database', async (t) => {
-    sinon.stub(mongoose, 'connect').resolves({});
-    sinon.stub(dbLock, 'ensureIndexes').callsArg(0);
-
-    // We need to be connected to the database before lock it
-    await database.connect('connectionString');
+    await connectDatabase();
 
     sinon.stub(dbLock, 'acquire')
         .onFirstCall()
@@ -223,11 +284,7 @@ test.serial('if database is locked, it should retry to lock the database', async
 });
 
 test.serial('if database is locked for a long time, it should throw an error', async (t) => {
-    sinon.stub(mongoose, 'connect').resolves({});
-    sinon.stub(dbLock, 'ensureIndexes').callsArg(0);
-
-    // We need to be connected to the database before lock it
-    await database.connect('connectionString');
+    await connectDatabase();
 
     sinon.stub(dbLock, 'acquire')
         .callsFake((callback) => {
@@ -245,11 +302,7 @@ test.serial('if database is locked for a long time, it should throw an error', a
 });
 
 test.serial('getJobsByUrl should return a job', async (t) => {
-    sinon.stub(mongoose, 'connect').resolves({});
-    sinon.stub(dbLock, 'ensureIndexes').callsArg(0);
-
-    // We need to be connected to the database before lock it
-    await database.connect('connectionString');
+    await connectDatabase();
 
     sinon.stub(query, 'exec').resolves(jobResult);
 
@@ -263,11 +316,7 @@ test.serial('getJobsByUrl should return a job', async (t) => {
 });
 
 test.serial('getJob should return a job', async (t) => {
-    sinon.stub(mongoose, 'connect').resolves({});
-    sinon.stub(dbLock, 'ensureIndexes').callsArg(0);
-
-    // We need to be connected to the database before lock it
-    await database.connect('connectionString');
+    await connectDatabase();
 
     sinon.stub(query, 'exec').resolves(jobResult[0]);
 
@@ -280,20 +329,128 @@ test.serial('getJob should return a job', async (t) => {
     t.context.query.exec.restore();
 });
 
-test.serial('newJob should return save a new job in database', async (t) => {
-    sinon.stub(mongoose, 'connect').resolves({});
-    sinon.stub(dbLock, 'ensureIndexes').callsArg(0);
+test.serial('newJob should save a new job in database', async (t) => {
+    await connectDatabase();
 
-    // We need to be connected to the database before lock it
-    await database.connect('connectionString');
+    sinon.stub(modelObject, 'save').resolves();
 
-    sinon.stub(jobObject, 'save').resolves();
-
-    t.context.jobObject = jobObject;
+    t.context.modelObject = modelObject;
 
     await database.newJob('url', JobStatus.pending, null, null);
 
-    t.true(t.context.jobObject.save.calledOnce);
+    t.true(t.context.modelObject.save.calledOnce);
 
-    t.context.jobObject.save.restore();
+    t.context.modelObject.save.restore();
+});
+
+test.serial('newConfig should save a new configuration in database', async (t) => {
+    await connectDatabase();
+
+    sinon.stub(modelObject, 'save').resolves();
+
+    t.context.modelObject = modelObject;
+
+    await database.newConfig('configName', 120, {} as IConfig);
+
+    t.true(t.context.modelObject.save.calledOnce);
+
+    t.context.modelObject.save.restore();
+});
+
+test.serial('activateConfiguration should return an error if there is no data in the database', async (t) => {
+    const name = 'configName';
+
+    await connectDatabase();
+
+    sinon.stub(query, 'exec').resolves([]);
+
+    t.plan(1);
+    try {
+        await database.activateConfiguration(name);
+    } catch (err) {
+        t.is(err.message, `Configuration '${name}' doesn't exist`);
+    }
+
+    t.context.query.exec.restore();
+});
+
+test.serial('activateConfiguration should return an error if there is no configuration with the given name', async (t) => {
+    const name = 'configName';
+
+    await connectDatabase();
+
+    sinon.stub(query, 'exec').resolves([{ name: 'otherName' }]);
+
+    t.plan(1);
+    try {
+        await database.activateConfiguration(name);
+    } catch (err) {
+        t.is(err.message, `Configuration '${name}' doesn't exist`);
+    }
+
+    t.context.query.exec.restore();
+});
+
+test.serial('activateConfiguration should activate the configuration with the given name', async (t) => {
+    const name = 'configName';
+    const modelFunctions = { save() { } };
+
+    sinon.stub(modelFunctions, 'save').resolves();
+
+    const configurations = [{
+        active: null,
+        name,
+        save: modelFunctions.save
+    }, {
+        active: null,
+        name: 'config1',
+        save: modelFunctions.save
+    },
+    {
+        active: null,
+        name: 'config2',
+        save: modelFunctions.save
+    }];
+
+    t.context.modelFunctions = modelFunctions;
+
+    await connectDatabase();
+
+    sinon.stub(query, 'exec').resolves(configurations);
+
+    await database.activateConfiguration(name);
+
+    t.is(t.context.modelFunctions.save.callCount, 3);
+    t.true(configurations[0].active);
+    t.false(configurations[1].active);
+    t.false(configurations[2].active);
+
+    t.context.modelFunctions.save.restore();
+    t.context.query.exec.restore();
+});
+
+test.serial('listConfigurations should returns a list of configurations', async (t) => {
+    const configurations = [{ name: 'config0' },
+    { name: 'config1' },
+    { name: 'config2' }];
+
+    await connectDatabase();
+
+    sinon.stub(query, 'exec').resolves(configurations);
+
+    const list = await database.listConfigurations();
+
+    t.is(list, configurations);
+
+    t.context.query.exec.restore();
+});
+
+test.serial('disconnect should call to mongoose.disconnect', async (t) => {
+    await connectDatabase();
+
+    sinon.stub(mongoose, 'disconnect').resolves();
+
+    database.disconnect();
+
+    t.true(t.context.mongoose.disconnect.called);
 });
