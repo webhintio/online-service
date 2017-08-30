@@ -1,0 +1,21 @@
+[{
+    "config": {
+        "rules": {
+            "rule1": "error",
+            "rule2": "error"
+        }
+    },
+    "id": "6c78e19c-905d-4f85-b0fb-655976bcc854",
+    "queued": "2017-08-22T15:26:31.152Z",
+    "rules": [{
+        "messages": [],
+        "name": "rule1",
+        "status": "pending"
+    }, {
+        "messages": [],
+        "name": "rule2",
+        "status": "pending"
+    }],
+    "status": "pending",
+    "url": "http://test.com"
+}]
