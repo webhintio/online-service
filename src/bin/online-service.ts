@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * @fileoverview Main CLI that is run via the sonar-service command. Based on ESLint.
+ * @fileoverview Main CLI that is run via the online-service command. Based on ESLint.
  */
 
 /* eslint no-console:off */

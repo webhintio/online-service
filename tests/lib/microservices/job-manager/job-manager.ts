@@ -13,6 +13,8 @@ const database = {
     unlock() { }
 };
 
+const configManager = { getActiveConfiguration() { } };
+
 const queueMethods = { sendMessage() { } };
 
 const Queue = function () {
@@ -23,7 +25,8 @@ const queueObject = { Queue };
 
 proxyquire('../../../../src/lib/microservices/job-manager/job-manager', {
     '../../common/database/database': database,
-    '../../common/queue/queue': queueObject
+    '../../common/queue/queue': queueObject,
+    '../config-manager/config-manager': configManager
 });
 
 import * as jobManager from '../../../../src/lib/microservices/job-manager/job-manager';
@@ -32,16 +35,23 @@ import { JobStatus, RuleStatus } from '../../../../src/lib/enums/status';
 import { readFileAsync } from '../../../../src/lib/utils/misc';
 import { IJob } from '../../../../src/lib/types/job'; // eslint-disable-line no-unused-vars
 
+const activeConfig = {
+    jobCacheTime: 120,
+    sonarConfig: { rules: ['rule1', 'rule2'] }
+};
+
 test.beforeEach(async (t) => {
     sinon.stub(database, 'getJob').resolves({});
     sinon.stub(database, 'lock').resolves({});
     sinon.stub(database, 'unlock').resolves({});
     sinon.stub(database, 'newJob').resolves({});
+    sinon.stub(configManager, 'getActiveConfiguration').resolves(activeConfig);
     sinon.spy(queueMethods, 'sendMessage');
 
     t.context.jobs = JSON.parse(await readFileAsync(path.join(__dirname, 'fixtures', 'jobs.json')));
     t.context.database = database;
     t.context.queueMethods = queueMethods;
+    t.context.configManager = configManager;
 });
 
 test.afterEach.always((t) => {
@@ -50,6 +60,7 @@ test.afterEach.always((t) => {
     t.context.database.unlock.restore();
     t.context.database.newJob.restore();
     t.context.queueMethods.sendMessage.restore();
+    t.context.configManager.getActiveConfiguration.restore();
 });
 
 test.serial(`if the job doesn't exist, it should create a new job and add it to the queue`, async (t) => {
@@ -58,6 +69,45 @@ test.serial(`if the job doesn't exist, it should create a new job and add it to 
         config: null,
         rules: ['rule1', 'rule2'],
         source: ConfigSource.manual,
+        url: 'http://sonarwhal.com'
+    };
+
+    await jobManager.startJob(jobInput);
+
+    t.true(t.context.database.lock.calledOnce);
+    t.true(t.context.database.unlock.calledOnce);
+    t.true(t.context.database.newJob.calledOnce);
+    t.true(t.context.queueMethods.sendMessage.calledOnce);
+
+    const args = t.context.database.newJob.args[0];
+
+    t.is(args[0], jobInput.url);
+    t.is(args[1], JobStatus.pending);
+    t.deepEqual(args[2], [{
+        messages: [],
+        name: 'rule1',
+        status: RuleStatus.pending
+    }, {
+        messages: [],
+        name: 'rule2',
+        status: RuleStatus.pending
+    }]);
+    t.deepEqual(args[3], {
+        rules: {
+            rule1: RuleStatus.error,
+            rule2: RuleStatus.error
+        }
+    });
+
+    t.context.database.getJobsByUrl.restore();
+});
+
+test.serial(`if the job doesn't exist, it should use the defaul configuration if source is not set`, async (t) => {
+    sinon.stub(database, 'getJobsByUrl').resolves([]);
+    const jobInput = {
+        config: null,
+        rules: null,
+        source: null,
         url: 'http://sonarwhal.com'
     };
 

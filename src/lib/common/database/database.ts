@@ -1,18 +1,22 @@
+import * as uuid from 'uuid/v4';
+import { promisify } from 'util';
+
+import { IConfig } from '@sonarwhal/sonar/dist/src/lib/types'; // eslint-disable-line no-unused-vars
 import * as mongoose from 'mongoose';
 (mongoose.Promise as any) = global.Promise;
 import * as mongoDBLock from 'mongodb-lock';
-import { promisify } from 'util';
 import * as tri from 'tri';
-import * as uuid from 'uuid/v4';
 
-import { IJob, Rule } from '../../types/job'; // eslint-disable-line no-unused-vars
-import { Job } from './models/job';
 import { JobStatus } from '../../enums/status'; // eslint-disable-line no-unused-vars
+import { Job } from './models/job';
+import { ServiceConfig, IServiceConfigModel } from './models/serviceconfig'; // eslint-disable-line no-unused-vars
+import { IJob, Rule } from '../../types/job'; // eslint-disable-line no-unused-vars
+import { IServiceConfig } from '../../types/serviceconfig'; // eslint-disable-line no-unused-vars
 import { debug as d } from '../../utils/debug';
 
 const debug: debug.IDebugger = d(__filename);
 let db: mongoose.Connection;
-const lockName = 'index';
+const lockName: string = 'index';
 
 /**
  * Create a lock object.
@@ -89,7 +93,7 @@ export const lock = async (url: string) => {
         return code;
     };
 
-    await tri(getLock, {
+    dbLock.code = await tri(getLock, {
         delay: 500,
         maxAttempts: 10
     });
@@ -138,7 +142,7 @@ export const getJob = async (id: string): Promise<IJob> => {
  * @param {Array<rules>} rules - Rules the job will check.
  * @param config - Configuration for the job.
  */
-export const newJob = async (url: string, status: JobStatus, rules: Array<Rule>, config): Promise<IJob> => {
+export const newJob = async (url: string, status: JobStatus, rules: Array<Rule>, config: IConfig): Promise<IJob> => {
     validateConnection();
 
     debug(`Creating new job for url: ${url}`);
@@ -157,4 +161,105 @@ export const newJob = async (url: string, status: JobStatus, rules: Array<Rule>,
     debug(`job for url ${url} saved in database `);
 
     return job;
+};
+
+/**
+ * Create a new configuration in database.
+ * @param {string} name - New configuration name.
+ * @param {number} cache - Cache time in seconds for jobs.
+ * @param {IConfig} options - Configuration data.
+ */
+export const newConfig = async (name: string, cache: number, options: IConfig): Promise<IServiceConfig> => {
+    validateConnection();
+
+    debug(`Creating config with name: ${name}`);
+
+    const config: IServiceConfigModel = new ServiceConfig({
+        active: false,
+        jobCacheTime: cache,
+        name,
+        sonarConfig: options
+    });
+
+    await config.save();
+
+    debug(`Config with name: ${name} saved in database`);
+
+    return config;
+};
+
+/**
+ * Mark a configuration as active.
+ * @param {string} name - Name of the configuration to activate.
+ */
+export const activateConfiguration = async (name: string): Promise<IServiceConfig> => {
+    validateConnection();
+
+    debug(`Getting config by name: ${name}`);
+    const query: mongoose.DocumentQuery<Array<IServiceConfigModel>, IServiceConfigModel> = ServiceConfig.find({});
+    const configs: Array<IServiceConfigModel> = await query.exec();
+
+    // First we will check if the config exists or not
+    const configuration = configs.find((config) => {
+        return config.name === name;
+    });
+
+    if (!configuration) {
+        throw new Error(`Configuration '${name}' doesn't exist`);
+    }
+
+    for (const config of configs) {
+        if (config && config.name !== name) {
+            config.active = false;
+
+            await config.save();
+
+            debug(`Configuration ${config.name} is not the default`);
+        }
+    }
+
+    configuration.active = true;
+
+    await configuration.save();
+
+    debug(`Configuration ${configuration.name} is the new default configuration`);
+
+    return configuration;
+};
+
+/**
+ * Get all the configurations stored in database.
+ */
+export const listConfigurations = async (): Promise<Array<IServiceConfig>> => {
+    validateConnection();
+
+    const query: mongoose.DocumentQuery<Array<IServiceConfigModel>, IServiceConfigModel> = ServiceConfig.find({});
+    const configs: Array<IServiceConfig> = await query.exec();
+
+    return configs;
+};
+
+/**
+ * Get the current active configuration.
+ */
+export const getActiveConfiguration = async (): Promise<IServiceConfig> => {
+    validateConnection();
+
+    const query: mongoose.DocumentQuery<IServiceConfigModel, IServiceConfigModel> = ServiceConfig.findOne({ active: true });
+    const config: IServiceConfig = await query.exec();
+
+    return config;
+};
+
+/**
+ * Disconnect from the database.
+ */
+export const disconnect = async () => {
+    if (db) {
+        try {
+            await mongoose.disconnect();
+        } catch (err) {
+            db = null;
+        }
+    }
 };

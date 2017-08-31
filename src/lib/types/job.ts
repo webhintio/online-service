@@ -1,3 +1,5 @@
+import { IConfig } from '@sonarwhal/sonar/dist/src/lib/types'; // eslint-disable-line no-unused-vars
+
 import { JobStatus, RuleStatus } from '../enums/status';
 
 export type Rule = {
@@ -12,7 +14,7 @@ export interface IJob {
     /** Job Status */
     status: JobStatus;
     /** Configuration to run sonar */
-    config;
+    config: IConfig;
     /** List of rules to run */
     rules: Array<Rule>;
     /** Timestamp when it was queued */

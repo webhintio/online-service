@@ -1,11 +1,15 @@
 import * as _ from 'lodash';
 import * as moment from 'moment';
+import { IConfig } from '@sonarwhal/sonar/dist/src/lib/types'; // eslint-disable-line no-unused-vars
+import normalizeRules from '@sonarwhal/sonar/dist/src/lib/utils/normalize-rules';
 
 import * as database from '../../common/database/database';
+import * as configManager from '../config-manager/config-manager';
 import { IJob, Rule } from '../../types/job'; // eslint-disable-line no-unused-vars
 import { JobStatus, RuleStatus } from '../../enums/status';
 import { ConfigSource } from '../../enums/configsource';
 import { RequestData } from '../../types/requestdata'; // eslint-disable-line no-unused-vars
+import { IServiceConfig } from '../../types/serviceconfig'; // eslint-disable-line no-unused-vars
 import { Queue } from '../../common/queue/queue';
 import { debug as d } from '../../utils/debug';
 
@@ -15,10 +19,11 @@ const queue: Queue = new Queue('sonar-jobs', process.env.queue); // eslint-disab
 /**
  * Create a new Job in the database.
  * @param {string} url - The url that the job will be use.
- * @param config - The configuration for the job.
+ * @param {IConfig} config - The configuration for the job.
  */
-const createNewJob = (url: string, config): Promise<IJob> => {
-    const rules: Array<Rule> = _.map(config.rules, (rule: string, key: string) => {
+const createNewJob = (url: string, config: IConfig): Promise<IJob> => {
+    const normalizedRules = normalizeRules(config.rules);
+    const rules: Array<Rule> = _.map(normalizedRules, (rule: string, key: string) => {
         return {
             messages: [],
             name: key,
@@ -47,9 +52,9 @@ const createRules = (rules: Array<string>) => {
  * Get the right configuration for the job.
  * @param {RequestData} data - The data the user sent in the request.
  */
-const getConfig = (data: RequestData) => {
+const getConfig = async (data: RequestData) => {
     const source: ConfigSource = data.source;
-    let config;
+    let config: IConfig;
 
     debug(`Configuration source: ${source}`);
     switch (source) {
@@ -57,13 +62,11 @@ const getConfig = (data: RequestData) => {
             config = data.config;
             break;
         case ConfigSource.manual:
-            // TODO: Add default config;
-            config = _.cloneDeep({});
+            config = (await configManager.getActiveConfiguration()).sonarConfig;
             config.rules = createRules(data.rules);
             break;
         default:
-            // TODO: Add default config;
-            config = {};
+            config = (await configManager.getActiveConfiguration()).sonarConfig;
             break;
     }
 
@@ -75,11 +78,12 @@ const getConfig = (data: RequestData) => {
  * @param {Array<IJob>} jobs - All the jobs for that url in the database.
  * @param config - Job configuration.
  */
-const getActiveJob = (jobs: Array<IJob>, config) => {
+const getActiveJob = async (jobs: Array<IJob>, config) => {
+    const configuration: IServiceConfig = await configManager.getActiveConfiguration();
+
     return jobs.find((job) => {
-        // TODO: Get minutes from config.
         // job.config in cosmosdb is undefined if the config saved was an empty object.
-        return _.isEqual(job.config || {}, config) && (!job.finished || moment(job.finished).isAfter(moment().subtract('2', 'minutes')));
+        return _.isEqual(job.config || {}, config) && (!job.finished || moment(job.finished).isAfter(moment().subtract(configuration.jobCacheTime, 'seconds')));
     });
 };
 
@@ -104,9 +108,9 @@ export const startJob = async (data: RequestData): Promise<IJob> => {
 
     const lock = await database.lock(data.url);
 
-    const config = getConfig(data);
+    const config: IConfig = await getConfig(data);
     const jobs: Array<IJob> = await database.getJobsByUrl(data.url);
-    let job = getActiveJob(jobs, config);
+    let job = await getActiveJob(jobs, config);
 
     if (jobs.length === 0 || !job) {
         job = await createNewJob(data.url, config);
