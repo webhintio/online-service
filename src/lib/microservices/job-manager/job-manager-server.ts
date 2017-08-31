@@ -5,8 +5,7 @@ import * as express from 'express';
 
 import * as jobManager from './job-manager';
 import * as database from '../../common/database/database';
-import { IJob } from '../../types/job'; // eslint-disable-line no-unused-vars
-import { RequestData } from '../../types/requestdata'; // eslint-disable-line no-unused-vars
+import { IJob, RequestData } from '../../types'; // eslint-disable-line no-unused-vars
 import * as logger from '../../utils/logging';
 import { getDataFromRequest } from '../../utils/misc';
 
@@ -18,7 +17,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.set('port', process.env.port || 3000); // eslint-disable-line no-process-env
 
 /** Initilize the server. */
-export const init = () => {
+export const run = () => {
     return new Promise(async (resolve, reject) => {
         const server = http.createServer(app);
 
@@ -81,5 +80,5 @@ app.post('/', createJob);
 app.get('/:id', getJobStatus);
 
 if (process.argv[1].includes('job-manager-server.js')) {
-    init();
+    run();
 }

@@ -33,17 +33,17 @@ test.afterEach.always((t) => {
 test.serial('createNewConfiguration should create a new configuration in database', async (t) => {
     const configurationFromFile = JSON.parse(await readFileAsync(path.join(__dirname, './fixtures/.sonarrc')));
 
-    await configManager.createNewConfiguration('newConfiguration', 120, 'dist/tests/lib/microservices/config-manager/fixtures/.sonarrc');
+    await configManager.createNewConfiguration('newConfiguration', 120, 180, 'dist/tests/lib/microservices/config-manager/fixtures/.sonarrc');
 
     t.true(t.context.database.newConfig.called);
-    t.deepEqual(t.context.database.newConfig.args[0][2], configurationFromFile);
+    t.deepEqual(t.context.database.newConfig.args[0][3], configurationFromFile);
 });
 
 test.serial('createNewConfiguration should throw an error if the configuration file is invalid', async (t) => {
     t.plan(1);
 
     try {
-        await configManager.createNewConfiguration('newConfiguration', 120, 'dist/tests/lib/microservices/config-manager/fixtures/.sonarrcInvalid');
+        await configManager.createNewConfiguration('newConfiguration', 120, 180, 'dist/tests/lib/microservices/config-manager/fixtures/.sonarrcInvalid');
     } catch (err) {
         t.is(err.message, 'Invalid Configuration file');
     }
@@ -84,11 +84,12 @@ test.serial('getActiveConfiguration should return a IServiceConfig object', asyn
         active: true,
         field: 'value',
         jobCacheTime: 1,
+        jobRunTime: 1,
         name: 'configName',
         sonarConfig: {}
     });
 
-    const fields = ['active', 'jobCacheTime', 'name', 'sonarConfig'];
+    const fields = ['active', 'jobCacheTime', 'jobRunTime', 'name', 'sonarConfig'];
 
     const config = await configManager.getActiveConfiguration();
 

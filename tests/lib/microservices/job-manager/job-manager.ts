@@ -33,7 +33,7 @@ import * as jobManager from '../../../../src/lib/microservices/job-manager/job-m
 import { ConfigSource } from '../../../../src/lib/enums/configsource';
 import { JobStatus, RuleStatus } from '../../../../src/lib/enums/status';
 import { readFileAsync } from '../../../../src/lib/utils/misc';
-import { IJob } from '../../../../src/lib/types/job'; // eslint-disable-line no-unused-vars
+import { IJob } from '../../../../src/lib/types'; // eslint-disable-line no-unused-vars
 
 const activeConfig = {
     jobCacheTime: 120,

@@ -3,7 +3,7 @@ import { validateConfig } from '@sonarwhal/sonar/dist/src/lib/config/config-vali
 import { IConfig } from '@sonarwhal/sonar/dist/src/lib/types'; // eslint-disable-line no-unused-vars
 
 import * as database from '../../common/database/database';
-import { IServiceConfig } from '../../types/serviceconfig'; // eslint-disable-line no-unused-vars
+import { IServiceConfig } from '../../types'; // eslint-disable-line no-unused-vars
 
 /**
  * Get the configuration from a path.
@@ -25,10 +25,10 @@ const getConfigFromFile = (filePath: string): IConfig => {
  * @param {number} cache - Cache time for jobs.
  * @param {string} filePath - Configuration file path.
  */
-export const createNewConfiguration = (name: string, cache: number, filePath: string): Promise<IServiceConfig> => {
+export const createNewConfiguration = (name: string, cache: number, run: number, filePath: string): Promise<IServiceConfig> => {
     const newConfig = getConfigFromFile(filePath);
 
-    return database.newConfig(name, cache, newConfig);
+    return database.newConfig(name, cache, run, newConfig);
 };
 
 /**
@@ -59,6 +59,7 @@ export const getActiveConfiguration = async (): Promise<IServiceConfig> => {
     const result: IServiceConfig = {
         active: currentConfig.active,
         jobCacheTime: currentConfig.jobCacheTime,
+        jobRunTime: currentConfig.jobRunTime,
         name: currentConfig.name,
         sonarConfig: currentConfig.sonarConfig
     };

@@ -50,13 +50,14 @@ proxyquire('../../../../src/lib/common/database/database', {
 });
 
 import * as database from '../../../../src/lib/common/database/database';
-import { IJob } from '../../../../src/lib/types/job'; // eslint-disable-line no-unused-vars
+import { IJob } from '../../../../src/lib/types'; // eslint-disable-line no-unused-vars
 import { JobStatus } from '../../../../src/lib/enums/status'; // eslint-disable-line no-unused-vars
 
 const jobResult: Array<IJob> = [{
     config: null,
     error: null,
     finished: new Date(),
+    maxRunTime: 180,
     queued: new Date(),
     rules: null,
     started: new Date(),
@@ -145,7 +146,7 @@ test.serial('getJob should fail if database is not connected', async (t) => {
 test.serial('newJob should fail if database is not connected', async (t) => {
     t.plan(1);
     try {
-        await database.newJob('url', JobStatus.pending, [], {} as IConfig);
+        await database.newJob('url', JobStatus.pending, [], {} as IConfig, 180);
     } catch (err) {
         t.is(err.message, 'Database not connected');
     }
@@ -154,7 +155,7 @@ test.serial('newJob should fail if database is not connected', async (t) => {
 test.serial('newConfig should fail if database is not connected', async (t) => {
     t.plan(1);
     try {
-        await database.newConfig('configName', 120, {} as IConfig);
+        await database.newConfig('configName', 120, 180, {} as IConfig);
     } catch (err) {
         t.is(err.message, 'Database not connected');
     }
@@ -336,7 +337,7 @@ test.serial('newJob should save a new job in database', async (t) => {
 
     t.context.modelObject = modelObject;
 
-    await database.newJob('url', JobStatus.pending, null, null);
+    await database.newJob('url', JobStatus.pending, null, null, 180);
 
     t.true(t.context.modelObject.save.calledOnce);
 
@@ -350,7 +351,7 @@ test.serial('newConfig should save a new configuration in database', async (t) =
 
     t.context.modelObject = modelObject;
 
-    await database.newConfig('configName', 120, {} as IConfig);
+    await database.newConfig('configName', 120, 180, {} as IConfig);
 
     t.true(t.context.modelObject.save.calledOnce);
 

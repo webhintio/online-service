@@ -10,8 +10,7 @@ import * as tri from 'tri';
 import { JobStatus } from '../../enums/status'; // eslint-disable-line no-unused-vars
 import { Job } from './models/job';
 import { ServiceConfig, IServiceConfigModel } from './models/serviceconfig'; // eslint-disable-line no-unused-vars
-import { IJob, Rule } from '../../types/job'; // eslint-disable-line no-unused-vars
-import { IServiceConfig } from '../../types/serviceconfig'; // eslint-disable-line no-unused-vars
+import { IJob, IServiceConfig, Rule } from '../../types'; // eslint-disable-line no-unused-vars
 import { debug as d } from '../../utils/debug';
 
 const debug: debug.IDebugger = d(__filename);
@@ -142,7 +141,7 @@ export const getJob = async (id: string): Promise<IJob> => {
  * @param {Array<rules>} rules - Rules the job will check.
  * @param config - Configuration for the job.
  */
-export const newJob = async (url: string, status: JobStatus, rules: Array<Rule>, config: IConfig): Promise<IJob> => {
+export const newJob = async (url: string, status: JobStatus, rules: Array<Rule>, config: IConfig, jobRunTime: number): Promise<IJob> => {
     validateConnection();
 
     debug(`Creating new job for url: ${url}`);
@@ -150,6 +149,7 @@ export const newJob = async (url: string, status: JobStatus, rules: Array<Rule>,
     const job = new Job({
         config,
         id: uuid(),
+        maxRunTime: jobRunTime,
         queued: new Date(),
         rules,
         status,
@@ -169,7 +169,7 @@ export const newJob = async (url: string, status: JobStatus, rules: Array<Rule>,
  * @param {number} cache - Cache time in seconds for jobs.
  * @param {IConfig} options - Configuration data.
  */
-export const newConfig = async (name: string, cache: number, options: IConfig): Promise<IServiceConfig> => {
+export const newConfig = async (name: string, cache: number, run: number, options: IConfig): Promise<IServiceConfig> => {
     validateConnection();
 
     debug(`Creating config with name: ${name}`);
@@ -177,6 +177,7 @@ export const newConfig = async (name: string, cache: number, options: IConfig): 
     const config: IServiceConfigModel = new ServiceConfig({
         active: false,
         jobCacheTime: cache,
+        jobRunTime: run,
         name,
         sonarConfig: options
     });
