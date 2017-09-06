@@ -222,3 +222,25 @@ test.serial(`If there is no problem running sonar, it should send to the queue t
     t.is(contentType.status, RuleStatus.pass);
     t.is(disown.status, RuleStatus.pending);
 });
+
+test.serial(`If sonar doesn't finish before the job.maxRunTime, it should send an error message to the queue`, async (t) => {
+    const job = {
+        config: {},
+        id: 0,
+        maxRunTime: 1,
+        rules: []
+    };
+    const emitter = getEmitter();
+
+    commonStub(emitter);
+
+    await worker.run();
+    await t.context.jobsQueue.listen.args[0][0](job);
+
+    t.true(t.context.resultsQueue.sendMessage.calledTwice);
+
+    const queueArgs = t.context.resultsQueue.sendMessage.args[1][0];
+
+    t.is(queueArgs.status, JobStatus.error);
+    t.is(queueArgs.error.message, 'TIMEOUT');
+});

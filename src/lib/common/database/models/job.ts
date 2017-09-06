@@ -1,4 +1,4 @@
-import { Document, Model, model } from 'mongoose'; // eslint-disable-line no-unused-vars
+import { Document, Model, model } from 'mongoose';
 import { IJob } from '../../../types';
 import { JobSchema } from '../schemas/job';
 

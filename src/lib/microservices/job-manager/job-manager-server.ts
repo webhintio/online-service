@@ -5,7 +5,7 @@ import * as express from 'express';
 
 import * as jobManager from './job-manager';
 import * as database from '../../common/database/database';
-import { IJob, RequestData } from '../../types'; // eslint-disable-line no-unused-vars
+import { IJob, RequestData } from '../../types';
 import * as logger from '../../utils/logging';
 import { getDataFromRequest } from '../../utils/misc';
 

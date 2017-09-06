@@ -14,10 +14,11 @@ import * as database from './common/database/database';
 import { Microservice } from './enums/microservice';
 import * as configManagerCLI from './microservices/config-manager/config-manager-cli';
 import * as jobManagerServer from './microservices/job-manager/job-manager-server';
-import { CLIOptions } from './types'; // eslint-disable-line no-unused-vars
+import { CLIOptions } from './types';
 import * as logger from './utils/logging';
 import { loadJSONFile } from './utils/misc';
 import * as worker from './microservices/worker-service/worker-service';
+import * as sync from './microservices/sync-service/sync-service';
 
 const pkg = loadJSONFile(path.join(__dirname, '../../../package.json'));
 
@@ -48,6 +49,8 @@ export const execute = async (args: string | Array<string> | object): Promise<nu
             await configManagerCLI.run(currentOptions);
         } else if (currentOptions.microservice === Microservice.worker) {
             await worker.run();
+        } else if (currentOptions.microservice === Microservice.sync) {
+            await sync.run();
         }
 
         return 0;

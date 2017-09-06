@@ -1,16 +1,16 @@
 import * as uuid from 'uuid/v4';
 import { promisify } from 'util';
 
-import { IConfig } from '@sonarwhal/sonar/dist/src/lib/types'; // eslint-disable-line no-unused-vars
+import { IConfig } from '@sonarwhal/sonar/dist/src/lib/types';
 import * as mongoose from 'mongoose';
 (mongoose.Promise as any) = global.Promise;
 import * as mongoDBLock from 'mongodb-lock';
 import * as tri from 'tri';
 
-import { JobStatus } from '../../enums/status'; // eslint-disable-line no-unused-vars
-import { Job } from './models/job';
-import { ServiceConfig, IServiceConfigModel } from './models/serviceconfig'; // eslint-disable-line no-unused-vars
-import { IJob, IServiceConfig, Rule } from '../../types'; // eslint-disable-line no-unused-vars
+import { JobStatus } from '../../enums/status';
+import { Job, IJobModel } from './models/job';
+import { ServiceConfig, IServiceConfigModel } from './models/serviceconfig';
+import { IJob, IServiceConfig, Rule } from '../../types';
 import { debug as d } from '../../utils/debug';
 
 const debug: debug.IDebugger = d(__filename);
@@ -121,13 +121,13 @@ export const getJobsByUrl = async (url: string): Promise<Array<IJob>> => {
  * Get a job from the database.
  * @param {string} id - Id we want to look for.
  */
-export const getJob = async (id: string): Promise<IJob> => {
+export const getJob = async (id: string): Promise<IJobModel> => {
     validateConnection();
 
     debug(`Getting job by id: ${id}`);
     const query = Job.findOne({ id });
 
-    const job = await query.exec();
+    const job: IJobModel = await query.exec();
 
     debug(`job with id ${id} ${job ? 'found' : 'not found'}`);
 
@@ -161,6 +161,16 @@ export const newJob = async (url: string, status: JobStatus, rules: Array<Rule>,
     debug(`job for url ${url} saved in database `);
 
     return job;
+};
+
+/**
+ * Update a job in database.
+ * @param {IJobModel} job Job we want to update.
+ */
+export const updateJob = async (job: IJobModel) => {
+    job.markModified('rules');
+
+    await job.save();
 };
 
 /**
@@ -260,6 +270,8 @@ export const disconnect = async () => {
         try {
             await mongoose.disconnect();
         } catch (err) {
+            // Do nothing.
+        } finally {
             db = null;
         }
     }

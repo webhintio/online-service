@@ -1,11 +1,11 @@
 import * as _ from 'lodash';
 import * as moment from 'moment';
-import { IConfig } from '@sonarwhal/sonar/dist/src/lib/types'; // eslint-disable-line no-unused-vars
+import { IConfig } from '@sonarwhal/sonar/dist/src/lib/types';
 import normalizeRules from '@sonarwhal/sonar/dist/src/lib/utils/normalize-rules';
 
 import * as database from '../../common/database/database';
 import * as configManager from '../config-manager/config-manager';
-import { IJob, IServiceConfig, RequestData, Rule } from '../../types'; // eslint-disable-line no-unused-vars
+import { IJob, IServiceConfig, RequestData, Rule } from '../../types';
 import { JobStatus, RuleStatus } from '../../enums/status';
 import { ConfigSource } from '../../enums/configsource';
 import { Queue } from '../../common/queue/queue';

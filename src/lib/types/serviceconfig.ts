@@ -1,4 +1,4 @@
-import { IConfig } from '@sonarwhal/sonar/dist/src/lib/types'; // eslint-disable-line no-unused-vars
+import { IConfig } from '@sonarwhal/sonar/dist/src/lib/types';
 
 export interface IServiceConfig {
     /** Default sonar configuration. */
