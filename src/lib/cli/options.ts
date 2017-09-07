@@ -49,8 +49,13 @@ export const options = optionator({
             option: 'cache',
             type: 'Int'
         }, {
+            alias: 'r',
+            description: 'Time a job has to complete the execution in sonar',
+            option: 'run',
+            type: 'Int'
+        }, {
             alias: 'f',
-            dependsOn: ['and', 'name', 'cache'],
+            dependsOn: ['and', 'name', 'cache', 'run'],
             description: 'Path to the sonar configuration file to store in database',
             example: 'online-service --microservice config-manager --name new-config-name --sonar-file config-file.json --cache 3000',
             option: 'file',

@@ -3,8 +3,7 @@ import { IConnectorConfig, IRuleConfigList, RuleConfig, IConfig } from '@sonarwh
 import { options } from '../../cli/options';
 import * as database from '../../common/database/database';
 import * as configManager from './config-manager';
-import { CLIOptions } from '../../types/clioptions'; // eslint-disable-line no-unused-vars
-import { IServiceConfig } from '../../types/serviceconfig'; // eslint-disable-line no-unused-vars
+import { CLIOptions, IServiceConfig } from '../../types'; // eslint-disable-line no-unused-vars
 import * as logger from '../../utils/logging';
 
 /**
@@ -58,7 +57,7 @@ export const run = async (cliOptions: CLIOptions) => {
 
     if (cliOptions.file) {
         try {
-            const newConfig: IServiceConfig = await configManager.createNewConfiguration(cliOptions.name, cliOptions.cache, cliOptions.file);
+            const newConfig: IServiceConfig = await configManager.createNewConfiguration(cliOptions.name, cliOptions.cache, cliOptions.run, cliOptions.file);
 
             logger.log(`Configuration '${newConfig.name}' created.`);
 

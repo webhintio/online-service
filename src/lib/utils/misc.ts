@@ -7,7 +7,7 @@ import { promisify } from 'util';
 
 import { debug as d } from './debug';
 import { ConfigSource } from '../enums/configsource';
-import { RequestData } from '../types/requestdata'; // eslint-disable-line no-unused-vars
+import { RequestData } from '../types'; // eslint-disable-line no-unused-vars
 
 const debug: debug.IDebugger = d(__filename);
 const _readFileAsync = promisify(fs.readFile);
@@ -67,4 +67,11 @@ export const loadJSONFile = (filePath: string) => {
     debug(`Loading JSON file: ${filePath}`);
 
     return JSON.parse(stripComments(readFile(filePath)));
+};
+
+/** Convenience wrapper to add a delay using promises. */
+export const delay = (millisecs: number): Promise<object> => {
+    return new Promise((resolve) => {
+        setTimeout(resolve, millisecs);
+    });
 };

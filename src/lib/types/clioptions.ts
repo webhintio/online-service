@@ -10,4 +10,5 @@ export type CLIOptions = {
     activate: boolean;
     list: boolean;
     cache: number;
+    run: number;
 };

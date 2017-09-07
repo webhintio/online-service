@@ -5,11 +5,9 @@ import normalizeRules from '@sonarwhal/sonar/dist/src/lib/utils/normalize-rules'
 
 import * as database from '../../common/database/database';
 import * as configManager from '../config-manager/config-manager';
-import { IJob, Rule } from '../../types/job'; // eslint-disable-line no-unused-vars
+import { IJob, IServiceConfig, RequestData, Rule } from '../../types'; // eslint-disable-line no-unused-vars
 import { JobStatus, RuleStatus } from '../../enums/status';
 import { ConfigSource } from '../../enums/configsource';
-import { RequestData } from '../../types/requestdata'; // eslint-disable-line no-unused-vars
-import { IServiceConfig } from '../../types/serviceconfig'; // eslint-disable-line no-unused-vars
 import { Queue } from '../../common/queue/queue';
 import { debug as d } from '../../utils/debug';
 
@@ -21,7 +19,7 @@ const queue: Queue = new Queue('sonar-jobs', process.env.queue); // eslint-disab
  * @param {string} url - The url that the job will be use.
  * @param {IConfig} config - The configuration for the job.
  */
-const createNewJob = (url: string, config: IConfig): Promise<IJob> => {
+const createNewJob = async (url: string, config: IConfig, jobRunTime: number): Promise<IJob> => {
     const normalizedRules = normalizeRules(config.rules);
     const rules: Array<Rule> = _.map(normalizedRules, (rule: string, key: string) => {
         return {
@@ -31,7 +29,20 @@ const createNewJob = (url: string, config: IConfig): Promise<IJob> => {
         };
     });
 
-    return database.newJob(url, JobStatus.pending, rules, config);
+    const databaseJob = await database.newJob(url, JobStatus.pending, rules, config, jobRunTime);
+
+    return {
+        config: databaseJob.config,
+        error: databaseJob.error,
+        finished: databaseJob.finished,
+        id: databaseJob.id,
+        maxRunTime: databaseJob.maxRunTime,
+        queued: databaseJob.queued,
+        rules: databaseJob.rules,
+        started: databaseJob.started,
+        status: databaseJob.status,
+        url: databaseJob.url
+    };
 };
 
 /**
@@ -52,7 +63,7 @@ const createRules = (rules: Array<string>) => {
  * Get the right configuration for the job.
  * @param {RequestData} data - The data the user sent in the request.
  */
-const getConfig = async (data: RequestData) => {
+const getConfig = (data: RequestData, serviceConfig: IServiceConfig) => {
     const source: ConfigSource = data.source;
     let config: IConfig;
 
@@ -62,11 +73,11 @@ const getConfig = async (data: RequestData) => {
             config = data.config;
             break;
         case ConfigSource.manual:
-            config = (await configManager.getActiveConfiguration()).sonarConfig;
+            config = serviceConfig.sonarConfig;
             config.rules = createRules(data.rules);
             break;
         default:
-            config = (await configManager.getActiveConfiguration()).sonarConfig;
+            config = serviceConfig.sonarConfig;
             break;
     }
 
@@ -78,12 +89,11 @@ const getConfig = async (data: RequestData) => {
  * @param {Array<IJob>} jobs - All the jobs for that url in the database.
  * @param config - Job configuration.
  */
-const getActiveJob = async (jobs: Array<IJob>, config) => {
-    const configuration: IServiceConfig = await configManager.getActiveConfiguration();
+const getActiveJob = (jobs: Array<IJob>, config: IConfig, cacheTime: number) => {
 
     return jobs.find((job) => {
         // job.config in cosmosdb is undefined if the config saved was an empty object.
-        return _.isEqual(job.config || {}, config) && (!job.finished || moment(job.finished).isAfter(moment().subtract(configuration.jobCacheTime, 'seconds')));
+        return _.isEqual(job.config || {}, config) && (!job.finished || moment(job.finished).isAfter(moment().subtract(cacheTime, 'seconds')));
     });
 };
 
@@ -105,15 +115,15 @@ export const startJob = async (data: RequestData): Promise<IJob> => {
                 II) Add job to the queue
         3. Unlock database by url
      */
-
+    const serviceConfig: IServiceConfig = await configManager.getActiveConfiguration();
     const lock = await database.lock(data.url);
 
-    const config: IConfig = await getConfig(data);
+    const config: IConfig = getConfig(data, serviceConfig);
     const jobs: Array<IJob> = await database.getJobsByUrl(data.url);
-    let job = await getActiveJob(jobs, config);
+    let job = getActiveJob(jobs, config, serviceConfig.jobCacheTime);
 
     if (jobs.length === 0 || !job) {
-        job = await createNewJob(data.url, config);
+        job = await createNewJob(data.url, config, serviceConfig.jobRunTime);
         await queue.sendMessage(job);
     }
 

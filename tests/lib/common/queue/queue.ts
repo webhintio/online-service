@@ -9,18 +9,26 @@ const azureSBService = {
     sendQueueMessage() { }
 };
 
-proxyquire('../../../../src/lib/common/queue/queue', { 'azure-sb': azureSB });
+const misc = { delay() { } };
+
+proxyquire('../../../../src/lib/common/queue/queue', {
+    '../../utils/misc': misc,
+    'azure-sb': azureSB
+});
 
 import { Queue } from '../../../../src/lib/common/queue/queue';
 
 test.beforeEach((t) => {
+    sinon.spy(misc, 'delay');
     sinon.stub(azureSB, 'createServiceBusService').returns(azureSBService);
 
     t.context.azureSB = azureSB;
+    t.context.misc = misc;
 });
 
 test.afterEach.always((t) => {
     t.context.azureSB.createServiceBusService.restore();
+    t.context.misc.delay.restore();
 });
 
 test.serial('Constructor should create the instance of azure service bus', (t) => {
@@ -53,7 +61,7 @@ test.serial(`getMessage should return a message and don't delete it`, async (t) 
     const message = { id: 'id', url: 'url' };
 
     sinon.stub(azureSBService, 'receiveQueueMessage').callsFake((param1, param2, callback) => {
-        callback(null, [{ body: JSON.stringify(message) }]);
+        callback(null, { body: JSON.stringify(message) });
     });
 
     t.context.azureSBService = azureSBService;
@@ -65,6 +73,7 @@ test.serial(`getMessage should return a message and don't delete it`, async (t) 
 
     t.true(t.context.azureSBService.receiveQueueMessage.calledOnce);
     t.is(t.context.azureSBService.receiveQueueMessage.args[0][0], queueName);
+    t.true(t.context.azureSBService.receiveQueueMessage.args[0][1].isPeekLock);
     t.deepEqual(msg.data, message);
 
     t.context.azureSBService.receiveQueueMessage.restore();
@@ -72,7 +81,7 @@ test.serial(`getMessage should return a message and don't delete it`, async (t) 
 
 test.serial(`if there is no messages in the queue, getMessage should return null`, async (t) => {
     sinon.stub(azureSBService, 'receiveQueueMessage').callsFake((param1, param2, callback) => {
-        callback(new Error('No messages to receive'));
+        callback('No messages to receive');
     });
 
     t.context.azureSBService = azureSBService;
@@ -109,6 +118,101 @@ test.serial(`if there is another error, getMessage should return an error`, asyn
         t.true(t.context.azureSBService.receiveQueueMessage.calledOnce);
         t.is(t.context.azureSBService.receiveQueueMessage.args[0][0], queueName);
     }
+
+    t.context.azureSBService.receiveQueueMessage.restore();
+});
+
+test.serial(`if listen is called without handler, it should return an error`, async (t) => {
+    const queueName = 'queueNme';
+    const queue = new Queue(queueName, 'connectionString');
+
+    t.plan(1);
+    try {
+        await queue.listen(null);
+    } catch (err) {
+        t.is(err.message, 'Listen needs a handler to work');
+    }
+});
+
+test.serial(`if a listener is called twice without stop it before, it should return an error`, async (t) => {
+    const message = { id: 'id', url: 'url' };
+
+    sinon.stub(azureSBService, 'receiveQueueMessage').callsFake((param1, param2, callback) => {
+        callback(null, { body: JSON.stringify(message) });
+    });
+
+    t.context.azureSBService = azureSBService;
+
+    const queueName = 'queueNme';
+    const queue = new Queue(queueName, 'connectionString');
+
+    t.plan(1);
+
+    await queue.listen(async () => {
+        try {
+            await queue.listen(() => {
+                return true;
+            });
+        } catch (err) {
+            t.is(err.message, 'There is already a listener defined. Stop the previous one');
+        } finally {
+            queue.stopListener();
+        }
+    });
+
+    t.context.azureSBService.receiveQueueMessage.restore();
+});
+
+test.serial('if listen is call with the option pooling defined, it should use it as default value', async (t) => {
+    const message = { id: 'id', url: 'url' };
+
+    sinon.stub(azureSBService, 'receiveQueueMessage')
+        .onFirstCall()
+        .callsFake((param1, param2, callback) => {
+            callback('No messages to receive');
+        })
+        .onSecondCall()
+        .callsFake((param1, param2, callback) => {
+            callback(null, { body: JSON.stringify(message) });
+        });
+
+    t.context.azureSBService = azureSBService;
+
+    const queueName = 'queueNme';
+    const queue = new Queue(queueName, 'connectionString');
+
+    await queue.listen(() => {
+        queue.stopListener();
+    }, { pooling: 3 });
+
+    t.is(t.context.misc.delay.args[0][0], 3);
+
+    t.context.azureSBService.receiveQueueMessage.restore();
+});
+
+test.serial('if service bus returns an error 503, delay should be called with 10000', async (t) => {
+    const message = { id: 'id', url: 'url' };
+
+    sinon.stub(azureSBService, 'receiveQueueMessage')
+        .onFirstCall()
+        .callsFake((param1, param2, callback) => {
+            callback({ statusCode: 503 });
+        })
+        .onSecondCall()
+        .callsFake((param1, param2, callback) => {
+            callback(null, { body: JSON.stringify(message) });
+        });
+
+    t.context.azureSBService = azureSBService;
+
+    const queueName = 'queueNme';
+    const queue = new Queue(queueName, 'connectionString');
+
+    await queue.listen(() => {
+        queue.stopListener();
+    });
+
+    t.is(t.context.misc.delay.args[0][0], 10000);
 
     t.context.azureSBService.receiveQueueMessage.restore();
 });
