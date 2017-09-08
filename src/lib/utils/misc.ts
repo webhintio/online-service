@@ -1,4 +1,4 @@
-import * as express from 'express'; // eslint-disable-line no-unused-vars
+import { Request } from 'express';
 import * as fs from 'fs';
 import * as multiparty from 'multiparty';
 import * as stripBom from 'strip-bom';
@@ -7,7 +7,7 @@ import { promisify } from 'util';
 
 import { debug as d } from './debug';
 import { ConfigSource } from '../enums/configsource';
-import { RequestData } from '../types'; // eslint-disable-line no-unused-vars
+import { RequestData } from '../types';
 
 const debug: debug.IDebugger = d(__filename);
 const _readFileAsync = promisify(fs.readFile);
@@ -26,7 +26,7 @@ export const readFileAsync = async (filePath: string): Promise<string> => {
 };
 
 /** Read multipart data from request. */
-export const getDataFromRequest = (req: express.Request): Promise<RequestData> => {
+export const getDataFromRequest = (req: Request): Promise<RequestData> => {
     return new Promise((resolve, reject) => {
         const form = new multiparty.Form({ maxFilesSize });
 
@@ -58,7 +58,7 @@ export const getDataFromRequest = (req: express.Request): Promise<RequestData> =
 };
 
 /** Convenience wrapper for synchronously reading file contents. */
-const readFile = (filePath: string): string => {
+export const readFile = (filePath: string): string => {
     return stripBom(fs.readFileSync(filePath, 'utf8')); // eslint-disable-line no-sync
 };
 

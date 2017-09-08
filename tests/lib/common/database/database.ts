@@ -1,7 +1,7 @@
 import test from 'ava';
 import * as sinon from 'sinon';
 import * as proxyquire from 'proxyquire';
-import { IConfig } from '@sonarwhal/sonar/dist/src/lib/types'; // eslint-disable-line no-unused-vars    
+import { IConfig } from '@sonarwhal/sonar/dist/src/lib/types';
 
 const mongoose = {
     connect() { },
@@ -50,8 +50,8 @@ proxyquire('../../../../src/lib/common/database/database', {
 });
 
 import * as database from '../../../../src/lib/common/database/database';
-import { IJob } from '../../../../src/lib/types'; // eslint-disable-line no-unused-vars
-import { JobStatus } from '../../../../src/lib/enums/status'; // eslint-disable-line no-unused-vars
+import { IJob } from '../../../../src/lib/types';
+import { JobStatus } from '../../../../src/lib/enums/status';
 
 const jobResult: Array<IJob> = [{
     config: null,

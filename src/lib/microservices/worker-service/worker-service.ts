@@ -1,12 +1,12 @@
 import * as _ from 'lodash';
-import { fork, ChildProcess } from 'child_process'; // eslint-disable-line no-unused-vars
-import { IConfig, IProblem } from '@sonarwhal/sonar/dist/src/lib/types'; // eslint-disable-line no-unused-vars
+import { fork, ChildProcess } from 'child_process';
+import { IConfig, IProblem } from '@sonarwhal/sonar/dist/src/lib/types';
 import normalizeRules from '@sonarwhal/sonar/dist/src/lib/utils/normalize-rules';
 import * as path from 'path';
 
 import { debug as d } from '../../utils/debug';
 import { Queue } from '../../common/queue/queue';
-import { IJob, JobResult, Rule } from '../../types'; // eslint-disable-line no-unused-vars
+import { IJob, JobResult, Rule } from '../../types';
 import { JobStatus, RuleStatus } from '../../enums/status';
 import * as logger from '../../utils/logging';
 
@@ -116,8 +116,18 @@ export const run = async () => {
             debug(`Error runing job: ${job.id}`);
             debug(err);
 
-            job.error = err;
+            if (err instanceof Error) {
+                // When we try to stringify an instance of Error, we just get an empty object.
+                job.error = {
+                    message: err.message,
+                    stack: err.stack
+                };
+            } else {
+                job.error = err;
+            }
+
             job.status = JobStatus.error;
+            job.finished = new Date();
 
             debug(`Sending job result with status: ${job.status}`);
             queueResults.sendMessage(job);
@@ -128,7 +138,6 @@ export const run = async () => {
 
     return 0;
 };
-
 
 if (process.argv[1].includes('worker-service.js')) {
     run();

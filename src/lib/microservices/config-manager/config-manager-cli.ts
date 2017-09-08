@@ -1,9 +1,9 @@
-import { IConnectorConfig, IRuleConfigList, RuleConfig, IConfig } from '@sonarwhal/sonar/dist/src/lib/types'; // eslint-disable-line no-unused-vars
+import { IConnectorConfig, IRuleConfigList, RuleConfig, IConfig } from '@sonarwhal/sonar/dist/src/lib/types';
 
 import { options } from '../../cli/options';
 import * as database from '../../common/database/database';
 import * as configManager from './config-manager';
-import { CLIOptions, IServiceConfig } from '../../types'; // eslint-disable-line no-unused-vars
+import { CLIOptions, IServiceConfig } from '../../types';
 import * as logger from '../../utils/logging';
 
 /**

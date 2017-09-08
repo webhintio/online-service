@@ -1,9 +1,8 @@
 import * as url from 'url';
 
-import { IProblem } from '@sonarwhal/sonar/dist/src/lib/types'; // eslint-disable-line no-unused-vars
 import { Sonar } from '@sonarwhal/sonar/dist/src/lib/sonar';
 
-import { IJob, JobResult, Rule } from '../../types'; // eslint-disable-line no-unused-vars
+import { IJob, JobResult } from '../../types';
 import * as logger from '../../utils/logging';
 
 /**

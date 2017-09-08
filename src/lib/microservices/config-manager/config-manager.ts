@@ -1,9 +1,9 @@
 import * as config from '@sonarwhal/sonar/dist/src/lib/config';
 import { validateConfig } from '@sonarwhal/sonar/dist/src/lib/config/config-validator';
-import { IConfig } from '@sonarwhal/sonar/dist/src/lib/types'; // eslint-disable-line no-unused-vars
+import { IConfig } from '@sonarwhal/sonar/dist/src/lib/types';
 
 import * as database from '../../common/database/database';
-import { IServiceConfig } from '../../types'; // eslint-disable-line no-unused-vars
+import { IServiceConfig } from '../../types';
 
 /**
  * Get the configuration from a path.

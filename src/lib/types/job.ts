@@ -1,4 +1,4 @@
-import { IConfig, IProblem, Severity } from '@sonarwhal/sonar/dist/src/lib/types'; // eslint-disable-line no-unused-vars
+import { IConfig, IProblem } from '@sonarwhal/sonar/dist/src/lib/types';
 
 import { JobStatus, RuleStatus } from '../enums/status';
 
@@ -33,6 +33,6 @@ export interface IJob {
     started: Date;
     /** Timestamp when it was queued */
     finished: Date;
-    /** Error message in case there is an error runing the job*/
-    error: string;
+    /** Error in case there is an error runing the job*/
+    error: any;
 }
