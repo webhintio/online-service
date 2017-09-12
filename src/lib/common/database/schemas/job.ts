@@ -7,6 +7,7 @@ export const JobSchema: Schema = new Schema({
     id: String,
     queued: Date,
     rules: [{}],
+    sonarVersion: String,
     started: Date,
     status: {},
     url: String

@@ -72,6 +72,7 @@ export const run = async () => {
 
         if (job.status === JobStatus.started) {
             dbJob.started = job.started;
+            dbJob.sonarVersion = job.sonarVersion;
 
             // double check just in case the started message is not the first one we are processing.
             if (dbJob.status === JobStatus.pending) {

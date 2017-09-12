@@ -17,6 +17,8 @@ services:
                 delay: 10s
         environment:
             - port=80
+            - queue=<YourAzureServiceBusConnectionString>
+            - database=<YourDatabaseConnectionString>
         ports:
             - "4000:80"
     worker-service:
