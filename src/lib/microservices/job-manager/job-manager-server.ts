@@ -33,7 +33,6 @@ export const run = () => {
 
         server.on('listening', () => {
             logger.log(`Server started on port ${app.get('port')}`);
-            resolve();
         });
 
         server.on('error', (e) => {

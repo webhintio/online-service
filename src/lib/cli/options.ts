@@ -31,11 +31,6 @@ export const options = optionator({
             description: 'Output the version number',
             option: 'version',
             type: 'Boolean'
-        }, {
-            alias: 'h',
-            description: 'Show help',
-            option: 'help',
-            type: 'Boolean'
         },
         { heading: 'Config Manager options' },
         {
@@ -72,6 +67,19 @@ export const options = optionator({
             description: 'List all the configuration available',
             example: 'online-service --microservice config-manager --list',
             option: 'list',
+            type: 'Boolean'
+        },
+        {heading: 'Miscellaneous'},
+        {
+            default: false,
+            description: 'Output debugging information',
+            option: 'debug',
+            type: 'Boolean'
+        },
+        {
+            alias: 'h',
+            description: 'Show help',
+            option: 'help',
             type: 'Boolean'
         }
     ],
