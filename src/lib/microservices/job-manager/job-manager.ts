@@ -39,6 +39,7 @@ const createNewJob = async (url: string, config: IConfig, jobRunTime: number): P
         maxRunTime: databaseJob.maxRunTime,
         queued: databaseJob.queued,
         rules: databaseJob.rules,
+        sonarVersion: null,
         started: databaseJob.started,
         status: databaseJob.status,
         url: databaseJob.url

@@ -27,6 +27,8 @@ export interface IJob {
     maxRunTime: number;
     /** List of rules to run */
     rules: Array<Rule>;
+    /** Sonar version */
+    sonarVersion: string;
     /** Timestamp when it was queued */
     queued: Date;
     /** Timestamp when it was queued */

@@ -90,15 +90,23 @@ const runSonar = (job: IJob): Promise<Array<IProblem>> => {
     });
 };
 
+const getSonarVersion = () => {
+    const pkg = require('@sonarwhal/sonar/package.json');
+
+    return pkg.version;
+};
+
 export const run = async () => {
     const queue = new Queue('sonar-jobs', process.env.queue); // eslint-disable-line no-process-env
     const queueResults = new Queue('sonar-results', process.env.queue); // eslint-disable-line no-process-env
+    const sonarVersion = getSonarVersion();
 
     const listener = async (job: IJob) => {
         debug(`Job received: ${job.id}`);
         try {
             job.started = new Date();
             job.status = JobStatus.started;
+            job.sonarVersion = sonarVersion;
 
             debug(`Changing job status to ${job.status}`);
             await queueResults.sendMessage(job);

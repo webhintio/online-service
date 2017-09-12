@@ -60,6 +60,7 @@ const jobResult: Array<IJob> = [{
     maxRunTime: 180,
     queued: new Date(),
     rules: null,
+    sonarVersion: null,
     started: new Date(),
     status: JobStatus.pending,
     url: 'url'
