@@ -9,32 +9,34 @@ export type Rule = {
 };
 
 export type JobResult = {
-    error: Error;
+    error: string;
     ok: boolean;
     messages: Array<IProblem>;
 };
 
 export interface IJob {
-    /** job id in database */
+    /** job id in database. */
     id?: string;
-    /** Job Url */
+    /** Job Url. */
     url: string;
-    /** Job Status */
+    /** Job Status. */
     status: JobStatus;
-    /** Configuration to run sonar */
+    /** Configuration to run sonar. */
     config: IConfig;
     /** Time in seconds the job has to complete the execution in sonar. */
     maxRunTime: number;
-    /** List of rules to run */
+    /** List of rules to run. */
     rules: Array<Rule>;
-    /** Sonar version */
+    /** Sonar version. */
     sonarVersion: string;
-    /** Timestamp when it was queued */
+    /** Timestamp when it was queued. */
     queued: Date;
-    /** Timestamp when it was queued */
+    /** Timestamp when it was queued. */
     started: Date;
-    /** Timestamp when it was queued */
+    /** Timestamp when it was queued. */
     finished: Date;
-    /** Error in case there is an error runing the job*/
+    /** Error in case there is an error runing the job. */
     error: any;
+    /** Messages in queue approximately before the job is added to the queue. */
+    messagesInQueue?: number;
 }
