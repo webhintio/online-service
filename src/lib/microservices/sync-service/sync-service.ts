@@ -25,8 +25,10 @@ const setRules = (dbJob: IJob, job: IJob) => {
     for (const rule of job.rules) {
         const dbJobRule = getRule(rule.name, dbJob.rules);
 
-        dbJobRule.messages = rule.messages;
-        dbJobRule.status = rule.status;
+        if (dbJobRule.status === RuleStatus.pending) {
+            dbJobRule.messages = rule.messages;
+            dbJobRule.status = rule.status;
+        }
     }
 };
 
@@ -61,7 +63,7 @@ export const run = async () => {
         }
 
         // If the job fails at some point, ignore other messages.
-        // This can happen if for example we split the job in 
+        // This can happen if for example we split the job in
         // some groups of rules to run just a subset in each worker
         // and for some reason, one of the execution fails.
         if (dbJob.status === JobStatus.error) {
@@ -71,8 +73,12 @@ export const run = async () => {
         }
 
         if (job.status === JobStatus.started) {
-            dbJob.started = job.started;
-            dbJob.sonarVersion = job.sonarVersion;
+            // When the a job is splitted we receive more than one messges for the status `started`
+            // but we only want to store in the database the first one.
+            if (dbJob.status !== JobStatus.started) {
+                dbJob.started = job.started;
+                dbJob.sonarVersion = job.sonarVersion;
+            }
 
             // double check just in case the started message is not the first one we are processing.
             if (dbJob.status === JobStatus.pending) {

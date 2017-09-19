@@ -141,7 +141,7 @@ export const getJob = async (id: string): Promise<IJobModel> => {
  * @param {Array<rules>} rules - Rules the job will check.
  * @param config - Configuration for the job.
  */
-export const newJob = async (url: string, status: JobStatus, rules: Array<Rule>, config: IConfig, jobRunTime: number): Promise<IJob> => {
+export const newJob = async (url: string, status: JobStatus, rules: Array<Rule>, config: Array<IConfig>, jobRunTime: number): Promise<IJob> => {
     validateConnection();
 
     debug(`Creating new job for url: ${url}`);
@@ -179,7 +179,7 @@ export const updateJob = async (job: IJobModel) => {
  * @param {number} cache - Cache time in seconds for jobs.
  * @param {IConfig} options - Configuration data.
  */
-export const newConfig = async (name: string, cache: number, run: number, options: IConfig): Promise<IServiceConfig> => {
+export const newConfig = async (name: string, cache: number, run: number, options: Array<IConfig>): Promise<IServiceConfig> => {
     validateConnection();
 
     debug(`Creating config with name: ${name}`);
@@ -189,7 +189,7 @@ export const newConfig = async (name: string, cache: number, run: number, option
         jobCacheTime: cache,
         jobRunTime: run,
         name,
-        sonarConfig: options
+        sonarConfigs: options
     });
 
     await config.save();

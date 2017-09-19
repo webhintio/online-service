@@ -10,6 +10,7 @@ import { JobStatus, RuleStatus } from '../../enums/status';
 import { ConfigSource } from '../../enums/configsource';
 import { Queue } from '../../common/queue/queue';
 import { debug as d } from '../../utils/debug';
+import { validateServiceConfig } from '../../utils/misc';
 
 const debug: debug.IDebugger = d(__filename);
 const queue: Queue = new Queue('sonar-jobs', process.env.queue); // eslint-disable-line no-process-env
@@ -19,17 +20,23 @@ const queue: Queue = new Queue('sonar-jobs', process.env.queue); // eslint-disab
  * @param {string} url - The url that the job will be use.
  * @param {IConfig} config - The configuration for the job.
  */
-const createNewJob = async (url: string, config: IConfig, jobRunTime: number): Promise<IJob> => {
-    const normalizedRules = normalizeRules(config.rules);
-    const rules: Array<Rule> = _.map(normalizedRules, (rule: string, key: string) => {
-        return {
-            messages: [],
-            name: key,
-            status: RuleStatus.pending
-        };
-    });
+const createNewJob = async (url: string, configs: Array<IConfig>, jobRunTime: number): Promise<IJob> => {
+    let rules: Array<Rule> = [];
 
-    const databaseJob = await database.newJob(url, JobStatus.pending, rules, config, jobRunTime);
+    for (const config of configs) {
+        const normalizedRules = normalizeRules(config.rules);
+        const partialRules = _.map(normalizedRules, (rule: string, key: string) => {
+            return {
+                messages: [],
+                name: key,
+                status: RuleStatus.pending
+            };
+        });
+
+        rules = rules.concat(partialRules);
+    }
+
+    const databaseJob = await database.newJob(url, JobStatus.pending, rules, configs, jobRunTime);
 
     return {
         config: databaseJob.config,
@@ -47,38 +54,33 @@ const createNewJob = async (url: string, config: IConfig, jobRunTime: number): P
 };
 
 /**
- * Create an object with all the rules and the default error level.
- * @param {Array<string>} rules - Array with names of rules.
+ * Validate if a sonar configuration or an array of them is valid.
+ * @param {IConfig | Array<IConfig>} config - Sonar configuration.
  */
-const createRules = (rules: Array<string>) => {
-    const result = {};
+const validateConfigs = (config: IConfig | Array<IConfig>) => {
+    const configs = Array.isArray(config) ? config : [config];
 
-    for (const rule of rules) {
-        result[rule] = RuleStatus.error;
-    }
-
-    return result;
+    validateServiceConfig(configs);
 };
 
 /**
  * Get the right configuration for the job.
  * @param {RequestData} data - The data the user sent in the request.
  */
-const getConfig = (data: RequestData, serviceConfig: IServiceConfig) => {
+const getConfig = (data: RequestData, serviceConfig: IServiceConfig): Array<IConfig> => {
     const source: ConfigSource = data.source;
-    let config: IConfig;
+    let config: Array<IConfig>;
 
     debug(`Configuration source: ${source}`);
     switch (source) {
         case ConfigSource.file:
-            config = data.config;
+            validateConfigs(data.config);
+            config = Array.isArray(data.config) ? data.config : [data.config];
             break;
-        case ConfigSource.manual:
-            config = serviceConfig.sonarConfig;
-            config.rules = createRules(data.rules);
-            break;
+        // TODO: TBD.
+        // case ConfigSource.manual:
         default:
-            config = serviceConfig.sonarConfig;
+            config = serviceConfig.sonarConfigs;
             break;
     }
 
@@ -90,12 +92,24 @@ const getConfig = (data: RequestData, serviceConfig: IServiceConfig) => {
  * @param {Array<IJob>} jobs - All the jobs for that url in the database.
  * @param config - Job configuration.
  */
-const getActiveJob = (jobs: Array<IJob>, config: IConfig, cacheTime: number) => {
-
+const getActiveJob = (jobs: Array<IJob>, config: Array<IConfig>, cacheTime: number) => {
     return jobs.find((job) => {
         // job.config in cosmosdb is undefined if the config saved was an empty object.
-        return _.isEqual(job.config || {}, config) && (!job.finished || moment(job.finished).isAfter(moment().subtract(cacheTime, 'seconds')));
+        return _.isEqual(job.config || [{}], config) && (!job.finished || moment(job.finished).isAfter(moment().subtract(cacheTime, 'seconds')));
     });
+};
+
+/**
+ * Split the job in as many messages as configurations it has.
+ * @param {IJob} job - Job to send to the queue.
+ */
+const sendMessagesToQueue = async (job: IJob) => {
+    for (const config of job.config) {
+        const jobCopy = _.cloneDeep(job);
+
+        jobCopy.config = [config];
+        await queue.sendMessage(jobCopy);
+    }
 };
 
 /**
@@ -119,14 +133,14 @@ export const startJob = async (data: RequestData): Promise<IJob> => {
     const serviceConfig: IServiceConfig = await configManager.getActiveConfiguration();
     const lock = await database.lock(data.url);
 
-    const config: IConfig = getConfig(data, serviceConfig);
+    const config: Array<IConfig> = getConfig(data, serviceConfig);
     const jobs: Array<IJob> = await database.getJobsByUrl(data.url);
     let job = getActiveJob(jobs, config, serviceConfig.jobCacheTime);
 
     if (jobs.length === 0 || !job) {
         job = await createNewJob(data.url, config, serviceConfig.jobRunTime);
         job.messagesInQueue = await queue.getMessagesCount();
-        await queue.sendMessage(job);
+        await sendMessagesToQueue(job);
     }
 
     await database.unlock(lock);

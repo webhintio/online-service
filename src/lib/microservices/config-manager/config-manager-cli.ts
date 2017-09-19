@@ -93,24 +93,27 @@ export const run = async (cliOptions: CLIOptions) => {
         for (const serviceConfig of configurations) {
             logger.log(`Configuration name: ${serviceConfig.name}${serviceConfig.active ? ' (Active)' : ''}`);
             logger.log(`Cache for jobs: ${serviceConfig.jobCacheTime} seconds`);
+            logger.log(`Time to run sonar: ${serviceConfig.jobRunTime} seconds`);
             logger.log('===================================');
             logger.log('======= Sonar configuration =======');
             logger.log('===================================');
-            const config = serviceConfig.sonarConfig;
+            const configs = serviceConfig.sonarConfigs;
 
-            logger.log('============ Connector ============');
-            logger.log(`Name: ${typeof config.connector === 'string' ? config.connector : config.connector.name}`);
-            printConnectorOptions(config);
-            logger.log('============== Rules ==============');
-            printRules(config.rules);
-            if (config.plugins) {
-                logger.log('============= Plugins =============');
-                printRules(config.plugins);
+            for (const config of configs) {
+                logger.log('============ Connector ============');
+                logger.log(`Name: ${typeof config.connector === 'string' ? config.connector : config.connector.name}`);
+                printConnectorOptions(config);
+                logger.log('============== Rules ==============');
+                printRules(config.rules);
+                if (config.plugins) {
+                    logger.log('============= Plugins =============');
+                    printRules(config.plugins);
+                }
+                logger.log('============= Options =============');
+                printOptions(config);
+                logger.log('');
+                logger.log('');
             }
-            logger.log('============= Options =============');
-            printOptions(config);
-            logger.log('');
-            logger.log('');
         }
 
         return null;

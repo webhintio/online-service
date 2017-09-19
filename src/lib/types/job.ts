@@ -22,7 +22,7 @@ export interface IJob {
     /** Job Status. */
     status: JobStatus;
     /** Configuration to run sonar. */
-    config: IConfig;
+    config: Array<IConfig>;
     /** Time in seconds the job has to complete the execution in sonar. */
     maxRunTime: number;
     /** List of rules to run. */

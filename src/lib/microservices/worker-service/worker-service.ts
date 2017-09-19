@@ -18,9 +18,9 @@ const debug: debug.IDebugger = d(__filename);
  * @param {IConfig} config - Sonar configuration.
  * @param {Array<IProblem>} result - Messages returned after run sonar.
  */
-const parseResult = (rules: Array<Rule>, config: IConfig, result: Array<IProblem>) => {
+const parseResult = (rules: Array<Rule>, config: Array<IConfig>, result: Array<IProblem>) => {
     const groupedData: _.Dictionary<Array<IProblem>> = _.groupBy(result, 'ruleId');
-    const configRules = normalizeRules(config.rules);
+    const configRules = normalizeRules(config[0].rules);
 
     rules.forEach((rule: Rule) => {
         // Skip rule if it is not in the configuration file.
@@ -90,16 +90,16 @@ const runSonar = (job: IJob): Promise<Array<IProblem>> => {
     });
 };
 
-const getSonarVersion = () => {
+const getSonarVersion = (): string => {
     const pkg = require('@sonarwhal/sonar/package.json');
 
     return pkg.version;
 };
 
 export const run = async () => {
-    const queue = new Queue('sonar-jobs', process.env.queue); // eslint-disable-line no-process-env
-    const queueResults = new Queue('sonar-results', process.env.queue); // eslint-disable-line no-process-env
-    const sonarVersion = getSonarVersion();
+    const queue: Queue = new Queue('sonar-jobs', process.env.queue); // eslint-disable-line no-process-env
+    const queueResults: Queue = new Queue('sonar-results', process.env.queue); // eslint-disable-line no-process-env
+    const sonarVersion: string = getSonarVersion();
 
     const listener = async (job: IJob) => {
         debug(`Job received: ${job.id}`);

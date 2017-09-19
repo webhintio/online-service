@@ -1,8 +1,8 @@
 import { IConfig } from '@sonarwhal/sonar/dist/src/lib/types';
 
 export interface IServiceConfig {
-    /** Default sonar configuration. */
-    sonarConfig: IConfig;
+    /** List of sonar configurations to split the job in messages. */
+    sonarConfigs: Array<IConfig>;
     /** Time in seconds to keep a job in the cache. */
     jobCacheTime: number;
     /** Time in seconds a job has to complete the execution in sonar. */

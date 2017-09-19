@@ -40,14 +40,65 @@ import { IJob } from '../../../../src/lib/types';
 
 const activeConfig = {
     jobCacheTime: 120,
-    sonarConfig: { rules: ['rule1', 'rule2'] }
+    sonarConfigs: [{
+        rules: {
+            rule1: 'error',
+            rule2: 'error'
+        }
+    },
+    {
+        rules: {
+            rule3: 'error',
+            rule4: 'error'
+        }
+    }]
+};
+
+const validatedJobCreatedInDatabase = (t, jobInput) => {
+    t.true(t.context.database.lock.calledOnce);
+    t.true(t.context.database.unlock.calledOnce);
+    t.true(t.context.database.newJob.calledOnce);
+    t.true(t.context.queueMethods.sendMessage.calledTwice);
+
+    const args = t.context.database.newJob.args[0];
+
+    t.is(args[0], jobInput.url);
+    t.is(args[1], JobStatus.pending);
+    t.deepEqual(args[2], [{
+        messages: [],
+        name: 'rule1',
+        status: RuleStatus.pending
+    }, {
+        messages: [],
+        name: 'rule2',
+        status: RuleStatus.pending
+    }, {
+        messages: [],
+        name: 'rule3',
+        status: RuleStatus.pending
+    }, {
+        messages: [],
+        name: 'rule4',
+        status: RuleStatus.pending
+    }]);
+    t.deepEqual(args[3], [{
+        rules: {
+            rule1: 'error',
+            rule2: 'error'
+        }
+    },
+    {
+        rules: {
+            rule3: 'error',
+            rule4: 'error'
+        }
+    }]);
 };
 
 test.beforeEach(async (t) => {
     sinon.stub(database, 'getJob').resolves({});
     sinon.stub(database, 'lock').resolves({});
     sinon.stub(database, 'unlock').resolves({});
-    sinon.stub(database, 'newJob').resolves({});
     sinon.stub(configManager, 'getActiveConfiguration').resolves(activeConfig);
     sinon.spy(queueMethods, 'sendMessage');
     sinon.spy(queueMethods, 'getMessagesCount');
@@ -62,7 +113,9 @@ test.afterEach.always((t) => {
     t.context.database.getJob.restore();
     t.context.database.lock.restore();
     t.context.database.unlock.restore();
-    t.context.database.newJob.restore();
+    if (t.context.database.newJob.restore) {
+        t.context.database.newJob.restore();
+    }
     t.context.queueMethods.sendMessage.restore();
     t.context.queueMethods.getMessagesCount.restore();
     t.context.configManager.getActiveConfiguration.restore();
@@ -71,38 +124,17 @@ test.afterEach.always((t) => {
 test.serial(`if the job doesn't exist, it should create a new job and add it to the queue`, async (t) => {
     sinon.stub(database, 'getJobsByUrl').resolves([]);
     const jobInput = {
-        config: null,
-        rules: ['rule1', 'rule2'],
-        source: ConfigSource.manual,
+        config: activeConfig.sonarConfigs,
+        rules: [],
+        source: ConfigSource.default,
         url: 'http://sonarwhal.com'
     };
 
+    sinon.stub(database, 'newJob').resolves(jobInput);
+
     await jobManager.startJob(jobInput);
 
-    t.true(t.context.database.lock.calledOnce);
-    t.true(t.context.database.unlock.calledOnce);
-    t.true(t.context.database.newJob.calledOnce);
-    t.true(t.context.queueMethods.sendMessage.calledOnce);
-
-    const args = t.context.database.newJob.args[0];
-
-    t.is(args[0], jobInput.url);
-    t.is(args[1], JobStatus.pending);
-    t.deepEqual(args[2], [{
-        messages: [],
-        name: 'rule1',
-        status: RuleStatus.pending
-    }, {
-        messages: [],
-        name: 'rule2',
-        status: RuleStatus.pending
-    }]);
-    t.deepEqual(args[3], {
-        rules: {
-            rule1: RuleStatus.error,
-            rule2: RuleStatus.error
-        }
-    });
+    validatedJobCreatedInDatabase(t, jobInput);
 
     t.context.database.getJobsByUrl.restore();
 });
@@ -110,38 +142,17 @@ test.serial(`if the job doesn't exist, it should create a new job and add it to 
 test.serial(`if the job doesn't exist, it should use the defaul configuration if source is not set`, async (t) => {
     sinon.stub(database, 'getJobsByUrl').resolves([]);
     const jobInput = {
-        config: null,
+        config: activeConfig.sonarConfigs,
         rules: null,
         source: null,
         url: 'http://sonarwhal.com'
     };
 
+    sinon.stub(database, 'newJob').resolves(jobInput);
+
     await jobManager.startJob(jobInput);
 
-    t.true(t.context.database.lock.calledOnce);
-    t.true(t.context.database.unlock.calledOnce);
-    t.true(t.context.database.newJob.calledOnce);
-    t.true(t.context.queueMethods.sendMessage.calledOnce);
-
-    const args = t.context.database.newJob.args[0];
-
-    t.is(args[0], jobInput.url);
-    t.is(args[1], JobStatus.pending);
-    t.deepEqual(args[2], [{
-        messages: [],
-        name: 'rule1',
-        status: RuleStatus.pending
-    }, {
-        messages: [],
-        name: 'rule2',
-        status: RuleStatus.pending
-    }]);
-    t.deepEqual(args[3], {
-        rules: {
-            rule1: RuleStatus.error,
-            rule2: RuleStatus.error
-        }
-    });
+    validatedJobCreatedInDatabase(t, jobInput);
 
     t.context.database.getJobsByUrl.restore();
 });
@@ -162,38 +173,17 @@ test.serial(`if the job exists, but it is expired, it should create a new job an
 
     sinon.stub(database, 'getJobsByUrl').resolves(jobs);
     const jobInput = {
-        config: null,
-        rules: ['rule1', 'rule2'],
-        source: ConfigSource.manual,
+        config: activeConfig.sonarConfigs,
+        rules: [],
+        source: ConfigSource.default,
         url: 'http://sonarwhal.com'
     };
 
+    sinon.stub(database, 'newJob').resolves(jobInput);
+
     await jobManager.startJob(jobInput);
 
-    t.true(t.context.database.lock.calledOnce);
-    t.true(t.context.database.unlock.calledOnce);
-    t.true(t.context.database.newJob.calledOnce);
-    t.true(t.context.queueMethods.sendMessage.calledOnce);
-
-    const args = t.context.database.newJob.args[0];
-
-    t.is(args[0], jobInput.url);
-    t.is(args[1], JobStatus.pending);
-    t.deepEqual(args[2], [{
-        messages: [],
-        name: 'rule1',
-        status: RuleStatus.pending
-    }, {
-        messages: [],
-        name: 'rule2',
-        status: RuleStatus.pending
-    }]);
-    t.deepEqual(args[3], {
-        rules: {
-            rule1: RuleStatus.error,
-            rule2: RuleStatus.error
-        }
-    });
+    validatedJobCreatedInDatabase(t, jobInput);
 
     t.context.database.getJobsByUrl.restore();
 });
@@ -201,47 +191,96 @@ test.serial(`if the job exists, but it is expired, it should create a new job an
 test.serial(`if the job exists, but config is different, it should create a new job and add it to the queue`, async (t) => {
     const jobs = t.context.jobs;
 
-    jobs[0].config = {
+    jobs[0].config = [{
         rules: {
             rule1: RuleStatus.error,
             rule3: RuleStatus.error
         }
-    };
+    }];
 
     sinon.stub(database, 'getJobsByUrl').resolves(jobs);
     const jobInput = {
-        config: null,
-        rules: ['rule1', 'rule2'],
-        source: ConfigSource.manual,
+        config: activeConfig.sonarConfigs,
+        rules: [],
+        source: ConfigSource.default,
         url: 'http://sonarwhal.com'
     };
+
+    sinon.stub(database, 'newJob').resolves(jobInput);
+
+    await jobManager.startJob(jobInput);
+
+    validatedJobCreatedInDatabase(t, jobInput);
+
+    t.context.database.getJobsByUrl.restore();
+});
+
+test.serial(`if the source is a file and the config is not valid, it should return an error`, async (t) => {
+    sinon.stub(database, 'getJobsByUrl').resolves([]);
+    const jobInput = {
+        config: JSON.parse(await readFileAsync(path.join(__dirname, '../fixtures/config-invalid.json'))),
+        rules: null,
+        source: ConfigSource.file,
+        url: 'http://sonarwhal.com'
+    };
+
+    sinon.spy(database, 'newJob');
+    t.plan(2);
+    try {
+        await jobManager.startJob(jobInput);
+    } catch (err) {
+        t.false(t.context.database.newJob.called);
+        t.true(err.message.startsWith('Invalid Configuration'));
+    }
+
+    t.context.database.getJobsByUrl.restore();
+});
+
+test.serial(`if the source is a file and the config has duplicated rules, it should return an error`, async (t) => {
+    sinon.stub(database, 'getJobsByUrl').resolves([]);
+    const jobInput = {
+        config: JSON.parse(await readFileAsync(path.join(__dirname, '../fixtures/config-duplicates.json'))),
+        rules: null,
+        source: ConfigSource.file,
+        url: 'http://sonarwhal.com'
+    };
+
+    sinon.spy(database, 'newJob');
+    t.plan(2);
+    try {
+        await jobManager.startJob(jobInput);
+    } catch (err) {
+        t.false(t.context.database.newJob.called);
+        t.is(err.message, 'Rule manifest-is-valid repeated');
+    }
+
+    t.context.database.getJobsByUrl.restore();
+});
+
+test.serial(`if the source is a file and the config is valid, it should create a new job`, async (t) => {
+    sinon.stub(database, 'getJobsByUrl').resolves([]);
+    const jobInput = {
+        config: JSON.parse(await readFileAsync(path.join(__dirname, '../fixtures/config.json'))),
+        rules: null,
+        source: ConfigSource.file,
+        url: 'http://sonarwhal.com'
+    };
+
+    sinon.stub(database, 'newJob').resolves(jobInput);
 
     await jobManager.startJob(jobInput);
 
     t.true(t.context.database.lock.calledOnce);
     t.true(t.context.database.unlock.calledOnce);
     t.true(t.context.database.newJob.calledOnce);
-    t.true(t.context.queueMethods.sendMessage.calledOnce);
+    t.is(t.context.queueMethods.sendMessage.callCount, 7);
 
     const args = t.context.database.newJob.args[0];
 
     t.is(args[0], jobInput.url);
     t.is(args[1], JobStatus.pending);
-    t.deepEqual(args[2], [{
-        messages: [],
-        name: 'rule1',
-        status: RuleStatus.pending
-    }, {
-        messages: [],
-        name: 'rule2',
-        status: RuleStatus.pending
-    }]);
-    t.deepEqual(args[3], {
-        rules: {
-            rule1: RuleStatus.error,
-            rule2: RuleStatus.error
-        }
-    });
+    t.deepEqual(args[2].length, 21);
+    t.deepEqual(args[3].length, 7);
 
     t.context.database.getJobsByUrl.restore();
 });
@@ -254,10 +293,12 @@ test.serial(`if the job exists and it isn't expired, it shouldn't create a new j
     sinon.stub(database, 'getJobsByUrl').resolves(jobs);
     const jobInput = {
         config: null,
-        rules: ['rule1', 'rule2'],
-        source: ConfigSource.manual,
+        rules: [],
+        source: ConfigSource.default,
         url: 'http://sonarwhal.com'
     };
+
+    sinon.spy(database, 'newJob');
 
     const result = await jobManager.startJob(jobInput);
 
@@ -276,10 +317,12 @@ test.serial(`if the job is still running, it shouldn't create a new job`, async 
     sinon.stub(database, 'getJobsByUrl').resolves(jobs);
     const jobInput = {
         config: null,
-        rules: ['rule1', 'rule2'],
-        source: ConfigSource.manual,
+        rules: [],
+        source: ConfigSource.default,
         url: 'http://sonarwhal.com'
     };
+
+    sinon.spy(database, 'newJob');
 
     const result = await jobManager.startJob(jobInput);
 
