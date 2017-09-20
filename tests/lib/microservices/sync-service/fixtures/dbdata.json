@@ -21,7 +21,7 @@
             "axe": "warning"
         },
         "rulesTimeout": 120000,
-        "formatter": "stylish",
+        "formatters": ["stylish"],
         "connector": {
             "options": {
                 "maxLoadWaitTime": 30000,

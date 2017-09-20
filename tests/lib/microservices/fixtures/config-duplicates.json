@@ -7,7 +7,7 @@
                 "waitFor": 1000
             }
         },
-        "formatter": "summary",
+        "formatters": ["summary"],
         "ignoredUrls": {},
         "rules": {
             "apple-touch-icons": "error",
@@ -24,7 +24,7 @@
                 "waitFor": 1000
             }
         },
-        "formatter": "summary",
+        "formatters": ["summary"],
         "ignoredUrls": {},
         "rules": {
             "disown-opener": "error",
@@ -41,7 +41,7 @@
                 "waitFor": 1000
             }
         },
-        "formatter": "summary",
+        "formatters": ["summary"],
         "ignoredUrls": {},
         "rules": {
             "manifest-app-name": "error",
@@ -59,7 +59,7 @@
                 "waitFor": 1000
             }
         },
-        "formatter": "summary",
+        "formatters": ["summary"],
         "ignoredUrls": {},
         "rules": {
             "manifest-is-valid": "error",
@@ -76,7 +76,7 @@
                 "waitFor": 1000
             }
         },
-        "formatter": "summary",
+        "formatters": ["summary"],
         "ignoredUrls": {},
         "rules": {
             "no-disallowed-headers": "error",
@@ -93,7 +93,7 @@
                 "waitFor": 1000
             }
         },
-        "formatter": "summary",
+        "formatters": ["summary"],
         "ignoredUrls": {},
         "rules": {
             "no-protocol-relative-urls": "error",
@@ -110,7 +110,7 @@
                 "waitFor": 1000
             }
         },
-        "formatter": "summary",
+        "formatters": ["summary"],
         "ignoredUrls": {},
         "rules": {
             "strict-transport-security": "error",
