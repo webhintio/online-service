@@ -147,7 +147,7 @@ test.serial('getJob should fail if database is not connected', async (t) => {
 test.serial('newJob should fail if database is not connected', async (t) => {
     t.plan(1);
     try {
-        await database.newJob('url', JobStatus.pending, [], {} as IConfig, 180);
+        await database.newJob('url', JobStatus.pending, [], [{}] as Array<IConfig>, 180);
     } catch (err) {
         t.is(err.message, 'Database not connected');
     }
@@ -156,7 +156,7 @@ test.serial('newJob should fail if database is not connected', async (t) => {
 test.serial('newConfig should fail if database is not connected', async (t) => {
     t.plan(1);
     try {
-        await database.newConfig('configName', 120, 180, {} as IConfig);
+        await database.newConfig('configName', 120, 180, [{}] as Array<IConfig>);
     } catch (err) {
         t.is(err.message, 'Database not connected');
     }
@@ -352,7 +352,7 @@ test.serial('newConfig should save a new configuration in database', async (t) =
 
     t.context.modelObject = modelObject;
 
-    await database.newConfig('configName', 120, 180, {} as IConfig);
+    await database.newConfig('configName', 120, 180, [{}] as Array<IConfig>);
 
     t.true(t.context.modelObject.save.calledOnce);
 

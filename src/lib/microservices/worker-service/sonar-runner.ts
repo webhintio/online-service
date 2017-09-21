@@ -55,7 +55,7 @@ const run = async (job: IJob) => {
     };
 
     try {
-        const sonar = new Sonar(job.config);
+        const sonar = new Sonar(job.config[0]);
 
         result.messages = await sonar.executeOn(url.parse(job.url));
 

@@ -31,9 +31,9 @@ test.afterEach.always((t) => {
 });
 
 test.serial('createNewConfiguration should create a new configuration in database', async (t) => {
-    const configurationFromFile = JSON.parse(await readFileAsync(path.join(__dirname, './fixtures/.sonarrc')));
+    const configurationFromFile = JSON.parse(await readFileAsync(path.join(__dirname, '../fixtures/config.json')));
 
-    await configManager.createNewConfiguration('newConfiguration', 120, 180, 'dist/tests/lib/microservices/config-manager/fixtures/.sonarrc');
+    await configManager.createNewConfiguration('newConfiguration', 120, 180, 'dist/tests/lib/microservices/fixtures/config.json');
 
     t.true(t.context.database.newConfig.called);
     t.deepEqual(t.context.database.newConfig.args[0][3], configurationFromFile);
@@ -43,12 +43,21 @@ test.serial('createNewConfiguration should throw an error if the configuration f
     t.plan(1);
 
     try {
-        await configManager.createNewConfiguration('newConfiguration', 120, 180, 'dist/tests/lib/microservices/config-manager/fixtures/.sonarrcInvalid');
+        await configManager.createNewConfiguration('newConfiguration', 120, 180, 'dist/tests/lib/microservices/fixtures/config-invalid.json');
     } catch (err) {
-        t.is(err.message, 'Invalid Configuration file');
+        t.true(err.message.startsWith('Invalid Configuration'));
     }
 });
 
+test.serial('createNewConfiguration should throw an error if the configuration has duplicate rules', async (t) => {
+    t.plan(1);
+
+    try {
+        await configManager.createNewConfiguration('newConfiguration', 120, 180, 'dist/tests/lib/microservices/fixtures/config-duplicates.json');
+    } catch (err) {
+        t.is(err.message, 'Rule manifest-is-valid repeated');
+    }
+});
 
 test.serial('activateConfiguration should activate the configuration in database with the given name', async (t) => {
     const name = 'configName';
@@ -86,10 +95,10 @@ test.serial('getActiveConfiguration should return a IServiceConfig object', asyn
         jobCacheTime: 1,
         jobRunTime: 1,
         name: 'configName',
-        sonarConfig: {}
+        sonarConfigs: {}
     });
 
-    const fields = ['active', 'jobCacheTime', 'jobRunTime', 'name', 'sonarConfig'];
+    const fields = ['active', 'jobCacheTime', 'jobRunTime', 'name', 'sonarConfigs'];
 
     const config = await configManager.getActiveConfiguration();
 

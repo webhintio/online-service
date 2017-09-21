@@ -78,7 +78,7 @@ const commonStub = (emitter) => {
 
 test.serial(`If there is no problem running sonar, it should send a couple of messages with the current status`, async (t) => {
     const job = {
-        config: {},
+        config: [{}],
         id: 0,
         rules: []
     };
@@ -104,7 +104,7 @@ test.serial(`If there is no problem running sonar, it should send a couple of me
 
 test.serial(`If there is no problem running sonar, it should send a couple of messages with the current status`, async (t) => {
     const job = {
-        config: {},
+        config: [{}],
         id: 0,
         rules: []
     };
@@ -131,7 +131,7 @@ test.serial(`If there is no problem running sonar, it should send a couple of me
 
 test.serial(`If there is no problem running sonar, it should send a couple of messages with the current status`, async (t) => {
     const job = {
-        config: {},
+        config: [{}],
         id: 0,
         rules: []
     };
@@ -164,12 +164,12 @@ const getRule = (name: string, rules) => {
 
 test.serial(`If there is no problem running sonar, it should send to the queue the status of each configured rule`, async (t) => {
     const job = {
-        config: {
+        config: [{
             rules: [
                 'axe:warning',
                 'content-type'
             ]
-        },
+        }],
         id: 0,
         rules: [
             {
@@ -225,7 +225,7 @@ test.serial(`If there is no problem running sonar, it should send to the queue t
 
 test.serial(`If sonar doesn't finish before the job.maxRunTime, it should send an error message to the queue`, async (t) => {
     const job = {
-        config: {},
+        config: [{}],
         id: 0,
         maxRunTime: 1,
         rules: []

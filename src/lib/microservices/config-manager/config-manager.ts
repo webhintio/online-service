@@ -1,22 +1,22 @@
-import * as config from '@sonarwhal/sonar/dist/src/lib/config';
-import { validateConfig } from '@sonarwhal/sonar/dist/src/lib/config/config-validator';
+import * as path from 'path';
+
 import { IConfig } from '@sonarwhal/sonar/dist/src/lib/types';
 
 import * as database from '../../common/database/database';
 import { IServiceConfig } from '../../types';
+import { loadJSONFile, validateServiceConfig } from '../../utils/misc';
 
 /**
  * Get the configuration from a path.
  * @param {string} filePath - Configuration file path.
  */
-const getConfigFromFile = (filePath: string): IConfig => {
-    const configFromFile: IConfig = config.load(filePath);
+const getConfigsFromFile = (filePath: string): Array<IConfig> => {
+    const resolvedPath = path.resolve(process.cwd(), filePath);
+    const configs: Array<IConfig> = loadJSONFile(resolvedPath);
 
-    if (!validateConfig(configFromFile)) {
-        throw new Error('Invalid Configuration file');
-    }
+    validateServiceConfig(configs);
 
-    return configFromFile;
+    return configs;
 };
 
 /**
@@ -26,9 +26,9 @@ const getConfigFromFile = (filePath: string): IConfig => {
  * @param {string} filePath - Configuration file path.
  */
 export const createNewConfiguration = (name: string, cache: number, run: number, filePath: string): Promise<IServiceConfig> => {
-    const newConfig = getConfigFromFile(filePath);
+    const newConfigs: Array<IConfig> = getConfigsFromFile(filePath);
 
-    return database.newConfig(name, cache, run, newConfig);
+    return database.newConfig(name, cache, run, newConfigs);
 };
 
 /**
@@ -61,7 +61,7 @@ export const getActiveConfiguration = async (): Promise<IServiceConfig> => {
         jobCacheTime: currentConfig.jobCacheTime,
         jobRunTime: currentConfig.jobRunTime,
         name: currentConfig.name,
-        sonarConfig: currentConfig.sonarConfig
+        sonarConfigs: currentConfig.sonarConfigs
     };
 
     return result;

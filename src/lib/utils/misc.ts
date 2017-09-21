@@ -1,9 +1,13 @@
-import { Request } from 'express';
 import * as fs from 'fs';
+import { promisify } from 'util';
+
+import { Request } from 'express';
 import * as multiparty from 'multiparty';
 import * as stripBom from 'strip-bom';
 import * as stripComments from 'strip-json-comments';
-import { promisify } from 'util';
+import { validateConfig } from '@sonarwhal/sonar/dist/src/lib/config/config-validator';
+import normalizeRules from '@sonarwhal/sonar/dist/src/lib/utils/normalize-rules';
+import { IConfig } from '@sonarwhal/sonar/dist/src/lib/types';
 
 import { debug as d } from './debug';
 import { ConfigSource } from '../enums/configsource';
@@ -74,4 +78,29 @@ export const delay = (millisecs: number): Promise<object> => {
     return new Promise((resolve) => {
         setTimeout(resolve, millisecs);
     });
+};
+
+/**
+ * Check if an array of sonar configurations is valid.
+ * @param {Array<IConfig>} configs - Array of sonar configurations.
+ */
+export const validateServiceConfig = (configs: Array<IConfig>) => {
+    const rules: Set<string> = new Set();
+
+    for (const config of configs) {
+        if (!validateConfig(config)) {
+            throw new Error(`Invalid Configuration
+${JSON.stringify(config)}`);
+        }
+
+        const normalizedRules = normalizeRules(config.rules);
+
+        for (const [key] of Object.entries(normalizedRules)) {
+            if (rules.has(key)) {
+                throw new Error(`Rule ${key} repeated`);
+            }
+
+            rules.add(key);
+        }
+    }
 };
