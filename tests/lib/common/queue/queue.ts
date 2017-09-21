@@ -5,6 +5,8 @@ import * as proxyquire from 'proxyquire';
 const azureSB = { createServiceBusService() { } };
 
 const azureSBService = {
+    deleteMessage() { },
+    getQueue() { },
     receiveQueueMessage() { },
     sendQueueMessage() { }
 };
@@ -141,6 +143,10 @@ test.serial(`if a listener is called twice without stop it before, it should ret
         callback(null, { body: JSON.stringify(message) });
     });
 
+    sinon.stub(azureSBService, 'deleteMessage').callsFake((param1, callback) => {
+        callback(null);
+    });
+
     t.context.azureSBService = azureSBService;
 
     const queueName = 'queueNme';
@@ -161,6 +167,7 @@ test.serial(`if a listener is called twice without stop it before, it should ret
     });
 
     t.context.azureSBService.receiveQueueMessage.restore();
+    t.context.azureSBService.deleteMessage.restore();
 });
 
 test.serial('if listen is call with the option pooling defined, it should use it as default value', async (t) => {
@@ -175,6 +182,9 @@ test.serial('if listen is call with the option pooling defined, it should use it
         .callsFake((param1, param2, callback) => {
             callback(null, { body: JSON.stringify(message) });
         });
+    sinon.stub(azureSBService, 'deleteMessage').callsFake((param1, callback) => {
+        callback(null);
+    });
 
     t.context.azureSBService = azureSBService;
 
@@ -186,8 +196,10 @@ test.serial('if listen is call with the option pooling defined, it should use it
     }, { pooling: 3 });
 
     t.is(t.context.misc.delay.args[0][0], 3);
+    t.true(t.context.azureSBService.deleteMessage.calledOnce);
 
     t.context.azureSBService.receiveQueueMessage.restore();
+    t.context.azureSBService.deleteMessage.restore();
 });
 
 test.serial('if service bus returns an error 503, delay should be called with 10000', async (t) => {
@@ -202,6 +214,9 @@ test.serial('if service bus returns an error 503, delay should be called with 10
         .callsFake((param1, param2, callback) => {
             callback(null, { body: JSON.stringify(message) });
         });
+    sinon.stub(azureSBService, 'deleteMessage').callsFake((param1, callback) => {
+        callback(null);
+    });
 
     t.context.azureSBService = azureSBService;
 
@@ -215,4 +230,40 @@ test.serial('if service bus returns an error 503, delay should be called with 10
     t.is(t.context.misc.delay.args[0][0], 10000);
 
     t.context.azureSBService.receiveQueueMessage.restore();
+    t.context.azureSBService.deleteMessage.restore();
+});
+
+test.serial(`if the handler throws an error, then the message shouldn't be deleted`, async (t) => {
+    // In the online-service, the only case for the handler to fail is
+    // if something goes wrong with the queue.
+    const message = { id: 'id', url: 'url' };
+
+    sinon.stub(azureSBService, 'receiveQueueMessage')
+        .callsFake((param1, param2, callback) => {
+            callback(null, { body: JSON.stringify(message) });
+        });
+    sinon.stub(azureSBService, 'deleteMessage').callsFake((param1, callback) => {
+        callback(null);
+    });
+
+    t.context.azureSBService = azureSBService;
+
+    const queueName = 'queueNme';
+    const queue = new Queue(queueName, 'connectionString');
+
+    let firstCall = true;
+
+    await queue.listen(() => {
+        if (firstCall) {
+            firstCall = false;
+            throw new Error();
+        }
+
+        queue.stopListener();
+    });
+
+    t.true(t.context.azureSBService.deleteMessage.calledOnce);
+
+    t.context.azureSBService.receiveQueueMessage.restore();
+    t.context.azureSBService.deleteMessage.restore();
 });

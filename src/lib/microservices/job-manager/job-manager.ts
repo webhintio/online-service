@@ -125,6 +125,7 @@ export const startJob = async (data: RequestData): Promise<IJob> => {
 
     if (jobs.length === 0 || !job) {
         job = await createNewJob(data.url, config, serviceConfig.jobRunTime);
+        job.messagesInQueue = await queue.getMessagesCount();
         await queue.sendMessage(job);
     }
 

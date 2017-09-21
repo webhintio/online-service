@@ -15,7 +15,10 @@ const database = {
 
 const configManager = { getActiveConfiguration() { } };
 
-const queueMethods = { sendMessage() { } };
+const queueMethods = {
+    getMessagesCount() { },
+    sendMessage() { }
+};
 
 const Queue = function () {
     return queueMethods;
@@ -47,6 +50,7 @@ test.beforeEach(async (t) => {
     sinon.stub(database, 'newJob').resolves({});
     sinon.stub(configManager, 'getActiveConfiguration').resolves(activeConfig);
     sinon.spy(queueMethods, 'sendMessage');
+    sinon.spy(queueMethods, 'getMessagesCount');
 
     t.context.jobs = JSON.parse(await readFileAsync(path.join(__dirname, 'fixtures', 'jobs.json')));
     t.context.database = database;
@@ -60,6 +64,7 @@ test.afterEach.always((t) => {
     t.context.database.unlock.restore();
     t.context.database.newJob.restore();
     t.context.queueMethods.sendMessage.restore();
+    t.context.queueMethods.getMessagesCount.restore();
     t.context.configManager.getActiveConfiguration.restore();
 });
 

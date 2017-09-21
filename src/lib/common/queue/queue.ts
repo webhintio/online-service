@@ -35,6 +35,8 @@ export class Queue {
         this.serviceBus = azure.createServiceBusService(connectionString);
         this.serviceBus.sendQueueMessageAsync = promisify(this.serviceBus.sendQueueMessage);
         this.serviceBus.receiveQueueMessageAsync = promisify(this.serviceBus.receiveQueueMessage);
+        this.serviceBus.getQueueAsync = promisify(this.serviceBus.getQueue);
+        this.serviceBus.deleteMessageAsync = promisify(this.serviceBus.deleteMessage);
     }
 
     /**
@@ -49,7 +51,6 @@ export class Queue {
 
     /**
      * Get a message from service bus.
-     * @param {boolean} remove - Remove the value from the queue.
      * */
     public async getMessage(remove?: boolean) {
         try {
@@ -73,11 +74,25 @@ export class Queue {
         }
     }
 
+    public async deleteMessage(message) {
+        try {
+            await this.serviceBus.deleteMessageAsync(message);
+        } catch (err) {
+            logger.error('Error deleting message', err);
+        }
+    }
+
+    public async getMessagesCount(): Promise<number> {
+        const queue = await this.serviceBus.getQueueAsync(this.name);
+
+        return parseInt(queue.CountDetails['d2p1:ActiveMessageCount']);
+    }
+
     private async checkQueue() {
         let message;
 
         try {
-            message = await this.getMessage(true);
+            message = await this.getMessage();
         } catch (err) {
             message = null;
 
@@ -96,6 +111,9 @@ export class Queue {
 
         try {
             await this.handler(message.data);
+
+            // Remove the message from the queue when the handler finishes.
+            await this.deleteMessage(message);
 
             return 0;
         } catch (err) {

@@ -76,7 +76,7 @@ const runSonar = (job: IJob): Promise<Array<IProblem>> => {
                 return resolve(result.messages);
             }
 
-            return reject(result.error);
+            return reject(JSON.parse(result.error));
         });
 
         runner.send(job);

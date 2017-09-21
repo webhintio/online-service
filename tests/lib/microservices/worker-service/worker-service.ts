@@ -119,7 +119,7 @@ test.serial(`If there is no problem running sonar, it should send a couple of me
     // Wait a little bit to ensure that 'runSonar' was launched
     await delay(500);
     await emitter.emitAsync('message', {
-        error: 'Error running sonar',
+        error: '"Error running sonar"',
         ok: false
     });
 
@@ -146,7 +146,7 @@ test.serial(`If there is no problem running sonar, it should send a couple of me
     // Wait a little bit to ensure that 'runSonar' was launched
     await delay(500);
     await emitter.emitAsync('message', {
-        error: 'Error running sonar',
+        error: '"Error running sonar"',
         ok: false
     });
 
