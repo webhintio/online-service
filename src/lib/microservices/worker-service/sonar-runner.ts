@@ -7,6 +7,8 @@ import { Sonar } from '@sonarwhal/sonar/dist/src/lib/sonar';
 import { IJob, JobResult } from '../../types';
 import * as logger from '../../utils/logging';
 
+const moduleName: string = 'Sonar Runner';
+
 const createErrorResult = (err): JobResult => {
     const jobResult: JobResult = {
         error: null,
@@ -47,7 +49,7 @@ process.once('unhandledRejection', (reason) => {
  * @param {IJob} job - Job to run in sonar.
  */
 const run = async (job: IJob) => {
-    logger.log(`Running job: ${job.id}`);
+    logger.log(`Running job: ${job.id} - Part ${job.part} of ${job.totalParts}`, moduleName);
     let result: JobResult = {
         error: null,
         messages: null,
@@ -61,10 +63,10 @@ const run = async (job: IJob) => {
 
         result.ok = true;
     } catch (err) {
-        logger.error(`Error runing job ${job.id}`, err);
+        logger.error(`Error runing job ${job.id} - Part ${job.part} of ${job.totalParts}`, moduleName, err);
         result = createErrorResult(err);
     }
-    logger.log(`Sending result for job ${job.id}`);
+    logger.log(`Sending result for job ${job.id} - Part ${job.part} of ${job.totalParts}`, moduleName);
     process.send(result);
 };
 

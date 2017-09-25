@@ -6,6 +6,7 @@ import * as configManager from './config-manager';
 import { CLIOptions, IServiceConfig } from '../../types';
 import * as logger from '../../utils/logging';
 
+const moduleName: string = 'Configuration Manager';
 /**
  * Print the connector options.
  * @param {IConfig} config Sonar configuration.
@@ -59,14 +60,14 @@ export const run = async (cliOptions: CLIOptions) => {
         try {
             const newConfig: IServiceConfig = await configManager.createNewConfiguration(cliOptions.name, cliOptions.cache, cliOptions.run, cliOptions.file);
 
-            logger.log(`Configuration '${newConfig.name}' created.`);
+            logger.log(`Configuration '${newConfig.name}' created.`, moduleName);
 
             return 0;
         } catch (err) {
             if (err.code === 11000) {
-                logger.error(`Already exists a configuration with name '${cliOptions.name}'`, err);
+                logger.error(`Already exists a configuration with name '${cliOptions.name}'`, moduleName, err);
             } else {
-                logger.error(err.message, err);
+                logger.error(err.message, moduleName, err);
             }
 
             return 1;

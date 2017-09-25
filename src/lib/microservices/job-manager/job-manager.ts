@@ -11,9 +11,11 @@ import { ConfigSource } from '../../enums/configsource';
 import { Queue } from '../../common/queue/queue';
 import { debug as d } from '../../utils/debug';
 import { validateServiceConfig } from '../../utils/misc';
+import * as logger from '../../utils/logging';
 
 const debug: debug.IDebugger = d(__filename);
 const queue: Queue = new Queue('sonar-jobs', process.env.queue); // eslint-disable-line no-process-env
+const moduleName: string = 'Job Manager';
 
 /**
  * Create a new Job in the database.
@@ -104,11 +106,18 @@ const getActiveJob = (jobs: Array<IJob>, config: Array<IConfig>, cacheTime: numb
  * @param {IJob} job - Job to send to the queue.
  */
 const sendMessagesToQueue = async (job: IJob) => {
+    let counter = 0;
+
+    logger.log(`Splitting the Job in ${job.config.length} tasks`, moduleName);
+
     for (const config of job.config) {
         const jobCopy = _.cloneDeep(job);
 
+        jobCopy.part = ++counter;
+        jobCopy.totalParts = job.config.length;
         jobCopy.config = [config];
         await queue.sendMessage(jobCopy);
+        logger.log(`Part ${jobCopy.part} of ${jobCopy.totalParts} sent to the Service Bus`, moduleName);
     }
 };
 
@@ -138,9 +147,34 @@ export const startJob = async (data: RequestData): Promise<IJob> => {
     let job = getActiveJob(jobs, config, serviceConfig.jobCacheTime);
 
     if (jobs.length === 0 || !job) {
+        logger.log('Active job not found, creating a new job', moduleName);
+
         job = await createNewJob(data.url, config, serviceConfig.jobRunTime);
-        job.messagesInQueue = await queue.getMessagesCount();
-        await sendMessagesToQueue(job);
+
+        logger.log(`Created new Job with id ${job.id}`, moduleName);
+
+        try {
+            job.messagesInQueue = await queue.getMessagesCount();
+            await sendMessagesToQueue(job);
+
+            logger.log(`all messages sent to Service Bus`, moduleName);
+        } catch (err) {
+            // Update the job status to Error.
+            const dbJob = await database.getJob(job.id);
+
+            dbJob.status = JobStatus.error;
+            dbJob.finished = new Date();
+            if (err instanceof Error) {
+                dbJob.error = JSON.stringify({
+                    message: err.message,
+                    stack: err.stack
+                });
+            } else {
+                dbJob.error = JSON.stringify(err);
+            }
+
+            await database.updateJob(dbJob);
+        }
     }
 
     await database.unlock(lock);

@@ -39,4 +39,8 @@ export interface IJob {
     error: any;
     /** Messages in queue approximately before the job is added to the queue. */
     messagesInQueue?: number;
+    /** Part number for a task */
+    part?: number;
+    /** Total parts we split a job */
+    totalParts?: number;
 }

@@ -5,6 +5,7 @@ import { IJob, Rule } from '../../types';
 import { JobStatus, RuleStatus } from '../../enums/status';
 import * as logger from '../../utils/logging';
 
+const moduleName: string = 'Sync Service';
 /**
  * Get a rule from rules given a rule name.
  * @param {string} name Name of the rule to get.
@@ -51,12 +52,13 @@ export const run = async () => {
     await database.connect(process.env.database); // eslint-disable-line no-process-env
 
     const listener = async (job: IJob) => {
+        logger.log(`Synchronizing Job: ${job.id} - Part ${job.part} of ${job.totalParts}`, moduleName);
         const lock = await database.lock(job.id);
 
         const dbJob: IJobModel = await database.getJob(job.id);
 
         if (!dbJob) {
-            logger.error(`Job ${job.id} not found in database`);
+            logger.error(`Job ${job.id} not found in database`, moduleName);
             await database.unlock(lock);
 
             return;
@@ -67,6 +69,7 @@ export const run = async () => {
         // some groups of rules to run just a subset in each worker
         // and for some reason, one of the execution fails.
         if (dbJob.status === JobStatus.error) {
+            logger.error(`Synchronization skipped: Job ${job.id} status is error`, moduleName);
             await database.unlock(lock);
 
             return;
@@ -99,14 +102,19 @@ export const run = async () => {
 
         await database.updateJob(dbJob);
         await database.unlock(lock);
+
+        logger.log(`Synchronized Job: ${job.id} - Part ${job.part} of ${job.totalParts}`, moduleName);
     };
 
     try {
         await queueResults.listen(listener);
         await database.disconnect();
+        logger.log('Service finished\nExiting with status 0', moduleName);
 
         return 0;
     } catch (err) {
+        logger.error('Error in Sync service\nExiting with status 1', moduleName);
+
         return 1;
     }
 };
