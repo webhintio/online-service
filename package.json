@@ -44,7 +44,7 @@
     "typescript-eslint-parser": "^8.0.0"
   },
   "dependencies": {
-    "@sonarwhal/sonar": "^0.8.0",
+    "@sonarwhal/sonar": "^0.9.0",
     "azure-sb": "^0.10.4",
     "body-parser": "^1.17.2",
     "express": "^4.15.3",
