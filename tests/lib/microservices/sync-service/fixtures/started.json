@@ -36,6 +36,10 @@
     "status": "started",
     "url": "https://sonarwhal.com/",
     "_id": "59a88d970210bd0a70d5e8c5",
+    "partInfo": {
+        "part": 1,
+        "totalParts": 1
+    },
     "rules": [
         {
             "status": "pending",

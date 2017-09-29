@@ -52,7 +52,7 @@ export const run = async () => {
     await database.connect(process.env.database); // eslint-disable-line no-process-env
 
     const listener = async (job: IJob) => {
-        logger.log(`Synchronizing Job: ${job.id} - Part ${job.part} of ${job.totalParts}`, moduleName);
+        logger.log(`Synchronizing Job: ${job.id} - Part ${job.partInfo.part} of ${job.partInfo.totalParts}`, moduleName);
         const lock = await database.lock(job.id);
 
         const dbJob: IJobModel = await database.getJob(job.id);
@@ -79,8 +79,11 @@ export const run = async () => {
             // When the a job is splitted we receive more than one messges for the status `started`
             // but we only want to store in the database the first one.
             if (dbJob.status !== JobStatus.started) {
-                dbJob.started = job.started;
                 dbJob.sonarVersion = job.sonarVersion;
+            }
+
+            if (!dbJob.started || dbJob.started > new Date(job.started)) {
+                dbJob.started = job.started;
             }
 
             // double check just in case the started message is not the first one we are processing.
@@ -92,18 +95,20 @@ export const run = async () => {
 
             if (job.status === JobStatus.error) {
                 dbJob.status = job.status;
-                dbJob.finished = job.finished;
                 dbJob.error = job.error;
             } else if (isJobFinished(dbJob)) {
-                dbJob.finished = job.finished;
                 dbJob.status = job.status;
+            }
+
+            if (!dbJob.finished || dbJob.finished < new Date(job.finished)) {
+                dbJob.finished = job.finished;
             }
         }
 
         await database.updateJob(dbJob);
         await database.unlock(lock);
 
-        logger.log(`Synchronized Job: ${job.id} - Part ${job.part} of ${job.totalParts}`, moduleName);
+        logger.log(`Synchronized Job: ${job.id} - Part ${job.partInfo.part} of ${job.partInfo.totalParts}`, moduleName);
     };
 
     try {

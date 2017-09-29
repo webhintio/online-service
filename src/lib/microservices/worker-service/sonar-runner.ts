@@ -49,7 +49,7 @@ process.once('unhandledRejection', (reason) => {
  * @param {IJob} job - Job to run in sonar.
  */
 const run = async (job: IJob) => {
-    logger.log(`Running job: ${job.id} - Part ${job.part} of ${job.totalParts}`, moduleName);
+    logger.log(`Running job: ${job.id} - Part ${job.partInfo.part} of ${job.partInfo.totalParts}`, moduleName);
     let result: JobResult = {
         error: null,
         messages: null,
@@ -63,10 +63,10 @@ const run = async (job: IJob) => {
 
         result.ok = true;
     } catch (err) {
-        logger.error(`Error runing job ${job.id} - Part ${job.part} of ${job.totalParts}`, moduleName, err);
+        logger.error(`Error runing job ${job.id} - Part ${job.partInfo.part} of ${job.partInfo.totalParts}`, moduleName, err);
         result = createErrorResult(err);
     }
-    logger.log(`Sending result for job ${job.id} - Part ${job.part} of ${job.totalParts}`, moduleName);
+    logger.log(`Sending result for job ${job.id} - Part ${job.partInfo.part} of ${job.partInfo.totalParts}`, moduleName);
     process.send(result);
 };
 

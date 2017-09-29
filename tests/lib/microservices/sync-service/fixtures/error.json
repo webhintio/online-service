@@ -32,6 +32,10 @@
         }
     },
     "id": "2772e178-5dfb-47ce-883d-ee6e6ee11004",
+    "partInfo": {
+        "part": 1,
+        "totalParts": 1
+    },
     "queued": "2017-08-31T22:28:39.517Z",
     "status": "error",
     "url": "https://sonarwhal.com/",

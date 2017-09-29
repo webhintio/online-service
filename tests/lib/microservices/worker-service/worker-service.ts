@@ -80,6 +80,10 @@ test.serial(`If there is no problem running sonar, it should send a couple of me
     const job = {
         config: [{}],
         id: 0,
+        partInfo: {
+            part: 1,
+            totalParts: 5
+        },
         rules: []
     };
     const emitter = getEmitter();
@@ -106,6 +110,10 @@ test.serial(`If there is no problem running sonar, it should send a couple of me
     const job = {
         config: [{}],
         id: 0,
+        partInfo: {
+            part: 1,
+            totalParts: 5
+        },
         rules: []
     };
     const emitter = getEmitter();
@@ -133,6 +141,10 @@ test.serial(`If there is no problem running sonar, it should send a couple of me
     const job = {
         config: [{}],
         id: 0,
+        partInfo: {
+            part: 1,
+            totalParts: 5
+        },
         rules: []
     };
     const emitter = getEmitter();
@@ -171,6 +183,10 @@ test.serial(`If there is no problem running sonar, it should send to the queue t
             ]
         }],
         id: 0,
+        partInfo: {
+            part: 1,
+            totalParts: 5
+        },
         rules: [
             {
                 name: 'axe',
@@ -198,11 +214,11 @@ test.serial(`If there is no problem running sonar, it should send to the queue t
     await delay(500);
     await emitter.emitAsync('message', {
         messages: [{
-            message: 'Error 1 axe',
+            message: 'Warning 1 axe',
             ruleId: 'axe'
         },
         {
-            message: 'Error 2 axe',
+            message: 'Warning 2 axe',
             ruleId: 'axe'
         }],
         ok: true
@@ -218,7 +234,7 @@ test.serial(`If there is no problem running sonar, it should send to the queue t
     const contentType = getRule('content-type', sendedRules);
     const disown = getRule('disown-opener', sendedRules);
 
-    t.is(axe.status, RuleStatus.error);
+    t.is(axe.status, RuleStatus.warning);
     t.is(contentType.status, RuleStatus.pass);
     t.is(disown.status, RuleStatus.pending);
 });
@@ -228,6 +244,10 @@ test.serial(`If sonar doesn't finish before the job.maxRunTime, it should send a
         config: [{}],
         id: 0,
         maxRunTime: 1,
+        partInfo: {
+            part: 1,
+            totalParts: 5
+        },
         rules: []
     };
     const emitter = getEmitter();

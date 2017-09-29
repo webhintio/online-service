@@ -8,5 +8,6 @@ export enum JobStatus {
 export enum RuleStatus {
     error = 'error',
     pass = 'pass',
-    pending = 'pending'
+    pending = 'pending',
+    warning = 'warning'
 }

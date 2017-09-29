@@ -27,10 +27,15 @@ const Queue = function () {
 
 const queueObject = { Queue };
 
+const rule = { meta: { docs: { category: 'category' } } };
+
+const resourceLoader = { loadRule() { } };
+
 proxyquire('../../../../src/lib/microservices/job-manager/job-manager', {
     '../../common/database/database': database,
     '../../common/queue/queue': queueObject,
-    '../config-manager/config-manager': configManager
+    '../config-manager/config-manager': configManager,
+    '@sonarwhal/sonar/dist/src/lib/utils/resource-loader': resourceLoader
 });
 
 import * as jobManager from '../../../../src/lib/microservices/job-manager/job-manager';
@@ -66,18 +71,22 @@ const validatedJobCreatedInDatabase = (t, jobInput) => {
     t.is(args[0], jobInput.url);
     t.is(args[1], JobStatus.pending);
     t.deepEqual(args[2], [{
+        category: 'category',
         messages: [],
         name: 'rule1',
         status: RuleStatus.pending
     }, {
+        category: 'category',
         messages: [],
         name: 'rule2',
         status: RuleStatus.pending
     }, {
+        category: 'category',
         messages: [],
         name: 'rule3',
         status: RuleStatus.pending
     }, {
+        category: 'category',
         messages: [],
         name: 'rule4',
         status: RuleStatus.pending
@@ -103,11 +112,13 @@ test.beforeEach(async (t) => {
     sinon.spy(database, 'updateJob');
     sinon.stub(configManager, 'getActiveConfiguration').resolves(activeConfig);
     sinon.spy(queueMethods, 'getMessagesCount');
+    sinon.stub(resourceLoader, 'loadRule').returns(rule);
 
     t.context.jobs = JSON.parse(await readFileAsync(path.join(__dirname, 'fixtures', 'jobs.json')));
     t.context.database = database;
     t.context.queueMethods = queueMethods;
     t.context.configManager = configManager;
+    t.context.resourceLoader = resourceLoader;
 });
 
 test.afterEach.always((t) => {
@@ -126,6 +137,7 @@ test.afterEach.always((t) => {
     }
     t.context.queueMethods.getMessagesCount.restore();
     t.context.configManager.getActiveConfiguration.restore();
+    t.context.resourceLoader.loadRule.restore();
 });
 
 test.serial(`if the job doesn't exist, it should create a new job and add it to the queue`, async (t) => {
@@ -182,10 +194,12 @@ test.serial(`if the job doesn't exist, it should use the defaul configuration if
 const setExpired = (job: IJob) => {
     job.finished = moment().subtract(3, 'minutes')
         .toDate();
+    job.status = JobStatus.finished;
 };
 
 const setNoExpired = (job: IJob) => {
     job.finished = new Date();
+    job.status = JobStatus.finished;
 };
 
 test.serial(`if the job exists, but it is expired, it should create a new job and add it to the queue`, async (t) => {
@@ -306,6 +320,31 @@ test.serial(`if the job exists and it isn't expired, it shouldn't create a new j
     const jobs = t.context.jobs;
 
     setNoExpired(jobs[0]);
+
+    sinon.spy(queueMethods, 'sendMessage');
+    sinon.stub(database, 'getJobsByUrl').resolves(jobs);
+    const jobInput = {
+        config: null,
+        rules: [],
+        source: ConfigSource.default,
+        url: 'http://sonarwhal.com'
+    };
+
+    sinon.spy(database, 'newJob');
+
+    const result = await jobManager.startJob(jobInput);
+
+    t.true(t.context.database.lock.calledOnce);
+    t.true(t.context.database.unlock.calledOnce);
+    t.false(t.context.database.newJob.called);
+    t.false(t.context.queueMethods.sendMessage.called);
+    t.is(result, jobs[0]);
+});
+
+test.serial(`if the job exists, the status is neither finish or error, but finished is set, it shouldn't create a new job`, async (t) => {
+    const jobs = t.context.jobs;
+
+    jobs[0].finished = new Date();
 
     sinon.spy(queueMethods, 'sendMessage');
     sinon.stub(database, 'getJobsByUrl').resolves(jobs);

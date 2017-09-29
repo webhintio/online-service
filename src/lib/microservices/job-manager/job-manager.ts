@@ -2,6 +2,7 @@ import * as _ from 'lodash';
 import * as moment from 'moment';
 import { IConfig } from '@sonarwhal/sonar/dist/src/lib/types';
 import normalizeRules from '@sonarwhal/sonar/dist/src/lib/utils/normalize-rules';
+import { loadRule } from '@sonarwhal/sonar/dist/src/lib/utils/resource-loader';
 
 import * as database from '../../common/database/database';
 import * as configManager from '../config-manager/config-manager';
@@ -29,6 +30,7 @@ const createNewJob = async (url: string, configs: Array<IConfig>, jobRunTime: nu
         const normalizedRules = normalizeRules(config.rules);
         const partialRules = _.map(normalizedRules, (rule: string, key: string) => {
             return {
+                category: loadRule(key).meta.docs.category,
                 messages: [],
                 name: key,
                 status: RuleStatus.pending
@@ -97,7 +99,7 @@ const getConfig = (data: RequestData, serviceConfig: IServiceConfig): Array<ICon
 const getActiveJob = (jobs: Array<IJob>, config: Array<IConfig>, cacheTime: number) => {
     return jobs.find((job) => {
         // job.config in cosmosdb is undefined if the config saved was an empty object.
-        return _.isEqual(job.config || [{}], config) && (!job.finished || moment(job.finished).isAfter(moment().subtract(cacheTime, 'seconds')));
+        return _.isEqual(job.config || [{}], config) && job.status !== JobStatus.error && (job.status !== JobStatus.finished || moment(job.finished).isAfter(moment().subtract(cacheTime, 'seconds')));
     });
 };
 
@@ -113,11 +115,13 @@ const sendMessagesToQueue = async (job: IJob) => {
     for (const config of job.config) {
         const jobCopy = _.cloneDeep(job);
 
-        jobCopy.part = ++counter;
-        jobCopy.totalParts = job.config.length;
+        jobCopy.partInfo = {
+            part: ++counter,
+            totalParts: job.config.length
+        };
         jobCopy.config = [config];
         await queue.sendMessage(jobCopy);
-        logger.log(`Part ${jobCopy.part} of ${jobCopy.totalParts} sent to the Service Bus`, moduleName);
+        logger.log(`Part ${jobCopy.partInfo.part} of ${jobCopy.partInfo.totalParts} sent to the Service Bus`, moduleName);
     }
 };
 
