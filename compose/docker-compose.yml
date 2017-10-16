@@ -17,6 +17,7 @@ services:
                 delay: 10s
         environment:
             - port=80
+            - NODE_ENV=development
             - queue=<YourAzureServiceBusConnectionString>
             - database=<YourDatabaseConnectionString>
         ports:

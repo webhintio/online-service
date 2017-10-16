@@ -1,5 +1,5 @@
 /**
- * @fileoverview Main CLI object, it reads the configuration from parameters and 
+ * @fileoverview Main CLI object, it reads the configuration from parameters and
  * run the microservice choosen or all of them
  */
 
@@ -43,15 +43,23 @@ export const execute = async (args: string | Array<string> | object): Promise<nu
     }
 
     try {
-        if (currentOptions.microservice === Microservice.jobManager) {
-            await jobManagerServer.run();
-        } else if (currentOptions.microservice === Microservice.configManager) {
-            await configManagerCLI.run(currentOptions);
-        } else if (currentOptions.microservice === Microservice.worker) {
-            await worker.run();
-        } else if (currentOptions.microservice === Microservice.sync) {
-            await sync.run();
+        const microservices = [];
+        const microservice = currentOptions.microservice;
+
+        if (microservice === Microservice.jobManager || microservice === Microservice.all) {
+            microservices.push(jobManagerServer.run());
         }
+        if (microservice === Microservice.configManager) {
+            microservices.push(configManagerCLI.run(currentOptions));
+        }
+        if (microservice === Microservice.worker || microservice === Microservice.all) {
+            microservices.push(worker.run());
+        }
+        if (microservice === Microservice.sync || microservice === Microservice.all) {
+            microservices.push(sync.run());
+        }
+
+        await Promise.all(microservices);
 
         return 0;
     } catch (err) {
