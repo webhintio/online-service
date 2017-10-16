@@ -4,17 +4,34 @@ import * as bodyParser from 'body-parser';
 import * as express from 'express';
 
 import * as jobManager from './job-manager';
-import * as database from '../../common/database/database';
+import * as db from '../../common/database/database';
 import { IJob, RequestData } from '../../types';
 import * as logger from '../../utils/logging';
 import { getDataFromRequest } from '../../utils/misc';
 
+const { auth, database, NODE_ENV: env, port } = process.env; // eslint-disable-line no-process-env
 const app = express();
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-app.set('port', process.env.port || 3000); // eslint-disable-line no-process-env
+
+if (env !== 'development') {
+
+    if (!auth) {
+        throw new Error('Missing authorization');
+    }
+
+    app.use((req, res, next) => {
+        if (req.header('authorization') !== `Bearer ${auth}`) {
+            return res.sendStatus(401);
+        }
+
+        return next();
+    });
+}
+
+app.set('port', port || 3000);
 
 /** Initilize the server. */
 export const run = () => {
@@ -26,7 +43,7 @@ export const run = () => {
         };
 
         try {
-            await database.connect(process.env.database); // eslint-disable-line no-process-env
+            await db.connect(database);
         } catch (err) {
             return reject(err);
         }
