@@ -21,7 +21,7 @@ import * as worker from './microservices/worker-service/worker-service';
 import * as sync from './microservices/sync-service/sync-service';
 
 const pkg = loadJSONFile(path.join(__dirname, '../../../package.json'));
-
+const moduleName: string = 'cli';
 // ------------------------------------------------------------------------------
 // Public
 // ------------------------------------------------------------------------------
@@ -63,7 +63,7 @@ export const execute = async (args: string | Array<string> | object): Promise<nu
 
         return 0;
     } catch (err) {
-        logger.error(err);
+        logger.error(err, moduleName);
 
         return 1;
     } finally {

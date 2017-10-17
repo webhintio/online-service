@@ -123,6 +123,24 @@ test.serial(`if the job status is 'started' and the job status in database is no
     t.is(dbJob.started, data.started.started);
 });
 
+test.serial(`if the job status is 'started' and the property started in database is greater than the current one, it should update the started property`, async (t) => {
+    t.context.job.status = JobStatus.finished;
+    t.context.job.started = new Date('2017-08-31T23:55:00.877Z');
+    sinon.stub(database, 'getJob').resolves(t.context.job);
+
+    await sync.run();
+
+    await t.context.resultsQueue.listen.args[0][0](data.started);
+
+    t.true(t.context.database.lock.calledOnce);
+    t.true(t.context.database.unlock.calledOnce);
+    t.true(t.context.database.updateJob.called);
+    const dbJob: IJob = t.context.database.updateJob.args[0][0];
+
+    t.is(dbJob.status, JobStatus.finished);
+    t.is(dbJob.started, data.started.started);
+});
+
 test.serial(`if the job status is 'error', it should update the job in database properly`, async (t) => {
     sinon.stub(database, 'getJob').resolves(t.context.job);
 
@@ -178,7 +196,6 @@ test.serial(`if the job status is 'finished' but they are partial results, it sh
     dbJob = t.context.database.updateJob.args[1][0];
 
     t.is(dbJob.status, JobStatus.started);
-    t.falsy(dbJob.finished);
 
     await t.context.resultsQueue.listen.args[0][0](data.finishedPart2);
 

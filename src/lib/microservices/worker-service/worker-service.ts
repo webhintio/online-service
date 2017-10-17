@@ -1,6 +1,6 @@
 import * as _ from 'lodash';
 import { fork, ChildProcess } from 'child_process';
-import { IConfig, IProblem } from '@sonarwhal/sonar/dist/src/lib/types';
+import { IConfig, IProblem, Severity } from '@sonarwhal/sonar/dist/src/lib/types';
 import normalizeRules from '@sonarwhal/sonar/dist/src/lib/utils/normalize-rules';
 import * as path from 'path';
 
@@ -11,6 +11,7 @@ import { JobStatus, RuleStatus } from '../../enums/status';
 import * as logger from '../../utils/logging';
 
 const debug: debug.IDebugger = d(__filename);
+const moduleName: string = 'Worker Service';
 
 /**
  * Parse the result return for sonar.
@@ -35,7 +36,7 @@ const parseResult = (rules: Array<Rule>, config: Array<IConfig>, result: Array<I
             return;
         }
 
-        rule.status = RuleStatus.error;
+        rule.status = Severity.error === messages[0].severity ? RuleStatus.error : RuleStatus.warning;
         rule.messages = messages;
     });
 };
@@ -48,7 +49,7 @@ const killProcess = (runner: ChildProcess) => {
     try {
         runner.kill('SIGKILL');
     } catch (err) {
-        logger.error('Error closing sonar process');
+        logger.error('Error closing sonar process', moduleName);
     }
 };
 
@@ -65,7 +66,7 @@ const runSonar = (job: IJob): Promise<Array<IProblem>> => {
         let timeoutId: NodeJS.Timer;
 
         runner.on('message', (result: JobResult) => {
-            debug(`Message from sonar process received for job: ${job.id}`);
+            logger.log(`Message from sonar process received for job: ${job.id} - Part ${job.partInfo.part} of ${job.partInfo.totalParts}`, moduleName);
             if (timeoutId) {
                 clearTimeout(timeoutId);
                 timeoutId = null;
@@ -102,7 +103,7 @@ export const run = async () => {
     const sonarVersion: string = getSonarVersion();
 
     const listener = async (job: IJob) => {
-        debug(`Job received: ${job.id}`);
+        logger.log(`Processing Job: ${job.id} - Part ${job.partInfo.part} of ${job.partInfo.totalParts}`, moduleName);
         try {
             job.started = new Date();
             job.status = JobStatus.started;
@@ -119,9 +120,10 @@ export const run = async () => {
             job.status = JobStatus.finished;
 
             debug(`Sending job result with status: ${job.status}`);
-            queueResults.sendMessage(job);
+            await queueResults.sendMessage(job);
+
         } catch (err) {
-            debug(`Error runing job: ${job.id}`);
+            logger.error(`Error processing Job: ${job.id} - Part ${job.partInfo.part} of ${job.partInfo.totalParts}`, moduleName, err);
             debug(err);
 
             if (err instanceof Error) {
@@ -138,8 +140,9 @@ export const run = async () => {
             job.finished = new Date();
 
             debug(`Sending job result with status: ${job.status}`);
-            queueResults.sendMessage(job);
+            await queueResults.sendMessage(job);
         }
+        logger.log(`Processed Job: ${job.id} - Part ${job.partInfo.part} of ${job.partInfo.totalParts}`, moduleName);
     };
 
     await queue.listen(listener);

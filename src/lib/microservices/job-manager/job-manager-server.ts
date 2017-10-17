@@ -11,6 +11,7 @@ import { getDataFromRequest } from '../../utils/misc';
 
 const { auth, database, NODE_ENV: env, port } = process.env; // eslint-disable-line no-process-env
 const app = express();
+const moduleName: string = 'Job Manager Server';
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -49,11 +50,11 @@ export const run = () => {
         }
 
         server.on('listening', () => {
-            logger.log(`Server started on port ${app.get('port')}`);
+            logger.log(`Server started on port ${app.get('port')}`, moduleName);
         });
 
         server.on('error', (e) => {
-            logger.error(`Error listening on port ${app.get('port')}`);
+            logger.error(`Error listening on port ${app.get('port')}`, moduleName);
             reject(e);
         });
 
@@ -73,7 +74,7 @@ const createJob = async (req, res) => {
 
         return res.send(job);
     } catch (err) {
-        logger.log(err);
+        logger.error(err, moduleName);
 
         return res.status(500).send(err);
     }

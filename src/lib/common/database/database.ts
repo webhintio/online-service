@@ -12,10 +12,12 @@ import { Job, IJobModel } from './models/job';
 import { ServiceConfig, IServiceConfigModel } from './models/serviceconfig';
 import { IJob, IServiceConfig, Rule } from '../../types';
 import { debug as d } from '../../utils/debug';
+import * as logger from '../../utils/logging';
 
 const debug: debug.IDebugger = d(__filename);
 let db: mongoose.Connection;
 const lockName: string = 'index';
+const moduleName: string = 'Database';
 
 /**
  * Create a lock object.
@@ -49,7 +51,7 @@ const validateConnection = () => {
 export const unlock = async (dbLock) => {
     validateConnection();
 
-    debug(`release lock for code ${dbLock.code}`);
+    logger.log(`Release lock for key ${dbLock.name}`, moduleName);
     await dbLock.releaseAsync(dbLock.code);
 };
 
@@ -86,8 +88,12 @@ export const lock = async (url: string) => {
         const code = await dbLock.acquireAsync();
 
         if (!code) {
+            logger.error(`Lock not acquired for key ${url}`, moduleName);
+
             throw new Error('Lock not acquired');
         }
+
+        logger.log(`Lock acquired for key ${url}`, moduleName);
 
         return code;
     };

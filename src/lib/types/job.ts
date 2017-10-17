@@ -3,6 +3,7 @@ import { IConfig, IProblem } from '@sonarwhal/sonar/dist/src/lib/types';
 import { JobStatus, RuleStatus } from '../enums/status';
 
 export type Rule = {
+    category: string;
     name: string;
     status: RuleStatus;
     messages: Array<IProblem>;
@@ -12,6 +13,13 @@ export type JobResult = {
     error: string;
     ok: boolean;
     messages: Array<IProblem>;
+};
+
+export type PartInfo = {
+    /** Part number for a task */
+    part?: number;
+    /** Total parts we split a job */
+    totalParts?: number;
 };
 
 export interface IJob {
@@ -39,4 +47,6 @@ export interface IJob {
     error: any;
     /** Messages in queue approximately before the job is added to the queue. */
     messagesInQueue?: number;
+    /** Partition information for a task */
+    partInfo?: PartInfo;
 }

@@ -1,11 +1,13 @@
-import * as azure from 'azure-sb';
 import { promisify } from 'util';
+
+import * as azure from 'azure-sb';
 
 import { ServiceBusOptions } from '../../types';
 import { debug as d } from '../../utils/debug';
 import * as logger from '../../utils/logging';
 import { delay } from '../../utils/misc';
 
+const moduleName: string = 'Queue';
 const debug: debug.IDebugger = d(__filename);
 
 export class Queue {
@@ -39,6 +41,29 @@ export class Queue {
         this.serviceBus.deleteMessageAsync = promisify(this.serviceBus.deleteMessage);
     }
 
+    private retry(action: Function, errMessage: string) {
+        let retries = 10;
+
+        const ret = async () => {
+            try {
+                return await action();
+            } catch (err) {
+                logger.error(`Error ${errMessage} ${this.name}`, moduleName, err);
+                retries--;
+
+                if (retries === 0) {
+                    throw err;
+                }
+
+                await delay((err.statusCode === 503 ? 10 : 1) * 1000);
+
+                return ret();
+            }
+        };
+
+        return ret();
+    }
+
     /**
      * Send a message to service bus.
      * @param {any} message - Message to send to the queue.
@@ -46,7 +71,9 @@ export class Queue {
     public sendMessage(message: any) {
         debug('Sending message to queue');
 
-        return this.serviceBus.sendQueueMessageAsync(this.name, { body: JSON.stringify(message) });
+        return this.retry(() => {
+            return this.serviceBus.sendQueueMessageAsync(this.name, { body: JSON.stringify(message) });
+        }, 'sending message to');
     }
 
     /**
@@ -78,14 +105,16 @@ export class Queue {
         try {
             await this.serviceBus.deleteMessageAsync(message);
         } catch (err) {
-            logger.error('Error deleting message', err);
+            logger.error('Error deleting message', moduleName, err);
         }
     }
 
-    public async getMessagesCount(): Promise<number> {
-        const queue = await this.serviceBus.getQueueAsync(this.name);
+    public getMessagesCount(): Promise<number> {
+        return this.retry(async () => {
+            const queue = await this.serviceBus.getQueueAsync(this.name);
 
-        return parseInt(queue.CountDetails['d2p1:ActiveMessageCount']);
+            return parseInt(queue.CountDetails['d2p1:ActiveMessageCount']);
+        }, 'getting messages count in');
     }
 
     private async checkQueue() {
@@ -97,7 +126,7 @@ export class Queue {
             message = null;
 
             if (err.code !== 'ETIMEDOUT') {
-                logger.error('Error getting message', err);
+                logger.error('Error getting message', moduleName, err);
             }
 
             if (err.statusCode === 503) {
@@ -117,7 +146,7 @@ export class Queue {
 
             return 0;
         } catch (err) {
-            logger.error(`Error processing message: \n${JSON.stringify(message)}`, err);
+            logger.error(`Error processing message: \n${JSON.stringify(message)}`, moduleName, err);
 
             return null;
         }

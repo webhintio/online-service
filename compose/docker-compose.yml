@@ -2,7 +2,7 @@ version: '3.3'
 
 services:
     job-manager:
-        image: jobmanager-test:latest
+        image: job-manager:latest
         build:
             context: ../
             dockerfile: Dockerfile.jobmanager
@@ -23,7 +23,7 @@ services:
         ports:
             - "4000:80"
     worker-service:
-        image: worker-service-test:latest
+        image: worker-service:latest
         build:
             context: ../
             dockerfile: Dockerfile.worker
@@ -36,8 +36,10 @@ services:
             update_config:
                 parallelism: 2
                 delay: 10s
+        environment:
+            - queue=<YourAzureServiceBusConnectionString>
     sync-service:
-        image: sync-service-test:latest
+        image: sync-service:latest
         build:
             context: ../
             dockerfile: Dockerfile.sync
@@ -50,3 +52,6 @@ services:
             update_config:
                 parallelism: 2
                 delay: 10s
+        environment:
+            - queue=<YourAzureServiceBusConnectionString>
+            - database=<YourDatabaseConnectionString>

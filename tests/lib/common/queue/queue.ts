@@ -59,6 +59,55 @@ test.serial('sendMessage should send a message to service bus', async (t) => {
     t.context.azureSBService.sendQueueMessage.restore();
 });
 
+test.serial('if sendMessage fails, it should retry it', async (t) => {
+    sinon.stub(azureSBService, 'sendQueueMessage')
+        .onFirstCall()
+        .callsFake((param1, param2, callback) => {
+            callback({});
+        })
+        .onSecondCall()
+        .callsFake((param1, param2, callback) => {
+            callback(null);
+        });
+
+    t.context.azureSBService = azureSBService;
+
+    const queueName = 'queueNme';
+    const queue = new Queue(queueName, 'connectionString');
+    const message = { id: 'id', url: 'url' };
+
+    await queue.sendMessage(message);
+
+    t.true(t.context.azureSBService.sendQueueMessage.calledTwice);
+
+    t.context.azureSBService.sendQueueMessage.restore();
+});
+
+test.serial('if sendMessage fails always, it should return an error', async (t) => {
+    const error = new Error('error');
+
+    sinon.stub(azureSBService, 'sendQueueMessage')
+        .callsFake((param1, param2, callback) => {
+            callback(error);
+        });
+
+    t.context.azureSBService = azureSBService;
+
+    const queueName = 'queueNme';
+    const queue = new Queue(queueName, 'connectionString');
+    const message = { id: 'id', url: 'url' };
+
+    t.plan(2);
+
+    try {
+        await queue.sendMessage(message);
+    } catch (err) {
+        t.is(t.context.azureSBService.sendQueueMessage.callCount, 10);
+        t.is(err, error);
+    }
+    t.context.azureSBService.sendQueueMessage.restore();
+});
+
 test.serial(`getMessage should return a message and don't delete it`, async (t) => {
     const message = { id: 'id', url: 'url' };
 
@@ -122,6 +171,21 @@ test.serial(`if there is another error, getMessage should return an error`, asyn
     }
 
     t.context.azureSBService.receiveQueueMessage.restore();
+});
+
+test.serial('getMessagesCount should return the number of active messages in the queue', async (t) => {
+    const queueResult = { CountDetails: { 'd2p1:ActiveMessageCount': 15 } };
+
+    sinon.stub(azureSBService, 'getQueue').callsFake((param1, callback) => {
+        callback(null, queueResult);
+    });
+
+    const queueName = 'queueNme';
+    const queue = new Queue(queueName, 'connectionString');
+
+    const result = await queue.getMessagesCount();
+
+    t.is(result, queueResult.CountDetails['d2p1:ActiveMessageCount']);
 });
 
 test.serial(`if listen is called without handler, it should return an error`, async (t) => {
