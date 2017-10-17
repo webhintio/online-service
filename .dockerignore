@@ -3,10 +3,10 @@ node_modules/
 .vscode/
 .nyc_output/
 coverage/
-docker-compose.override.yml
 compose/
 .editorconfig
 .eslintrc.json
 .gitignore
 .travis.yml
 scripts/
+Dockerfile.*

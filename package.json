@@ -16,9 +16,10 @@
     "build": "npm run clean && npm-run-all build:*",
     "build:ts": "tsc --outDir dist",
     "build:assets": "cpx \"./{scripts,src,tests}/**/{!(*.ts),.!(ts)}\" dist",
+    "clean": "rimraf dist",
+    "online-service": "node ./dist/src/bin/online-service",
     "lint": "npm-run-all lint:*",
     "lint:js": "eslint --ext ts --ignore-pattern dist .",
-    "clean": "rimraf dist",
     "test": "npm run lint && npm run build && nyc ava",
     "watch:ts": "npm run build:ts -- --watch"
   },
