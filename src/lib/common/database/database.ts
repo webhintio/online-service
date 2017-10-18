@@ -10,7 +10,8 @@ import * as tri from 'tri';
 import { JobStatus } from '../../enums/status';
 import { Job, IJobModel } from './models/job';
 import { ServiceConfig, IServiceConfigModel } from './models/serviceconfig';
-import { IJob, IServiceConfig, Rule } from '../../types';
+import { User, IUserModel } from './models/user';
+import { IJob, IServiceConfig, IUser, Rule, StatisticsOptions, StatisticsQueryParameter } from '../../types';
 import { debug as d } from '../../utils/debug';
 import * as logger from '../../utils/logging';
 
@@ -182,18 +183,19 @@ export const updateJob = async (job: IJobModel) => {
 /**
  * Create a new configuration in database.
  * @param {string} name - New configuration name.
- * @param {number} cache - Cache time in seconds for jobs.
+ * @param {number} jobCacheTime - Cache time in seconds for jobs.
+ * @param {number} jobRunTime - Time before throw a timeout for jobs.
  * @param {IConfig} options - Configuration data.
  */
-export const newConfig = async (name: string, cache: number, run: number, options: Array<IConfig>): Promise<IServiceConfig> => {
+export const newConfig = async (name: string, jobCacheTime: number, jobRunTime: number, options: Array<IConfig>): Promise<IServiceConfig> => {
     validateConnection();
 
     debug(`Creating config with name: ${name}`);
 
     const config: IServiceConfigModel = new ServiceConfig({
         active: false,
-        jobCacheTime: cache,
-        jobRunTime: run,
+        jobCacheTime,
+        jobRunTime,
         name,
         sonarConfigs: options
     });
@@ -257,6 +259,31 @@ export const listConfigurations = async (): Promise<Array<IServiceConfig>> => {
 };
 
 /**
+ * Get a configuration from the database by name
+ * @param {string} name - Configuration name
+ */
+export const getConfigurationByName = async (name: string): Promise<IServiceConfig> => {
+    validateConnection();
+
+    const query: mongoose.DocumentQuery<IServiceConfigModel, IServiceConfigModel> = ServiceConfig.findOne({ name });
+    const config: IServiceConfig = await query.exec();
+
+    return config;
+};
+
+/**
+ * Remove configuration from database by name
+ * @param {string} name - Configuration name
+ */
+export const removeConfiguration = async (name: string) => {
+    validateConnection();
+
+    const query: mongoose.DocumentQuery<IServiceConfigModel, IServiceConfigModel> = ServiceConfig.findOne({ name });
+
+    await query.remove().exec();
+};
+
+/**
  * Get the current active configuration.
  */
 export const getActiveConfiguration = async (): Promise<IServiceConfig> => {
@@ -266,6 +293,141 @@ export const getActiveConfiguration = async (): Promise<IServiceConfig> => {
     const config: IServiceConfig = await query.exec();
 
     return config;
+};
+
+/**
+ * Edit a configuration.
+ * @param {string} oldName - Old configuration name.
+ * @param {string} newName - New configuration name.
+ * @param {number} jobCacheTime - Cache time in seconds for jobs.
+ * @param {number} jobRunTime - Time before throw a timeout for jobs.
+ * @param {IConfig} options - Configuration data.
+ */
+export const editConfiguration = async (oldName: string, newName: string, jobCacheTime: number, jobRunTime: number, configs?: Array<IConfig>): Promise<IServiceConfig> => {
+    validateConnection();
+
+    const query: mongoose.DocumentQuery<IServiceConfigModel, IServiceConfigModel> = ServiceConfig.findOne({ name: oldName });
+    const config: IServiceConfigModel = await query.exec();
+
+    config.name = newName;
+    config.jobCacheTime = jobCacheTime;
+    config.jobRunTime = jobRunTime;
+
+    if (configs) {
+        config.sonarConfigs = configs;
+        config.markModified('sonarConfigs');
+    }
+
+    await config.save();
+
+    return config;
+};
+
+/**
+ * Add a new user to the database.
+ * @param {string} name - User name.
+ */
+export const addUser = async (name: string): Promise<IUser> => {
+    validateConnection();
+
+    debug(`Adding user: ${name}`);
+
+    const user: IUserModel = new User({ name });
+
+    await user.save();
+
+    debug(`User: ${name} saved in database`);
+
+    return user;
+};
+
+/**
+ * Get all users in the database.
+ */
+export const getUsers = async (): Promise<Array<IUser>> => {
+    validateConnection();
+
+    const query: mongoose.DocumentQuery<Array<IUserModel>, IUserModel> = User.find({});
+    const users: Array<IUser> = await query.exec();
+
+    return users;
+};
+
+/**
+ * Get an user from the database.
+ * @param {string} name - User name.
+ */
+export const getUserByName = async (name: string): Promise<IUser> => {
+    validateConnection();
+    const query: mongoose.DocumentQuery<IUserModel, IUserModel> = User.findOne({ name });
+    const user: IUser = await query.exec();
+
+    return user;
+};
+
+/**
+ * Remove an user from the database.
+ * @param {string} name - User name.
+ */
+export const removeUserByName = async (name: string) => {
+    validateConnection();
+    const query: mongoose.DocumentQuery<IUserModel, IUserModel> = User.findOne({ name });
+
+    await query.remove().exec();
+};
+
+/* ******************************************** */
+/*                  STATISTICS                  */
+/* ******************************************** */
+/**
+ * Return the count of a query.
+ * @param {StatisticsQueryParameter} queryParameters - Query parameters.
+ */
+const count = (queryParameters: StatisticsQueryParameter): Promise<number> => {
+    const query = Job.find(queryParameters);
+
+    return query
+        .count()
+        .exec();
+};
+
+/**
+ * Get the number of jobs with a status.
+ * @param {JobStatus} status - Job status.
+ * @param {StatisticsOptions} options - Query options.
+ */
+export const getStatusCount = async (status: JobStatus, options?: StatisticsOptions): Promise<number> => {
+    validateConnection();
+
+    const queryParameters: StatisticsQueryParameter = { status };
+
+    if (options && options.since) {
+        queryParameters[options.field] = { $gte: options.since };
+    }
+
+    const result: number = await Job.find(queryParameters)
+        .count()
+        .exec();
+
+    return result;
+};
+
+/**
+ * Get the number of jobs in the database.
+ * @param {StatisticsOptions} options - Query options.
+ */
+export const getJobsCount = async (options?: StatisticsOptions): Promise<number> => {
+    validateConnection();
+
+    const queryParameters: StatisticsQueryParameter = {};
+
+    if (options && options.since) {
+        queryParameters.finished = { $gte: options.since };
+    }
+
+    const total: number = await count(queryParameters);
+
+    return total;
 };
 
 /**

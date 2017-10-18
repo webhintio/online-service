@@ -1,0 +1,48 @@
+<section class="section">
+    <header>
+        <h2>Online service Statistics</h2>
+        <h3>{{title}}</h3>
+    </header>
+    <div>
+        {{> new-user}}
+    </div>
+    <div class="table--overflow">
+        <table>
+            <caption>{{tableCaption}}</caption>
+            <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>Url</th>
+                    <th>Errors</th>
+                    <th>Warnings</th>
+                    <th>Start</th>
+                    <th>End</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each job}}
+                <tr>
+                    <td>
+                        {{status}}
+                    </td>
+                    <td>
+                        {{end}}
+                    </td>
+                    <td>
+                        {{errors}}
+                    </td>
+                    <td>
+                        {{#count warnings}}
+                    </td>
+                    <td>
+                        {{#count started}}
+                    </td>
+                    <td>
+                        {{finished}}
+                    </td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </div>
+</section>

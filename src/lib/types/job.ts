@@ -1,5 +1,6 @@
 import { IConfig, IProblem } from '@sonarwhal/sonar/dist/src/lib/types';
 
+import { ConfigSource } from '../enums/configsource';
 import { JobStatus, RuleStatus } from '../enums/status';
 
 export type Rule = {
@@ -13,6 +14,13 @@ export type JobResult = {
     error: string;
     ok: boolean;
     messages: Array<IProblem>;
+};
+
+export type JobData = {
+    config;
+    rules: Array<string>;
+    source: ConfigSource;
+    url: string;
 };
 
 export type PartInfo = {

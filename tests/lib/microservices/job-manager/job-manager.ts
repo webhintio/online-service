@@ -14,7 +14,7 @@ const database = {
     updateJob() { }
 };
 
-const configManager = { getActiveConfiguration() { } };
+const configManager = { active() { } };
 
 const queueMethods = {
     getMessagesCount() { },
@@ -110,7 +110,7 @@ test.beforeEach(async (t) => {
     sinon.stub(database, 'lock').resolves({});
     sinon.stub(database, 'unlock').resolves({});
     sinon.spy(database, 'updateJob');
-    sinon.stub(configManager, 'getActiveConfiguration').resolves(activeConfig);
+    sinon.stub(configManager, 'active').resolves(activeConfig);
     sinon.spy(queueMethods, 'getMessagesCount');
     sinon.stub(resourceLoader, 'loadRule').returns(rule);
 
@@ -136,38 +136,76 @@ test.afterEach.always((t) => {
         t.context.database.getJobsByUrl.restore();
     }
     t.context.queueMethods.getMessagesCount.restore();
-    t.context.configManager.getActiveConfiguration.restore();
+    t.context.configManager.active.restore();
     t.context.resourceLoader.loadRule.restore();
+});
+
+test.serial(`if there is no url, it should return an error`, async (t) => {
+    const jobInput = {
+        fields: {
+            config: activeConfig.sonarConfigs,
+            rules: [],
+            source: ConfigSource.default,
+            url: null
+        },
+        files: {}
+    };
+
+    sinon.stub(database, 'newJob').resolves(jobInput);
+
+    try {
+        await jobManager.startJob(jobInput);
+    } catch (err) {
+        t.is(err.message, 'Url is required');
+    }
 });
 
 test.serial(`if the job doesn't exist, it should create a new job and add it to the queue`, async (t) => {
     sinon.spy(queueMethods, 'sendMessage');
     sinon.stub(database, 'getJobsByUrl').resolves([]);
     const jobInput = {
+        fields: {
+            config: null,
+            rules: [],
+            source: [ConfigSource.default],
+            url: ['http://sonarwhal.com']
+        },
+        files: {}
+    };
+
+    const jobResult = {
         config: activeConfig.sonarConfigs,
         rules: [],
-        source: ConfigSource.default,
         url: 'http://sonarwhal.com'
     };
 
-    sinon.stub(database, 'newJob').resolves(jobInput);
+    sinon.stub(database, 'newJob').resolves(jobResult);
 
     await jobManager.startJob(jobInput);
 
-    validatedJobCreatedInDatabase(t, jobInput);
+    validatedJobCreatedInDatabase(t, jobResult);
 });
 
 test.serial(`if the job doesn't exist, but there is an error in Service Bus, it should set the status or the job to error`, async (t) => {
     sinon.stub(queueMethods, 'sendMessage').rejects();
     sinon.stub(database, 'getJobsByUrl').resolves([]);
     const jobInput = {
+        fields: {
+            config: null,
+            rules: [],
+            source: [ConfigSource.default],
+            url: ['http://sonarwhal.com']
+        },
+        files: {}
+    };
+
+    const jobResult = {
         config: activeConfig.sonarConfigs,
         rules: [],
-        source: ConfigSource.default,
         url: 'http://sonarwhal.com'
     };
 
-    sinon.stub(database, 'newJob').resolves(jobInput);
+    sinon.stub(database, 'newJob').resolves(jobResult);
 
     await jobManager.startJob(jobInput);
 
@@ -178,17 +216,26 @@ test.serial(`if the job doesn't exist, it should use the defaul configuration if
     sinon.spy(queueMethods, 'sendMessage');
     sinon.stub(database, 'getJobsByUrl').resolves([]);
     const jobInput = {
+        fields: {
+            config: null,
+            rules: [],
+            source: null,
+            url: ['http://sonarwhal.com']
+        },
+        files: {}
+    };
+
+    const jobResult = {
         config: activeConfig.sonarConfigs,
-        rules: null,
-        source: null,
+        rules: [],
         url: 'http://sonarwhal.com'
     };
 
-    sinon.stub(database, 'newJob').resolves(jobInput);
+    sinon.stub(database, 'newJob').resolves(jobResult);
 
     await jobManager.startJob(jobInput);
 
-    validatedJobCreatedInDatabase(t, jobInput);
+    validatedJobCreatedInDatabase(t, jobResult);
 });
 
 const setExpired = (job: IJob) => {
@@ -210,17 +257,26 @@ test.serial(`if the job exists, but it is expired, it should create a new job an
     sinon.spy(queueMethods, 'sendMessage');
     sinon.stub(database, 'getJobsByUrl').resolves(jobs);
     const jobInput = {
+        fields: {
+            config: null,
+            rules: [],
+            source: null,
+            url: ['http://sonarwhal.com']
+        },
+        files: {}
+    };
+
+    const jobResult = {
         config: activeConfig.sonarConfigs,
         rules: [],
-        source: ConfigSource.default,
         url: 'http://sonarwhal.com'
     };
 
-    sinon.stub(database, 'newJob').resolves(jobInput);
+    sinon.stub(database, 'newJob').resolves(jobResult);
 
     await jobManager.startJob(jobInput);
 
-    validatedJobCreatedInDatabase(t, jobInput);
+    validatedJobCreatedInDatabase(t, jobResult);
 });
 
 test.serial(`if the job exists, but config is different, it should create a new job and add it to the queue`, async (t) => {
@@ -236,27 +292,43 @@ test.serial(`if the job exists, but config is different, it should create a new 
     sinon.spy(queueMethods, 'sendMessage');
     sinon.stub(database, 'getJobsByUrl').resolves(jobs);
     const jobInput = {
+        fields: {
+            config: null,
+            rules: [],
+            source: ConfigSource.default,
+            url: ['http://sonarwhal.com']
+        },
+        files: {}
+    };
+
+    const jobResult = {
         config: activeConfig.sonarConfigs,
         rules: [],
-        source: ConfigSource.default,
         url: 'http://sonarwhal.com'
     };
 
-    sinon.stub(database, 'newJob').resolves(jobInput);
+    sinon.stub(database, 'newJob').resolves(jobResult);
 
     await jobManager.startJob(jobInput);
 
-    validatedJobCreatedInDatabase(t, jobInput);
+    validatedJobCreatedInDatabase(t, jobResult);
 });
 
 test.serial(`if the source is a file and the config is not valid, it should return an error`, async (t) => {
     sinon.spy(queueMethods, 'sendMessage');
     sinon.stub(database, 'getJobsByUrl').resolves([]);
     const jobInput = {
-        config: JSON.parse(await readFileAsync(path.join(__dirname, '../fixtures/config-invalid.json'))),
-        rules: null,
-        source: ConfigSource.file,
-        url: 'http://sonarwhal.com'
+        fields: {
+            rules: null,
+            source: [ConfigSource.file],
+            url: ['http://sonarwhal.com']
+        },
+        files: {
+            'config-file': [{
+                path: path.join(__dirname, '../fixtures/config-invalid.json'),
+                size: (await readFileAsync(path.join(__dirname, '../fixtures/config-invalid.json'))).length
+            }]
+        }
     };
 
     sinon.spy(database, 'newJob');
@@ -273,10 +345,17 @@ test.serial(`if the source is a file and the config has duplicated rules, it sho
     sinon.spy(queueMethods, 'sendMessage');
     sinon.stub(database, 'getJobsByUrl').resolves([]);
     const jobInput = {
-        config: JSON.parse(await readFileAsync(path.join(__dirname, '../fixtures/config-duplicates.json'))),
-        rules: null,
-        source: ConfigSource.file,
-        url: 'http://sonarwhal.com'
+        fields: {
+            rules: null,
+            source: [ConfigSource.file],
+            url: ['http://sonarwhal.com']
+        },
+        files: {
+            'config-file': [{
+                path: path.join(__dirname, '../fixtures/config-duplicates.json'),
+                size: (await readFileAsync(path.join(__dirname, '../fixtures/config-duplicates.json'))).length
+            }]
+        }
     };
 
     sinon.spy(database, 'newJob');
@@ -293,13 +372,27 @@ test.serial(`if the source is a file and the config is valid, it should create a
     sinon.spy(queueMethods, 'sendMessage');
     sinon.stub(database, 'getJobsByUrl').resolves([]);
     const jobInput = {
+        fields: {
+            rules: null,
+            source: [ConfigSource.file],
+            url: ['http://sonarwhal.com']
+        },
+        files: {
+            'config-file': [{
+                path: path.join(__dirname, '../fixtures/config.json'),
+                size: (await readFileAsync(path.join(__dirname, '../fixtures/config.json'))).length
+            }]
+        }
+    };
+
+    const jobResult = {
         config: JSON.parse(await readFileAsync(path.join(__dirname, '../fixtures/config.json'))),
         rules: null,
         source: ConfigSource.file,
         url: 'http://sonarwhal.com'
     };
 
-    sinon.stub(database, 'newJob').resolves(jobInput);
+    sinon.stub(database, 'newJob').resolves(jobResult);
 
     await jobManager.startJob(jobInput);
 
@@ -310,7 +403,7 @@ test.serial(`if the source is a file and the config is valid, it should create a
 
     const args = t.context.database.newJob.args[0];
 
-    t.is(args[0], jobInput.url);
+    t.is(args[0], jobResult.url);
     t.is(args[1], JobStatus.pending);
     t.deepEqual(args[2].length, 21);
     t.deepEqual(args[3].length, 7);
@@ -324,10 +417,13 @@ test.serial(`if the job exists and it isn't expired, it shouldn't create a new j
     sinon.spy(queueMethods, 'sendMessage');
     sinon.stub(database, 'getJobsByUrl').resolves(jobs);
     const jobInput = {
-        config: null,
-        rules: [],
-        source: ConfigSource.default,
-        url: 'http://sonarwhal.com'
+        fields: {
+            config: null,
+            rules: [],
+            source: ConfigSource.default,
+            url: 'http://sonarwhal.com'
+        },
+        files: {}
     };
 
     sinon.spy(database, 'newJob');
@@ -349,10 +445,13 @@ test.serial(`if the job exists, the status is neither finish or error, but finis
     sinon.spy(queueMethods, 'sendMessage');
     sinon.stub(database, 'getJobsByUrl').resolves(jobs);
     const jobInput = {
-        config: null,
-        rules: [],
-        source: ConfigSource.default,
-        url: 'http://sonarwhal.com'
+        fields: {
+            config: null,
+            rules: [],
+            source: ConfigSource.default,
+            url: 'http://sonarwhal.com'
+        },
+        files: {}
     };
 
     sinon.spy(database, 'newJob');
@@ -372,10 +471,13 @@ test.serial(`if the job is still running, it shouldn't create a new job`, async 
     sinon.spy(queueMethods, 'sendMessage');
     sinon.stub(database, 'getJobsByUrl').resolves(jobs);
     const jobInput = {
-        config: null,
-        rules: [],
-        source: ConfigSource.default,
-        url: 'http://sonarwhal.com'
+        fields: {
+            config: null,
+            rules: [],
+            source: ConfigSource.default,
+            url: 'http://sonarwhal.com'
+        },
+        files: {}
     };
 
     sinon.spy(database, 'newJob');

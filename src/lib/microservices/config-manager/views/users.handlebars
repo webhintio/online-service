@@ -1,0 +1,37 @@
+<section class="section">
+    <header>
+        <h2>Online service users panel</h2>
+        <h3>Users list</h3>
+    </header>
+    <div>
+        {{> new-user}}
+    </div>
+    <p class="error">{{error}}</p>
+    <div class="table--overflow">
+        <table>
+            <caption>Users</caption>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each users}}
+                <tr>
+                    <td>
+                        {{name}}
+                    </td>
+                    <td>
+                        <form class="admin-form" method="POST">
+                            <button type="submit">Delete</button>
+                            <input type="hidden" name="_method" value="DELETE" />
+                            <input type="hidden" name="name" value="{{name}}" />
+                        </form>
+                    </td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </div>
+</section>
