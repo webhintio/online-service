@@ -2,7 +2,7 @@ import { Schema } from 'mongoose';
 
 export const JobSchema: Schema = new Schema({
     config: {},
-    error: {},
+    error: [{}],
     finished: Date,
     id: String,
     queued: Date,
