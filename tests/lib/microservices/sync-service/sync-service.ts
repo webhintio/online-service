@@ -24,6 +24,7 @@ const data = {
     finished: JSON.parse(readFile(path.join(__dirname, 'fixtures', 'finished.json'))),
     finishedPart1: JSON.parse(readFile(path.join(__dirname, 'fixtures', 'finished-part1.json'))),
     finishedPart2: JSON.parse(readFile(path.join(__dirname, 'fixtures', 'finished-part2.json'))),
+    finishedWithError: JSON.parse(readFile(path.join(__dirname, 'fixtures', 'finished-with-error.json'))),
     started: JSON.parse(readFile(path.join(__dirname, 'fixtures', 'started.json')))
 };
 
@@ -51,7 +52,7 @@ test.beforeEach(async (t) => {
     t.context.queueObject = queueObject;
 });
 
-test.afterEach((t) => {
+test.afterEach.always((t) => {
     t.context.database.connect.restore();
     t.context.queueObject.Queue.restore();
     t.context.resultsQueue.listen.restore();
@@ -77,7 +78,7 @@ test.serial(`if a job doesn't exists in database, it should report an error and 
     t.context.logger.error.restore();
 });
 
-test.serial(`if the job in the database has the status 'error', it should unlock the key and return`, async (t) => {
+test.serial(`if the job in the database has the status 'error', it should work as normal`, async (t) => {
     t.context.job.status = JobStatus.error;
     sinon.stub(database, 'getJob').resolves(t.context.job);
 
@@ -87,7 +88,7 @@ test.serial(`if the job in the database has the status 'error', it should unlock
 
     t.true(t.context.database.lock.calledOnce);
     t.true(t.context.database.unlock.calledOnce);
-    t.false(t.context.database.updateJob.called);
+    t.true(t.context.database.updateJob.called);
 });
 
 test.serial(`if the job status is 'started' and the job status is database 'pending', it should update the status and the started property`, async (t) => {
@@ -153,12 +154,12 @@ test.serial(`if the job status is 'error', it should update the job in database 
     t.true(t.context.database.updateJob.called);
     const dbJob: IJob = t.context.database.updateJob.args[0][0];
 
-    t.is(dbJob.status, JobStatus.error);
+    t.not(dbJob.status, JobStatus.error);
     t.is(dbJob.finished, data.error.finished);
-    t.is(dbJob.error, data.error.error);
+    t.deepEqual(dbJob.error[0], data.error.error);
 });
 
-test.serial(`if the job status is 'finished' and all rules are processed, it should update rules and send the status finished`, async (t) => {
+test.serial(`if the job status is 'finished' and all rules are processed, it should update rules and send the status finished if there is no errors`, async (t) => {
     sinon.stub(database, 'getJob').resolves(t.context.job);
 
     await sync.run();
@@ -172,6 +173,49 @@ test.serial(`if the job status is 'finished' and all rules are processed, it sho
     const dbJob: IJob = t.context.database.updateJob.args[0][0];
 
     t.is(dbJob.status, JobStatus.finished);
+    t.is(dbJob.finished, data.finished.finished);
+
+    for (const rule of dbJob.rules) {
+        t.not(rule.status, RuleStatus.pending);
+    }
+});
+
+test.serial(`if the job status is 'finished' and all rules are processed, it should update rules and send the status error if there is a previous error in database`, async (t) => {
+    t.context.job.error = [data.error.error];
+    sinon.stub(database, 'getJob').resolves(t.context.job);
+
+    await sync.run();
+
+    await t.context.resultsQueue.listen.args[0][0](data.finished);
+
+    t.true(t.context.database.lock.calledOnce);
+    t.true(t.context.database.unlock.calledOnce);
+    t.true(t.context.database.updateJob.called);
+
+    const dbJob: IJob = t.context.database.updateJob.args[0][0];
+
+    t.is(dbJob.status, JobStatus.error);
+    t.is(dbJob.finished, data.finished.finished);
+
+    for (const rule of dbJob.rules) {
+        t.not(rule.status, RuleStatus.pending);
+    }
+});
+
+test.serial(`if the job status is 'finished' and all rules are processed, it should update rules and send the status error if there is any error`, async (t) => {
+    sinon.stub(database, 'getJob').resolves(t.context.job);
+
+    await sync.run();
+
+    await t.context.resultsQueue.listen.args[0][0](data.finishedWithError);
+
+    t.true(t.context.database.lock.calledOnce);
+    t.true(t.context.database.unlock.calledOnce);
+    t.true(t.context.database.updateJob.called);
+
+    const dbJob: IJob = t.context.database.updateJob.args[0][0];
+
+    t.is(dbJob.status, JobStatus.error);
     t.is(dbJob.finished, data.finished.finished);
 
     for (const rule of dbJob.rules) {

@@ -11,7 +11,8 @@ import { IConfig } from '@sonarwhal/sonar/dist/src/lib/types';
 
 import { debug as d } from './debug';
 import { ConfigSource } from '../enums/configsource';
-import { RequestData } from '../types';
+import { JobStatus } from '../enums/status';
+import { RequestData, IJob } from '../types';
 
 const debug: debug.IDebugger = d(__filename);
 const _readFileAsync = promisify(fs.readFile);
@@ -103,4 +104,19 @@ ${JSON.stringify(config)}`);
             rules.add(key);
         }
     }
+};
+
+/**
+ * Generate a log message for a job.
+ * @param {string} header - Log header.
+ * @param {IJob} job - Job to get the log info
+ */
+export const generateLog = (header: string, job: IJob, options: { showRule: boolean } = { showRule: false }) => {
+    const showRule = options.showRule && job.status !== JobStatus.started;
+
+    return `${header}:
+    - Id: ${job.id}
+    - Part: ${job.partInfo.part} of ${job.partInfo.totalParts}
+    - Status: ${job.status} ${showRule ? `
+    - Rule: ${job.rules[0].name}` : ''}`;
 };

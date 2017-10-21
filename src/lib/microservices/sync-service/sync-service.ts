@@ -4,6 +4,7 @@ import { IJobModel } from '../../common/database/models/job';
 import { IJob, Rule } from '../../types';
 import { JobStatus, RuleStatus } from '../../enums/status';
 import * as logger from '../../utils/logging';
+import { generateLog } from '../../utils/misc';
 
 const moduleName: string = 'Sync Service';
 /**
@@ -52,24 +53,13 @@ export const run = async () => {
     await database.connect(process.env.database); // eslint-disable-line no-process-env
 
     const listener = async (job: IJob) => {
-        logger.log(`Synchronizing Job: ${job.id} - Part ${job.partInfo.part} of ${job.partInfo.totalParts}`, moduleName);
+        logger.log(generateLog(`Synchronizing Job`, job, { showRule: true }), moduleName);
         const lock = await database.lock(job.id);
 
         const dbJob: IJobModel = await database.getJob(job.id);
 
         if (!dbJob) {
             logger.error(`Job ${job.id} not found in database`, moduleName);
-            await database.unlock(lock);
-
-            return;
-        }
-
-        // If the job fails at some point, ignore other messages.
-        // This can happen if for example we split the job in
-        // some groups of rules to run just a subset in each worker
-        // and for some reason, one of the execution fails.
-        if (dbJob.status === JobStatus.error) {
-            logger.error(`Synchronization skipped: Job ${job.id} status is error`, moduleName);
             await database.unlock(lock);
 
             return;
@@ -94,10 +84,14 @@ export const run = async () => {
             setRules(dbJob, job);
 
             if (job.status === JobStatus.error) {
-                dbJob.status = job.status;
-                dbJob.error = job.error;
-            } else if (isJobFinished(dbJob)) {
-                dbJob.status = job.status;
+                if (!dbJob.error) {
+                    dbJob.error = [];
+                }
+                dbJob.error.push(job.error);
+            }
+
+            if (isJobFinished(dbJob)) {
+                dbJob.status = dbJob.error && dbJob.error.length > 0 ? JobStatus.error : job.status;
             }
 
             if (!dbJob.finished || dbJob.finished < new Date(job.finished)) {
@@ -108,7 +102,7 @@ export const run = async () => {
         await database.updateJob(dbJob);
         await database.unlock(lock);
 
-        logger.log(`Synchronized Job: ${job.id} - Part ${job.partInfo.part} of ${job.partInfo.totalParts}`, moduleName);
+        logger.log(generateLog(`Synchronized Job`, job, { showRule: true }), moduleName);
     };
 
     try {

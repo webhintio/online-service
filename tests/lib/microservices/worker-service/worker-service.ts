@@ -32,8 +32,6 @@ test.beforeEach((t) => {
         .onSecondCall()
         .returns(resultsQueue);
 
-    sinon.spy(resultsQueue, 'sendMessage');
-
     t.context.queueObject = queueObject;
     t.context.resultsQueue = resultsQueue;
     t.context.jobsQueue = jobsQueue;
@@ -54,6 +52,7 @@ test.afterEach((t) => {
 });
 
 test.serial('Worker has to listen the jobs queue', async (t) => {
+    sinon.spy(resultsQueue, 'sendMessage');
     sinon.stub(jobsQueue, 'listen').resolves();
 
     await worker.run();
@@ -78,15 +77,21 @@ const commonStub = (emitter) => {
 
 test.serial(`If there is no problem running sonar, it should send a couple of messages with the current status`, async (t) => {
     const job = {
-        config: [{}],
+        config: [{ rules: { 'content-type': 'error' } }],
         id: 0,
         partInfo: {
             part: 1,
             totalParts: 5
         },
-        rules: []
+        rules: [{
+            category: 'interoperability',
+            name: 'content-type',
+            status: 'pending'
+        }]
     };
     const emitter = getEmitter();
+
+    sinon.spy(resultsQueue, 'sendMessage');
 
     commonStub(emitter);
 
@@ -94,6 +99,7 @@ test.serial(`If there is no problem running sonar, it should send a couple of me
 
     const promise = t.context.jobsQueue.listen.args[0][0](job);
 
+    // Wait a little bit to ensure that 'runSonar' was launched
     await delay(500);
     await emitter.emitAsync('message', {
         messages: [],
@@ -106,7 +112,7 @@ test.serial(`If there is no problem running sonar, it should send a couple of me
     t.is(t.context.resultsQueue.sendMessage.args[1][0].status, JobStatus.finished);
 });
 
-test.serial(`If there is no problem running sonar, it should send a couple of messages with the current status`, async (t) => {
+test.serial(`If there is a problem running sonar, it should send a couple of messages with the current status`, async (t) => {
     const job = {
         config: [{}],
         id: 0,
@@ -118,36 +124,7 @@ test.serial(`If there is no problem running sonar, it should send a couple of me
     };
     const emitter = getEmitter();
 
-    commonStub(emitter);
-
-    await worker.run();
-
-    const promise = t.context.jobsQueue.listen.args[0][0](job);
-
-    // Wait a little bit to ensure that 'runSonar' was launched
-    await delay(500);
-    await emitter.emitAsync('message', {
-        error: '"Error running sonar"',
-        ok: false
-    });
-
-    await promise;
-
-    t.true(t.context.resultsQueue.sendMessage.calledTwice);
-    t.is(t.context.resultsQueue.sendMessage.args[1][0].status, JobStatus.error);
-});
-
-test.serial(`If there is no problem running sonar, it should send a couple of messages with the current status`, async (t) => {
-    const job = {
-        config: [{}],
-        id: 0,
-        partInfo: {
-            part: 1,
-            totalParts: 5
-        },
-        rules: []
-    };
-    const emitter = getEmitter();
+    sinon.spy(resultsQueue, 'sendMessage');
 
     commonStub(emitter);
 
@@ -174,7 +151,143 @@ const getRule = (name: string, rules) => {
     });
 };
 
-test.serial(`If there is no problem running sonar, it should send to the queue the status of each configured rule`, async (t) => {
+test.serial(`If there is a problem running sonar, the job sent to the queue has all rules in the configuration set as error`, async (t) => {
+    const job = {
+        config: [{
+            rules: {
+                axe: 'warning',
+                'content-type': 'error',
+                'disown-opener': ['off', {}]
+            }
+        }],
+        id: 0,
+        partInfo: {
+            part: 1,
+            totalParts: 5
+        },
+        rules: [
+            {
+                name: 'axe',
+                status: RuleStatus.pending
+            },
+            {
+                name: 'content-type',
+                status: RuleStatus.pending
+            },
+            {
+                name: 'disown-opener',
+                status: RuleStatus.pending
+            },
+            {
+                name: 'manifest-exists',
+                status: RuleStatus.pending
+            }
+        ]
+    };
+    const emitter = getEmitter();
+
+    sinon.spy(resultsQueue, 'sendMessage');
+
+    commonStub(emitter);
+
+    await worker.run();
+
+    const promise = t.context.jobsQueue.listen.args[0][0](job);
+
+    // Wait a little bit to ensure that 'runSonar' was launched
+    await delay(500);
+    await emitter.emitAsync('message', {
+        error: '"Error running sonar"',
+        ok: false
+    });
+
+    await promise;
+
+    const jobSent = t.context.resultsQueue.sendMessage.args[1][0];
+    const rules = jobSent.rules;
+    const axe = getRule('axe', rules);
+    const contentType = getRule('content-type', rules);
+    const disown = getRule('disown-opener', rules);
+    const manifest = getRule('manifest-exists', rules);
+
+    t.true(t.context.resultsQueue.sendMessage.calledTwice);
+    t.is(jobSent.status, JobStatus.error);
+    t.is(axe.status, RuleStatus.error);
+    t.is(contentType.status, RuleStatus.error);
+    t.is(disown.status, RuleStatus.pass);
+    t.is(manifest.status, RuleStatus.pending);
+});
+
+test.serial(`If a message is too big for Service Bus, we should send the rule with just one common error message`, async (t) => {
+    const job = {
+        config: [{
+            rules: [
+                'axe'
+            ]
+        }],
+        id: 0,
+        partInfo: {
+            part: 1,
+            totalParts: 5
+        },
+        rules: [
+            {
+                name: 'axe',
+                status: RuleStatus.pending
+            },
+            {
+                name: 'content-type',
+                status: RuleStatus.pending
+            }
+        ]
+    };
+    const emitter = getEmitter();
+
+    t.plan(3);
+
+    sinon.stub(resultsQueue, 'sendMessage')
+        .onFirstCall()
+        .resolves()
+        .onSecondCall()
+        .callsFake((j) => {
+            // j.rules change in each call, so we need to test the value here for the second call.
+            t.is(j.rules[0].messages.length, 2);
+
+            const err = { statusCode: 413 };
+
+            throw err;
+        })
+        .onThirdCall()
+        .resolves();
+
+    commonStub(emitter);
+
+    await worker.run();
+
+    const promise = t.context.jobsQueue.listen.args[0][0](job);
+
+    // Wait a little bit to ensure that 'runSonar' was launched
+    await delay(500);
+    await emitter.emitAsync('message', {
+        messages: [{
+            message: 'First of a tons of messages',
+            ruleId: 'axe'
+        }, {
+            message: 'Second of a tons of messages',
+            ruleId: 'axe'
+        }],
+        ok: true
+    });
+
+    await promise;
+
+    const jobSent = t.context.resultsQueue.sendMessage.args[2][0];
+
+    t.is(t.context.resultsQueue.sendMessage.callCount, 3);
+    t.is(jobSent.rules[0].messages.length, 1);
+});
+
+test.serial(`If there is no problem running sonar, it should send to the queue as many messages as rules we have configured`, async (t) => {
     const job = {
         config: [{
             rules: [
@@ -204,6 +317,23 @@ test.serial(`If there is no problem running sonar, it should send to the queue t
     };
     const emitter = getEmitter();
 
+    t.plan(5);
+
+    sinon.stub(resultsQueue, 'sendMessage')
+        .onFirstCall()
+        .resolves()
+        .onSecondCall()
+        .callsFake((j) => {
+            // j.rules change in each call, so we need to test the value here for the first rule.
+            const axeRules = j.rules;
+            const axe = getRule('axe', axeRules);
+
+            t.is(axeRules.length, 1);
+            t.is(axe.status, RuleStatus.warning);
+        })
+        .onThirdCall()
+        .resolves();
+
     commonStub(emitter);
 
     await worker.run();
@@ -226,17 +356,12 @@ test.serial(`If there is no problem running sonar, it should send to the queue t
 
     await promise;
 
-    t.true(t.context.resultsQueue.sendMessage.calledTwice);
+    const contentTypeRules = t.context.resultsQueue.sendMessage.args[2][0].rules;
+    const contentType = getRule('content-type', contentTypeRules);
 
-    const sendedRules = t.context.resultsQueue.sendMessage.args[1][0].rules;
-
-    const axe = getRule('axe', sendedRules);
-    const contentType = getRule('content-type', sendedRules);
-    const disown = getRule('disown-opener', sendedRules);
-
-    t.is(axe.status, RuleStatus.warning);
+    t.is(t.context.resultsQueue.sendMessage.callCount, 3);
+    t.is(contentTypeRules.length, 1);
     t.is(contentType.status, RuleStatus.pass);
-    t.is(disown.status, RuleStatus.pending);
 });
 
 test.serial(`If sonar doesn't finish before the job.maxRunTime, it should send an error message to the queue`, async (t) => {
@@ -251,6 +376,8 @@ test.serial(`If sonar doesn't finish before the job.maxRunTime, it should send a
         rules: []
     };
     const emitter = getEmitter();
+
+    sinon.spy(resultsQueue, 'sendMessage');
 
     commonStub(emitter);
 
