@@ -9,3 +9,4 @@ compose/
 .eslintrc.json
 .gitignore
 .travis.yml
+scripts/
