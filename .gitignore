@@ -4,3 +4,5 @@ node_modules/
 .nyc_output/
 coverage/
 docker-compose.override.yml
+nginx-*.yml
+online-service-*.yml

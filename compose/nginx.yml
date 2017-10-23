@@ -1,0 +1,30 @@
+version: '3.3'
+
+services:
+      nginx:
+        build:
+            context: ../
+            dockerfile: Dockerfile.nginx
+        image: sonarwhal/nginx:latest
+        volumes:
+            - certs:/etc/letsencrypt
+            - certs-data:/data/letsencrypt
+        deploy:
+            replicas: 2
+            restart_policy:
+                condition: on-failure
+                delay: 5s
+                max_attempts: 3
+            update_config:
+                parallelism: 1
+                delay: 30s
+        ports:
+            - 80:80
+            - 443:443
+volumes:
+    certs:
+    certs-data:
+networks:
+  default:
+    external:
+      name: ingress

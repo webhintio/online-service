@@ -17,11 +17,12 @@ services:
                 delay: 10s
         environment:
             - port=80
-            - NODE_ENV=development
+            - NODE_ENV=production
+            - auth=<YourAuthCode>
             - queue=<YourAzureServiceBusConnectionString>
             - database=<YourDatabaseConnectionString>
         ports:
-            - "4000:80"
+            - "3000:80"
     worker-service:
         image: worker-service:latest
         build:
@@ -37,6 +38,7 @@ services:
                 parallelism: 2
                 delay: 10s
         environment:
+            - auth=<YourAuthCode>
             - queue=<YourAzureServiceBusConnectionString>
     sync-service:
         image: sync-service:latest
@@ -53,5 +55,6 @@ services:
                 parallelism: 2
                 delay: 10s
         environment:
+            - auth=<YourAuthCode>
             - queue=<YourAzureServiceBusConnectionString>
             - database=<YourDatabaseConnectionString>
