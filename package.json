@@ -30,7 +30,7 @@
     "@types/mongoose": "^4.7.19",
     "@types/multiparty": "0.0.31",
     "@types/node": "^8.0.19",
-    "ava": "^0.21.0",
+    "ava": "^0.23.0",
     "cpx": "^1.5.0",
     "eslint": "^4.3.0",
     "eslint-plugin-import": "^2.7.0",
