@@ -25,7 +25,8 @@ const data = {
     finishedPart1: JSON.parse(readFile(path.join(__dirname, 'fixtures', 'finished-part1.json'))),
     finishedPart2: JSON.parse(readFile(path.join(__dirname, 'fixtures', 'finished-part2.json'))),
     finishedWithError: JSON.parse(readFile(path.join(__dirname, 'fixtures', 'finished-with-error.json'))),
-    started: JSON.parse(readFile(path.join(__dirname, 'fixtures', 'started.json')))
+    started: JSON.parse(readFile(path.join(__dirname, 'fixtures', 'started.json'))),
+    startedNewId: JSON.parse(readFile(path.join(__dirname, 'fixtures', 'started-new-id.json')))
 };
 
 proxyquire('../../../../src/lib/microservices/sync-service/sync-service', {
@@ -68,7 +69,7 @@ test.serial(`if a job doesn't exists in database, it should report an error and 
 
     await sync.run();
 
-    await t.context.resultsQueue.listen.args[0][0](data.started);
+    await t.context.resultsQueue.listen.args[0][0]([data.started]);
 
     t.true(t.context.logger.error.calledOnce);
     t.true(t.context.database.lock.calledOnce);
@@ -84,7 +85,7 @@ test.serial(`if the job in the database has the status 'error', it should work a
 
     await sync.run();
 
-    await t.context.resultsQueue.listen.args[0][0](data.started);
+    await t.context.resultsQueue.listen.args[0][0]([data.started]);
 
     t.true(t.context.database.lock.calledOnce);
     t.true(t.context.database.unlock.calledOnce);
@@ -96,7 +97,7 @@ test.serial(`if the job status is 'started' and the job status is database 'pend
 
     await sync.run();
 
-    await t.context.resultsQueue.listen.args[0][0](data.started);
+    await t.context.resultsQueue.listen.args[0][0]([data.started]);
 
     t.true(t.context.database.lock.calledOnce);
     t.true(t.context.database.unlock.calledOnce);
@@ -113,7 +114,7 @@ test.serial(`if the job status is 'started' and the job status in database is no
 
     await sync.run();
 
-    await t.context.resultsQueue.listen.args[0][0](data.started);
+    await t.context.resultsQueue.listen.args[0][0]([data.started]);
 
     t.true(t.context.database.lock.calledOnce);
     t.true(t.context.database.unlock.calledOnce);
@@ -131,7 +132,7 @@ test.serial(`if the job status is 'started' and the property started in database
 
     await sync.run();
 
-    await t.context.resultsQueue.listen.args[0][0](data.started);
+    await t.context.resultsQueue.listen.args[0][0]([data.started]);
 
     t.true(t.context.database.lock.calledOnce);
     t.true(t.context.database.unlock.calledOnce);
@@ -147,7 +148,7 @@ test.serial(`if the job status is 'error', it should update the job in database 
 
     await sync.run();
 
-    await t.context.resultsQueue.listen.args[0][0](data.error);
+    await t.context.resultsQueue.listen.args[0][0]([data.error]);
 
     t.true(t.context.database.lock.calledOnce);
     t.true(t.context.database.unlock.calledOnce);
@@ -164,7 +165,7 @@ test.serial(`if the job status is 'finished' and all rules are processed, it sho
 
     await sync.run();
 
-    await t.context.resultsQueue.listen.args[0][0](data.finished);
+    await t.context.resultsQueue.listen.args[0][0]([data.finished]);
 
     t.true(t.context.database.lock.calledOnce);
     t.true(t.context.database.unlock.calledOnce);
@@ -186,7 +187,7 @@ test.serial(`if the job status is 'finished' and all rules are processed, it sho
 
     await sync.run();
 
-    await t.context.resultsQueue.listen.args[0][0](data.finished);
+    await t.context.resultsQueue.listen.args[0][0]([data.finished]);
 
     t.true(t.context.database.lock.calledOnce);
     t.true(t.context.database.unlock.calledOnce);
@@ -207,7 +208,7 @@ test.serial(`if the job status is 'finished' and all rules are processed, it sho
 
     await sync.run();
 
-    await t.context.resultsQueue.listen.args[0][0](data.finishedWithError);
+    await t.context.resultsQueue.listen.args[0][0]([data.finishedWithError]);
 
     t.true(t.context.database.lock.calledOnce);
     t.true(t.context.database.unlock.calledOnce);
@@ -228,20 +229,20 @@ test.serial(`if the job status is 'finished' but they are partial results, it sh
 
     await sync.run();
 
-    await t.context.resultsQueue.listen.args[0][0](data.started);
+    await t.context.resultsQueue.listen.args[0][0]([data.started]);
 
     let dbJob: IJob = t.context.database.updateJob.args[0][0];
 
     t.is(dbJob.status, JobStatus.started);
     t.is(dbJob.started, data.started.started);
 
-    await t.context.resultsQueue.listen.args[0][0](data.finishedPart1);
+    await t.context.resultsQueue.listen.args[0][0]([data.finishedPart1]);
 
     dbJob = t.context.database.updateJob.args[1][0];
 
     t.is(dbJob.status, JobStatus.started);
 
-    await t.context.resultsQueue.listen.args[0][0](data.finishedPart2);
+    await t.context.resultsQueue.listen.args[0][0]([data.finishedPart2]);
 
     dbJob = t.context.database.updateJob.args[2][0];
 
@@ -251,4 +252,28 @@ test.serial(`if the job status is 'finished' but they are partial results, it sh
     t.is(t.context.database.lock.callCount, 3);
     t.is(t.context.database.unlock.callCount, 3);
     t.is(t.context.database.updateJob.callCount, 3);
+});
+
+test.serial(`if the job receive more than one message from the same id, it should lock the database just once`, async (t) => {
+    sinon.stub(database, 'getJob').resolves(t.context.job);
+
+    await sync.run();
+
+    await t.context.resultsQueue.listen.args[0][0]([data.started, data.finishedPart1, data.finishedPart2]);
+
+    t.is(t.context.database.lock.callCount, 1);
+    t.is(t.context.database.unlock.callCount, 1);
+    t.is(t.context.database.updateJob.callCount, 1);
+});
+
+test.serial(`if the job receive two messages with different id, it should lock the database twice`, async (t) => {
+    sinon.stub(database, 'getJob').resolves(t.context.job);
+
+    await sync.run();
+
+    await t.context.resultsQueue.listen.args[0][0]([data.started, data.startedNewId]);
+
+    t.is(t.context.database.lock.callCount, 2);
+    t.is(t.context.database.unlock.callCount, 2);
+    t.is(t.context.database.updateJob.callCount, 2);
 });

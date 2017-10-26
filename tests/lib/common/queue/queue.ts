@@ -266,6 +266,71 @@ test.serial('if listen is call with the option pooling defined, it should use it
     t.context.azureSBService.deleteMessage.restore();
 });
 
+test.serial('the lisener should receive an array with as many messages as the option messagesToGet', async (t) => {
+    const message = { id: 'id', url: 'url' };
+
+    sinon.stub(azureSBService, 'receiveQueueMessage')
+        .callsFake((param1, param2, callback) => {
+            callback(null, { body: JSON.stringify(message) });
+        });
+    sinon.stub(azureSBService, 'deleteMessage').callsFake((param1, callback) => {
+        callback(null);
+    });
+
+    t.context.azureSBService = azureSBService;
+
+    const queueName = 'queueNme';
+    const queue = new Queue(queueName, 'connectionString');
+
+    t.plan(3);
+
+    await queue.listen((messages) => {
+        t.is(messages.length, 3);
+        queue.stopListener();
+    }, { messagesToGet: 3 });
+
+    t.is(t.context.azureSBService.deleteMessage.callCount, 3);
+    t.is(t.context.azureSBService.receiveQueueMessage.callCount, 3);
+
+    t.context.azureSBService.receiveQueueMessage.restore();
+    t.context.azureSBService.deleteMessage.restore();
+});
+
+test.serial('the lisener should receive an array with as many messages as the option messagesToGet or messages in the queue', async (t) => {
+    const message = { id: 'id', url: 'url' };
+
+    sinon.stub(azureSBService, 'receiveQueueMessage')
+        .onFirstCall()
+        .callsFake((param1, param2, callback) => {
+            callback(null, { body: JSON.stringify(message) });
+        })
+        .onSecondCall()
+        .callsFake((param1, param2, callback) => {
+            callback('No messages to receive');
+        });
+    sinon.stub(azureSBService, 'deleteMessage').callsFake((param1, callback) => {
+        callback(null);
+    });
+
+    t.context.azureSBService = azureSBService;
+
+    const queueName = 'queueNme';
+    const queue = new Queue(queueName, 'connectionString');
+
+    t.plan(3);
+
+    await queue.listen((messages) => {
+        t.is(messages.length, 1);
+        queue.stopListener();
+    }, { messagesToGet: 3 });
+
+    t.is(t.context.azureSBService.deleteMessage.callCount, 1);
+    t.is(t.context.azureSBService.receiveQueueMessage.callCount, 2);
+
+    t.context.azureSBService.receiveQueueMessage.restore();
+    t.context.azureSBService.deleteMessage.restore();
+});
+
 test.serial('if service bus returns an error 503, delay should be called with 10000', async (t) => {
     const message = { id: 'id', url: 'url' };
 

@@ -25,6 +25,8 @@ export class Queue {
     private pooling: number = 1000;
     /** Timeout id for the listener scheduler. */
     private timeoutId: number;
+    /** Number of messages to get by the listener */
+    private messagesToGet: number = 1;
 
     /**
      * @constructor
@@ -117,13 +119,31 @@ export class Queue {
         }, 'getting messages count in');
     }
 
+    private async getMessages(): Promise<Array<any>> {
+        let count = this.messagesToGet;
+        const messages = [];
+
+        while (count > 0) {
+            const message = await this.getMessage();
+
+            if (message) {
+                messages.push(message);
+                count--;
+            } else {
+                count = 0;
+            }
+        }
+
+        return messages;
+    }
+
     private async checkQueue() {
-        let message;
+        let messages;
 
         try {
-            message = await this.getMessage();
+            messages = await this.getMessages();
         } catch (err) {
-            message = null;
+            messages = null;
 
             if (err.code !== 'ETIMEDOUT') {
                 logger.error('Error getting message', moduleName, err);
@@ -134,25 +154,29 @@ export class Queue {
             }
         }
 
-        if (!message) {
+        if (messages.length === 0) {
             return null;
         }
 
         try {
-            await this.handler(message.data);
+            await this.handler(messages.map((message) => {
+                return message.data;
+            }));
 
             // Remove the message from the queue when the handler finishes.
-            await this.deleteMessage(message);
+            for (const message of messages) {
+                await this.deleteMessage(message);
+            }
 
             return 0;
         } catch (err) {
-            logger.error(`Error processing message: \n${JSON.stringify(message)}`, moduleName, err);
+            logger.error(`Error processing message: \n${JSON.stringify(messages)}`, moduleName, err);
 
             return null;
         }
     }
 
-    public async listen(handler: Function, options?): Promise<void> {
+    public async listen(handler: (jobs: Array<any>) => any, options?): Promise<void> {
         if (!handler) {
             throw new Error('Listen needs a handler to work');
         }
@@ -161,8 +185,9 @@ export class Queue {
             throw new Error('There is already a listener defined. Stop the previous one');
         }
 
-        if (options && options.pooling) {
-            this.pooling = options.pooling;
+        if (options) {
+            this.pooling = options.pooling || this.pooling;
+            this.messagesToGet = options.messagesToGet || this.messagesToGet;
         }
 
         this.stop = false;
