@@ -4,6 +4,7 @@ import { IProblem, Severity } from '@sonarwhal/sonar/dist/src/lib/types';
 import normalizeRules from '@sonarwhal/sonar/dist/src/lib/utils/normalize-rules';
 import * as path from 'path';
 
+import * as appInsight from '../../utils/appinsights';
 import { debug as d } from '../../utils/debug';
 import { Queue } from '../../common/queue/queue';
 import { IJob, JobResult, Rule } from '../../types';
@@ -11,6 +12,7 @@ import { JobStatus, RuleStatus } from '../../enums/status';
 import * as logger from '../../utils/logging';
 import { generateLog } from '../../utils/misc';
 
+const appInsightClient = appInsight.getClient();
 const debug: debug.IDebugger = d(__filename);
 const moduleName: string = 'Worker Service';
 const MAX_MESSAGE_SIZE = 220 * 1024; // size in kB
@@ -308,6 +310,7 @@ export const run = async () => {
     const sonarVersion: string = getSonarVersion();
 
     const listener = async (jobs: Array<IJob>) => {
+        const start = Date.now();
         const job = jobs[0];
 
         logger.log(generateLog('Processing Job', job), moduleName);
@@ -318,7 +321,13 @@ export const run = async () => {
 
             await sendStartedMessage(queueResults, job);
 
+            const sonarStart = Date.now();
             const result: Array<IProblem> = await runSonar(job);
+
+            appInsightClient.trackMetric({
+                name: 'run-sonar',
+                value: Date.now() - sonarStart
+            });
 
             parseResult(job, result, normalizedRules);
 
@@ -330,8 +339,14 @@ export const run = async () => {
             await sendResults(queueResults, job, normalizedRules);
 
             logger.log(generateLog('Processed Job', job), moduleName);
+
+            appInsightClient.trackMetric({
+                name: 'run-worker',
+                value: Date.now() - start
+            });
         } catch (err) {
             logger.error(generateLog('Error processing Job', job), moduleName, err);
+            appInsightClient.trackException({ exception: err });
             debug(err);
 
             setRulesToError(job, normalizedRules);

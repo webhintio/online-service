@@ -7,8 +7,11 @@ import { IJob, Rule } from '../../types';
 import { JobStatus, RuleStatus } from '../../enums/status';
 import * as logger from '../../utils/logging';
 import { generateLog } from '../../utils/misc';
+import * as appInsight from '../../utils/appinsights';
 
 const moduleName: string = 'Sync Service';
+const appInsightClient = appInsight.getClient();
+
 /**
  * Get a rule from rules given a rule name.
  * @param {string} name Name of the rule to get.
@@ -55,64 +58,78 @@ export const run = async () => {
     await database.connect(process.env.database); // eslint-disable-line no-process-env
 
     const listener = async (jobsArray: Array<IJob>) => {
-        const groups = _.groupBy(jobsArray, 'id');
+        try {
+            const start = Date.now();
+            const groups = _.groupBy(jobsArray, 'id');
 
-        for (const [id, jobs] of Object.entries(groups)) {
-            const lock = await database.lock(id);
-            const dbJob: IJobModel = await database.getJob(id);
+            for (const [id, jobs] of Object.entries(groups)) {
+                const lock = await database.lock(id);
+                const dbJob: IJobModel = await database.getJob(id);
 
-            if (!dbJob) {
-                logger.error(`Job ${id} not found in database`, moduleName);
-                await database.unlock(lock);
+                if (!dbJob) {
+                    logger.error(`Job ${id} not found in database`, moduleName);
+                    await database.unlock(lock);
 
-                return;
-            }
+                    appInsightClient.trackException({ exception: new Error(`Job ${id} not found in database`) });
 
-            for (const job of jobs) {
-                logger.log(generateLog(`Synchronizing Job`, job, { showRule: true }), moduleName);
-
-                if (job.status === JobStatus.started) {
-                    // When a job is split we receive more than one messages for the status `started`
-                    // but we only want to store in the database the first one.
-                    if (dbJob.status !== JobStatus.started) {
-                        dbJob.sonarVersion = job.sonarVersion;
-                    }
-
-                    if (!dbJob.started || dbJob.started > new Date(job.started)) {
-                        dbJob.started = job.started;
-                    }
-
-                    // double check just in case the started message is not the first one we are processing.
-                    if (dbJob.status === JobStatus.pending) {
-                        dbJob.status = job.status;
-                    }
-                } else {
-                    setRules(dbJob, job);
-
-                    if (job.status === JobStatus.error) {
-                        if (!dbJob.error) {
-                            dbJob.error = [];
-                        }
-                        dbJob.error.push(job.error);
-                    }
-
-                    if (isJobFinished(dbJob)) {
-                        dbJob.status = dbJob.error && dbJob.error.length > 0 ? JobStatus.error : job.status;
-                    }
-
-                    if (!dbJob.finished || dbJob.finished < new Date(job.finished)) {
-                        dbJob.finished = job.finished;
-                    }
+                    continue; // eslint-disable-line no-continue
                 }
 
-                logger.log(generateLog(`Synchronized Job`, job, { showRule: true }), moduleName);
+                for (const job of jobs) {
+                    logger.log(generateLog(`Synchronizing Job`, job, { showRule: true }), moduleName);
+
+                    if (job.status === JobStatus.started) {
+                        // When a job is split we receive more than one messages for the status `started`
+                        // but we only want to store in the database the first one.
+                        if (dbJob.status !== JobStatus.started) {
+                            dbJob.sonarVersion = job.sonarVersion;
+                        }
+
+                        if (!dbJob.started || dbJob.started > new Date(job.started)) {
+                            dbJob.started = job.started;
+                        }
+
+                        // double check just in case the started message is not the first one we are processing.
+                        if (dbJob.status === JobStatus.pending) {
+                            dbJob.status = job.status;
+                        }
+                    } else {
+                        setRules(dbJob, job);
+
+                        if (job.status === JobStatus.error) {
+                            if (!dbJob.error) {
+                                dbJob.error = [];
+                            }
+                            dbJob.error.push(job.error);
+                        }
+
+                        if (isJobFinished(dbJob)) {
+                            dbJob.status = dbJob.error && dbJob.error.length > 0 ? JobStatus.error : job.status;
+                        }
+
+                        if (!dbJob.finished || dbJob.finished < new Date(job.finished)) {
+                            dbJob.finished = job.finished;
+                        }
+                    }
+
+                    logger.log(generateLog(`Synchronized Job`, job, { showRule: true }), moduleName);
+                }
+
+                await database.updateJob(dbJob);
+
+                logger.log(`Job ${id} updated in database`);
+
+                await database.unlock(lock);
             }
 
-            await database.updateJob(dbJob);
+            appInsightClient.trackMetric({
+                name: 'run-sonar',
+                value: Date.now() - start
+            });
+        } catch (err) {
+            appInsightClient.trackException({ exception: err });
 
-            logger.log(`Job ${id} updated in database`);
-
-            await database.unlock(lock);
+            throw err;
         }
     };
 

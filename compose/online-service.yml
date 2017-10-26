@@ -40,6 +40,7 @@ services:
         environment:
             - auth=<YourAuthCode>
             - queue=<YourAzureServiceBusConnectionString>
+            - APP_INSIGHTS_KEY=<YourAppInsightKey>
     sync-service:
         image: sync-service:latest
         build:
@@ -58,3 +59,4 @@ services:
             - auth=<YourAuthCode>
             - queue=<YourAzureServiceBusConnectionString>
             - database=<YourDatabaseConnectionString>
+            - APP_INSIGHTS_KEY=<YourAppInsightKey>

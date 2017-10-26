@@ -47,6 +47,7 @@
   },
   "dependencies": {
     "@sonarwhal/sonar": "^0.13.0",
+    "applicationinsights": "^1.0.0",
     "azure-sb": "^0.10.4",
     "body-parser": "^1.17.2",
     "express": "^4.15.3",
