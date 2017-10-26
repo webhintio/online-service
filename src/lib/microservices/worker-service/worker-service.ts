@@ -254,7 +254,9 @@ export const run = async () => {
     const queueResults: Queue = new Queue('sonar-results', process.env.queue); // eslint-disable-line no-process-env
     const sonarVersion: string = getSonarVersion();
 
-    const listener = async (job: IJob) => {
+    const listener = async (jobs: Array<IJob>) => {
+        const job = jobs[0];
+
         logger.log(generateLog('Processing Job', job), moduleName);
         const normalizedRules = normalizeRules(job.config[0].rules);
 
@@ -287,7 +289,7 @@ export const run = async () => {
         }
     };
 
-    await queue.listen(listener);
+    await queue.listen(listener, { messagesToGet: 1 });
 
     return 0;
 };

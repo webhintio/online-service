@@ -97,7 +97,7 @@ test.serial(`If there is no problem running sonar, it should send a couple of me
 
     await worker.run();
 
-    const promise = t.context.jobsQueue.listen.args[0][0](job);
+    const promise = t.context.jobsQueue.listen.args[0][0]([job]);
 
     // Wait a little bit to ensure that 'runSonar' was launched
     await delay(500);
@@ -130,7 +130,7 @@ test.serial(`If there is a problem running sonar, it should send a couple of mes
 
     await worker.run();
 
-    const promise = t.context.jobsQueue.listen.args[0][0](job);
+    const promise = t.context.jobsQueue.listen.args[0][0]([job]);
 
     // Wait a little bit to ensure that 'runSonar' was launched
     await delay(500);
@@ -192,7 +192,7 @@ test.serial(`If there is a problem running sonar, the job sent to the queue has 
 
     await worker.run();
 
-    const promise = t.context.jobsQueue.listen.args[0][0](job);
+    const promise = t.context.jobsQueue.listen.args[0][0]([job]);
 
     // Wait a little bit to ensure that 'runSonar' was launched
     await delay(500);
@@ -264,7 +264,7 @@ test.serial(`If a message is too big for Service Bus, we should send the rule wi
 
     await worker.run();
 
-    const promise = t.context.jobsQueue.listen.args[0][0](job);
+    const promise = t.context.jobsQueue.listen.args[0][0]([job]);
 
     // Wait a little bit to ensure that 'runSonar' was launched
     await delay(500);
@@ -338,7 +338,7 @@ test.serial(`If there is no problem running sonar, it should send to the queue a
 
     await worker.run();
 
-    const promise = t.context.jobsQueue.listen.args[0][0](job);
+    const promise = t.context.jobsQueue.listen.args[0][0]([job]);
 
     // Wait a little bit to ensure that 'runSonar' was launched
     await delay(500);
@@ -382,7 +382,7 @@ test.serial(`If sonar doesn't finish before the job.maxRunTime, it should send a
     commonStub(emitter);
 
     await worker.run();
-    await t.context.jobsQueue.listen.args[0][0](job);
+    await t.context.jobsQueue.listen.args[0][0]([job]);
 
     t.true(t.context.resultsQueue.sendMessage.calledTwice);
 
