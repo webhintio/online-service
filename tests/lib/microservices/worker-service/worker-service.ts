@@ -1,8 +1,9 @@
+import * as fs from 'fs';
+
 import test from 'ava';
 import { EventEmitter2 as EventEmitter } from 'eventemitter2';
 import * as sinon from 'sinon';
 import * as proxyquire from 'proxyquire';
-
 
 const resultsQueue = { sendMessage() { } };
 const jobsQueue = { listen() { } };
@@ -75,6 +76,12 @@ const commonStub = (emitter) => {
     sinon.stub(jobsQueue, 'listen');
 };
 
+const getRule = (name: string, rules) => {
+    return rules.find((rule) => {
+        return rule.name === name;
+    });
+};
+
 test.serial(`If there is no problem running sonar, it should send a couple of messages with the current status`, async (t) => {
     const job = {
         config: [{ rules: { 'content-type': 'error' } }],
@@ -144,12 +151,6 @@ test.serial(`If there is a problem running sonar, it should send a couple of mes
     t.true(t.context.resultsQueue.sendMessage.calledTwice);
     t.is(t.context.resultsQueue.sendMessage.args[1][0].status, JobStatus.error);
 });
-
-const getRule = (name: string, rules) => {
-    return rules.find((rule) => {
-        return rule.name === name;
-    });
-};
 
 test.serial(`If there is a problem running sonar, the job sent to the queue has all rules in the configuration set as error`, async (t) => {
     const job = {
@@ -287,7 +288,7 @@ test.serial(`If a message is too big for Service Bus, we should send the rule wi
     t.is(jobSent.rules[0].messages.length, 1);
 });
 
-test.serial(`If there is no problem running sonar, it should send to the queue as many messages as rules we have configured`, async (t) => {
+test.serial(`If there is no problem running sonar, it should send to the queue one message if the size is smaller than MAX_MESSAGE_SIZE`, async (t) => {
     const job = {
         config: [{
             rules: [
@@ -317,21 +318,10 @@ test.serial(`If there is no problem running sonar, it should send to the queue a
     };
     const emitter = getEmitter();
 
-    t.plan(5);
-
     sinon.stub(resultsQueue, 'sendMessage')
         .onFirstCall()
         .resolves()
         .onSecondCall()
-        .callsFake((j) => {
-            // j.rules change in each call, so we need to test the value here for the first rule.
-            const axeRules = j.rules;
-            const axe = getRule('axe', axeRules);
-
-            t.is(axeRules.length, 1);
-            t.is(axe.status, RuleStatus.warning);
-        })
-        .onThirdCall()
         .resolves();
 
     commonStub(emitter);
@@ -356,13 +346,132 @@ test.serial(`If there is no problem running sonar, it should send to the queue a
 
     await promise;
 
-    const contentTypeRules = t.context.resultsQueue.sendMessage.args[2][0].rules;
-    const contentType = getRule('content-type', contentTypeRules);
+    const axe = getRule('axe', t.context.resultsQueue.sendMessage.args[1][0].rules);
+    const contentType = getRule('content-type', t.context.resultsQueue.sendMessage.args[1][0].rules);
 
-    t.is(t.context.resultsQueue.sendMessage.callCount, 3);
-    t.is(contentTypeRules.length, 1);
+    t.is(t.context.resultsQueue.sendMessage.callCount, 2);
+    t.is(axe.status, RuleStatus.warning);
     t.is(contentType.status, RuleStatus.pass);
 });
+
+test.serial(`If there is no problem running sonar, it should send to the queue 2 messages if the total size is bigger than MAX_MESSAGE_SIZE`, async (t) => {
+    const lipsum = fs.readFileSync(`${__dirname}/../fixtures/lipsum.txt`, 'utf-8'); // eslint-disable-line no-sync
+
+    const job = {
+        config: [{
+            rules: [
+                'axe:warning',
+                'content-type'
+            ]
+        }],
+        id: 0,
+        partInfo: {
+            part: 1,
+            totalParts: 5
+        },
+        rules: [
+            {
+                name: 'axe',
+                status: RuleStatus.pending
+            },
+            {
+                name: 'content-type',
+                status: RuleStatus.pending
+            }
+        ]
+    };
+    const emitter = getEmitter();
+
+    sinon.stub(resultsQueue, 'sendMessage')
+        .onFirstCall()
+        .resolves()
+        .onSecondCall()
+        .resolves();
+
+    commonStub(emitter);
+
+    await worker.run();
+
+    const promise = t.context.jobsQueue.listen.args[0][0]([job]);
+
+    // Wait a little bit to ensure that 'runSonar' was launched
+    await delay(500);
+    await emitter.emitAsync('message', {
+        messages: [{
+            message: lipsum,
+            ruleId: 'axe'
+        },
+        {
+            message: lipsum,
+            ruleId: 'content-type'
+        }],
+        ok: true
+    });
+
+    await promise;
+
+    t.is(t.context.resultsQueue.sendMessage.callCount, 3);
+});
+
+
+test.serial(`If there is no problem running sonar, it should send a "Too many errors" message if the messages are bigger than MAX_MESSAGE_SIZE`, async (t) => {
+    const lipsum = fs.readFileSync(`${__dirname}/../fixtures/lipsum.txt`, 'utf-8'); // eslint-disable-line no-sync
+
+    const job = {
+        config: [{
+            rules: [
+                'axe:warning',
+                'content-type'
+            ]
+        }],
+        id: 0,
+        partInfo: {
+            part: 1,
+            totalParts: 5
+        },
+        rules: [
+            {
+                name: 'axe',
+                status: RuleStatus.pending
+            },
+            {
+                name: 'content-type',
+                status: RuleStatus.pending
+            }
+        ]
+    };
+    const emitter = getEmitter();
+
+    sinon.stub(resultsQueue, 'sendMessage')
+        .onFirstCall()
+        .resolves();
+
+    commonStub(emitter);
+
+    await worker.run();
+
+    const promise = t.context.jobsQueue.listen.args[0][0]([job]);
+
+    // Wait a little bit to ensure that 'runSonar' was launched
+    await delay(500);
+    await emitter.emitAsync('message', {
+        messages: [{
+            message: lipsum + lipsum,
+            ruleId: 'axe'
+        }],
+        ok: true
+    });
+
+    await promise;
+
+    const axe = getRule('axe', t.context.resultsQueue.sendMessage.args[1][0].rules);
+
+    t.is(t.context.resultsQueue.sendMessage.callCount, 2);
+    t.is(axe.status, RuleStatus.warning);
+    t.is(axe.messages.length, 1);
+    t.is(axe.messages[0].message, 'This rule has too many errors, please use sonar locally for more details');
+});
+
 
 test.serial(`If sonar doesn't finish before the job.maxRunTime, it should send an error message to the queue`, async (t) => {
     const job = {

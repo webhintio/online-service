@@ -114,9 +114,17 @@ ${JSON.stringify(config)}`);
 export const generateLog = (header: string, job: IJob, options: { showRule: boolean } = { showRule: false }) => {
     const showRule = options.showRule && job.status !== JobStatus.started;
 
-    return `${header}:
+    let log = `${header}:
     - Id: ${job.id}
     - Part: ${job.partInfo.part} of ${job.partInfo.totalParts}
-    - Status: ${job.status} ${showRule ? `
-    - Rule: ${job.rules[0].name}` : ''}`;
+    - Status: ${job.status}`;
+
+    if (showRule) {
+        job.rules.forEach((rule) => {
+            log += `
+    - Rule: ${rule.name}`;
+        });
+    }
+
+    return log;
 };
