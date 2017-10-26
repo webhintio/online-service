@@ -46,7 +46,7 @@ test.serial('sendMessage should send a message to service bus', async (t) => {
 
     t.context.azureSBService = azureSBService;
 
-    const queueName = 'queueNme';
+    const queueName = 'queueName';
     const queue = new Queue(queueName, 'connectionString');
     const message = { id: 'id', url: 'url' };
 
@@ -72,7 +72,7 @@ test.serial('if sendMessage fails, it should retry it', async (t) => {
 
     t.context.azureSBService = azureSBService;
 
-    const queueName = 'queueNme';
+    const queueName = 'queueName';
     const queue = new Queue(queueName, 'connectionString');
     const message = { id: 'id', url: 'url' };
 
@@ -93,7 +93,7 @@ test.serial('if sendMessage fails always, it should return an error', async (t) 
 
     t.context.azureSBService = azureSBService;
 
-    const queueName = 'queueNme';
+    const queueName = 'queueName';
     const queue = new Queue(queueName, 'connectionString');
     const message = { id: 'id', url: 'url' };
 
@@ -117,7 +117,7 @@ test.serial(`getMessage should return a message and don't delete it`, async (t) 
 
     t.context.azureSBService = azureSBService;
 
-    const queueName = 'queueNme';
+    const queueName = 'queueName';
     const queue = new Queue(queueName, 'connectionString');
 
     const msg = await queue.getMessage();
@@ -137,7 +137,7 @@ test.serial(`if there is no messages in the queue, getMessage should return null
 
     t.context.azureSBService = azureSBService;
 
-    const queueName = 'queueNme';
+    const queueName = 'queueName';
     const queue = new Queue(queueName, 'connectionString');
 
     const msg = await queue.getMessage();
@@ -158,7 +158,7 @@ test.serial(`if there is another error, getMessage should return an error`, asyn
 
     t.context.azureSBService = azureSBService;
 
-    const queueName = 'queueNme';
+    const queueName = 'queueName';
     const queue = new Queue(queueName, 'connectionString');
 
     t.plan(3);
@@ -180,7 +180,7 @@ test.serial('getMessagesCount should return the number of active messages in the
         callback(null, queueResult);
     });
 
-    const queueName = 'queueNme';
+    const queueName = 'queueName';
     const queue = new Queue(queueName, 'connectionString');
 
     const result = await queue.getMessagesCount();
@@ -189,7 +189,7 @@ test.serial('getMessagesCount should return the number of active messages in the
 });
 
 test.serial(`if listen is called without handler, it should return an error`, async (t) => {
-    const queueName = 'queueNme';
+    const queueName = 'queueName';
     const queue = new Queue(queueName, 'connectionString');
 
     t.plan(1);
@@ -213,7 +213,7 @@ test.serial(`if a listener is called twice without stop it before, it should ret
 
     t.context.azureSBService = azureSBService;
 
-    const queueName = 'queueNme';
+    const queueName = 'queueName';
     const queue = new Queue(queueName, 'connectionString');
 
     t.plan(1);
@@ -252,7 +252,7 @@ test.serial('if listen is call with the option pooling defined, it should use it
 
     t.context.azureSBService = azureSBService;
 
-    const queueName = 'queueNme';
+    const queueName = 'queueName';
     const queue = new Queue(queueName, 'connectionString');
 
     await queue.listen(() => {
@@ -349,7 +349,7 @@ test.serial('if service bus returns an error 503, delay should be called with 10
 
     t.context.azureSBService = azureSBService;
 
-    const queueName = 'queueNme';
+    const queueName = 'queueName';
     const queue = new Queue(queueName, 'connectionString');
 
     await queue.listen(() => {
@@ -377,7 +377,7 @@ test.serial(`if the handler throws an error, then the message shouldn't be delet
 
     t.context.azureSBService = azureSBService;
 
-    const queueName = 'queueNme';
+    const queueName = 'queueName';
     const queue = new Queue(queueName, 'connectionString');
 
     let firstCall = true;

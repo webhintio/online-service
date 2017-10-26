@@ -13,6 +13,7 @@
   "private": true,
   "main": "./dist/src/index.js",
   "scripts": {
+    "ava": "ava",
     "build": "npm run clean && npm-run-all build:*",
     "build:ts": "tsc --outDir dist",
     "build:assets": "cpx \"./{scripts,src,tests}/**/{!(*.ts),.!(ts)}\" dist",

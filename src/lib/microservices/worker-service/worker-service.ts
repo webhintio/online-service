@@ -13,6 +13,7 @@ import { generateLog } from '../../utils/misc';
 
 const debug: debug.IDebugger = d(__filename);
 const moduleName: string = 'Worker Service';
+const MAX_MESSAGE_SIZE = 220 * 1024; // size in kB
 
 /**
  * Parse the result returned for sonar.
@@ -152,6 +153,27 @@ const getSonarVersion = (): string => {
     return pkg.version;
 };
 
+/** Directly removes the messages for a rule with a "Too many errors" message.
+ * @param {Rule} rule The rule to clean.
+ */
+const tooManyErrorsMessage = (rule: Rule): Rule => {
+    rule.messages = [{
+        location: {
+            column: -1,
+            elementColumn: -1,
+            elementLine: -1,
+            line: -1
+        },
+        message: 'This rule has too many errors, please use sonar locally for more details',
+        resource: null,
+        ruleId: rule.messages[0].ruleId,
+        severity: rule.messages[0].severity,
+        sourceCode: null
+    }];
+
+    return rule;
+};
+
 /**
  * Clean all messages in rules and set a default one.
  * @param {IJob} job Job to clean.
@@ -163,50 +185,81 @@ const cleanMessagesInRules = (job: IJob, normalizedRules) => {
             return;
         }
 
-        rule.messages = [{
-            location: {
-                column: -1,
-                elementColumn: -1,
-                elementLine: -1,
-                line: -1
-            },
-            message: 'This rule has too many errors, please use Sonar locally for more details',
-            resource: null,
-            ruleId: rule.messages[0].ruleId,
-            severity: rule.messages[0].severity,
-            sourceCode: null
-        }];
+        tooManyErrorsMessage(rule);
     });
 };
 
 /**
- * Send a message to the queue for each rule in the configuration.
+ * Sends a message with the results of a job.
+ * @param {Queue} queue - Queue where to send the message.
+ * @param job - Job processed that needs update.
+ * @param normalizedRules - Normalized job rules.
+ */
+const sendMessage = async (queue: Queue, job: IJob, normalizedRules) => {
+    try {
+        logger.log(generateLog('Sending message for Job', job, { showRule: true }), moduleName);
+        await queue.sendMessage(job);
+    } catch (err) {
+        // The status code can be 413 or 400.
+        if (err.statusCode === 413 || (err.statusCode === 400 && err.message.includes('The body of the message is too large.'))) {
+            cleanMessagesInRules(job, normalizedRules);
+            await queue.sendMessage(job);
+        } else {
+            throw err;
+        }
+    }
+};
+
+/**
+ * Sends the results to the results queue.
  * @param {Queue} queue - Queue where to send the messages.
  * @param {IJob} job - Job to get the messages.
  * @param normalizedRules - Normalized job rules.
  */
-const sendMessages = async (queue: Queue, job: IJob, normalizedRules) => {
+const sendResults = async (queue: Queue, job: IJob, normalizedRules) => {
+    let messageSize = JSON.stringify(job).length;
+
+    if (messageSize <= MAX_MESSAGE_SIZE) {
+        await sendMessage(queue, job, normalizedRules);
+
+        return;
+    }
+
     const cloneRules = job.rules.slice(0);
     const cloneJob = _.cloneDeep(job);
 
-    for (const rule of cloneRules) {
-        if (normalizedRules[rule.name]) {
-            cloneJob.rules = [rule];
+    cloneJob.rules = [];
 
-            try {
-                logger.log(generateLog('Sending message for Job', cloneJob, { showRule: true }), moduleName);
-                await queue.sendMessage(cloneJob);
-            } catch (err) {
-                // The status code can be 413 or 400.
-                if (err.statusCode === 413 || (err.statusCode === 400 && err.message.includes('The body of the message is too large.'))) {
-                    cleanMessagesInRules(cloneJob, normalizedRules);
+    while (cloneRules.length > 0) {
+        let rule = cloneRules.pop();
+        let ruleSize = JSON.stringify(rule).length;
 
-                    await queue.sendMessage(cloneJob);
-                } else {
-                    throw err;
-                }
-            }
+        if (!normalizedRules[rule.name]) {
+            continue; // eslint-disable-line no-continue
         }
+
+        if (ruleSize > MAX_MESSAGE_SIZE) {
+            rule = tooManyErrorsMessage(rule);
+            ruleSize = JSON.stringify(rule).length;
+        }
+
+        messageSize = JSON.stringify(cloneJob).length;
+
+        // Size is too big with the latest rule, we have to send all the previous ones
+        if (messageSize + ruleSize > MAX_MESSAGE_SIZE) {
+            // We send the previous version of `cloneJob`
+            await sendMessage(queue, cloneJob, normalizedRules);
+            // We clean `cloneJob`'s rules to not repeat results and add the new one
+            cloneJob.rules = [rule];
+        } else {
+            // Add rule to job
+            cloneJob.rules.push(rule);
+        }
+    }
+
+    // We might not have reached MAX_MESSAGE_SIZE with the last rule, send any remaining ones
+    if (cloneJob.rules.length > 0) {
+        await sendMessage(queue, cloneJob, normalizedRules);
     }
 };
 
@@ -274,7 +327,7 @@ export const run = async () => {
 
             debug(`Sending job result with status: ${job.status}`);
 
-            await sendMessages(queueResults, job, normalizedRules);
+            await sendResults(queueResults, job, normalizedRules);
 
             logger.log(generateLog('Processed Job', job), moduleName);
         } catch (err) {
