@@ -8,7 +8,7 @@
             }
         },
         "formatters": ["summary"],
-        "ignoredUrls": {},
+        "ignoredUrls": [],
         "rules": {
             "apple-touch-icons": "error",
             "axe": "error",
@@ -25,7 +25,7 @@
             }
         },
         "formatters": ["summary"],
-        "ignoredUrls": {},
+        "ignoredUrls": [],
         "rules": {
             "disown-opener": "error",
             "highest-available-document-mode": "error",
@@ -42,7 +42,7 @@
             }
         },
         "formatters": ["summary"],
-        "ignoredUrls": {},
+        "ignoredUrls": [],
         "rules": {
             "manifest-app-name": "error",
             "manifest-exists": "error",
@@ -60,7 +60,7 @@
             }
         },
         "formatters": ["summary"],
-        "ignoredUrls": {},
+        "ignoredUrls": [],
         "rules": {
             "manifest-is-valid": "error",
             "meta-charset-utf-8": "error",
@@ -77,7 +77,7 @@
             }
         },
         "formatters": ["summary"],
-        "ignoredUrls": {},
+        "ignoredUrls": [],
         "rules": {
             "no-disallowed-headers": "error",
             "no-friendly-error-pages": "error",
@@ -94,7 +94,7 @@
             }
         },
         "formatters": ["summary"],
-        "ignoredUrls": {},
+        "ignoredUrls": [],
         "rules": {
             "no-protocol-relative-urls": "error",
             "no-vulnerable-javascript-libraries": "error",
@@ -111,7 +111,7 @@
             }
         },
         "formatters": ["summary"],
-        "ignoredUrls": {},
+        "ignoredUrls": [],
         "rules": {
             "strict-transport-security": "error",
             "validate-set-cookie-header": "error",
