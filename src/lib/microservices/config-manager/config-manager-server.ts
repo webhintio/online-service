@@ -63,10 +63,7 @@ app.set('port', process.env.port || 3000); // eslint-disable-line no-process-env
 export const run = () => {
     return new Promise(async (resolve, reject) => {
         const server = http.createServer(app);
-
-        const startServer = () => {
-            server.listen(app.get('port'));
-        };
+        const port = parseInt(app.get('port'), 10) + 2;
 
         try {
             await database.connect(process.env.database); // eslint-disable-line no-process-env
@@ -75,15 +72,16 @@ export const run = () => {
         }
 
         server.on('listening', () => {
-            logger.log(`Server started on port ${app.get('port')}`, moduleName);
+            logger.log(`Server started on port ${port}`, moduleName);
+            resolve();
         });
 
         server.on('error', (e) => {
-            logger.error(`Error listening on port ${app.get('port')}`, moduleName);
+            logger.error(`Error listening on port ${port}`, moduleName);
             reject(e);
         });
 
-        return startServer();
+        return server.listen(port);
     });
 };
 
@@ -91,7 +89,7 @@ const index = (req, res) => {
     res.render('index');
 };
 
-const renderConfigAfterAction = async (action, res) => {
+const renderConfigList = async (action, res) => {
     try {
         await action();
 
@@ -105,11 +103,14 @@ const renderConfigAfterAction = async (action, res) => {
 };
 
 const configList = (req, res) => {
-    renderConfigAfterAction(() => { }, res);
+    renderConfigList(() => { }, res);
 };
 
 const getConfigData = async (req) => {
     const data = await getDataFromRequest(req);
+    // The package multiparty returns an array
+    // for all the properties, thats why we need
+    // the [0]
     const file = data.files.configurations[0];
     const configData: ConfigData = {
         filePath: file.size > 0 ? file.path : null,
@@ -122,7 +123,7 @@ const getConfigData = async (req) => {
 };
 
 const addConfig = (req, res) => {
-    renderConfigAfterAction(async () => {
+    renderConfigList(async () => {
         const configData: ConfigData = await getConfigData(req);
 
         return configManager.add(configData);
@@ -130,7 +131,7 @@ const addConfig = (req, res) => {
 };
 
 const activateConfig = (req, res) => {
-    renderConfigAfterAction(() => {
+    renderConfigList(() => {
         const name = req.body.name;
 
         return configManager.activate(name);
@@ -138,7 +139,7 @@ const activateConfig = (req, res) => {
 };
 
 const deleteConfig = (req, res) => {
-    renderConfigAfterAction(() => {
+    renderConfigList(() => {
         const name = req.body.name;
 
         return configManager.remove(name);

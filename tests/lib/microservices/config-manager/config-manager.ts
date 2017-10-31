@@ -103,7 +103,7 @@ test.serial('add should throw an error if the configuration is not an array', as
     try {
         await configManager.add(configData);
     } catch (err) {
-        t.is(err.message, 'Configuration file has to container an array of sonar configurations');
+        t.is(err.message, 'Configuration file has to contain an array of sonar configurations');
     }
 });
 

@@ -571,7 +571,7 @@ test.serial('removeConfiguration should remove a configuration', async (t) => {
     t.context.query.exec.restore();
 });
 
-test.serial('getActiveConfiguration  should return the active configuration', async (t) => {
+test.serial('getActiveConfiguration should return the active configuration', async (t) => {
     await connectDatabase();
 
     sinon.stub(query, 'exec').resolves();

@@ -3,7 +3,6 @@ import { IConnectorConfig, IRuleConfigList, RuleConfig, IConfig } from '@sonarwh
 import { options } from '../../cli/options';
 import * as database from '../../common/database/database';
 import * as configManager from './config-manager';
-import * as configManagerServer from './config-manager-server';
 import { CLIOptions, IServiceConfig } from '../../types';
 import * as logger from '../../utils/logging';
 
@@ -56,8 +55,6 @@ const printOptions = (config: IConfig) => {
  */
 export const run = async (cliOptions: CLIOptions) => {
     if (cliOptions.server) {
-        await configManagerServer.run();
-
         return 0;
     }
 

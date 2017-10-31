@@ -3,6 +3,8 @@ import { Strategy as GitHubStrategy } from 'passport-github2';
 
 import * as database from '../../../common/database/database';
 
+const { callbackURL, githubId, githubSecret } = process.env; // eslint-disable-line no-process-env
+
 passport.serializeUser((user, done) => {
     done(null, user);
 });
@@ -38,11 +40,9 @@ const registerEndpoints = (app) => {
  */
 export const configure = (app) => {
     passport.use(new GitHubStrategy({
-        /* eslint-disable no-process-env */
-        callbackURL: process.env.callbackURL,
-        clientID: process.env.githubId,
-        clientSecret: process.env.githubSecret
-        /* eslint-enable no-process-env */
+        callbackURL,
+        clientID: githubId,
+        clientSecret: githubSecret
     }, async (accessToken, refresToken, profile, done) => {
         const user = await database.getUserByName(profile.username);
 

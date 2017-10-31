@@ -15,7 +15,7 @@ const getConfigsFromFile = (filePath: string): Array<IConfig> => {
     const configs: Array<IConfig> = loadJSONFile(resolvedPath);
 
     if (!Array.isArray(configs)) {
-        throw new Error('Configuration file has to container an array of sonar configurations');
+        throw new Error('Configuration file has to contain an array of sonar configurations');
     }
 
     validateServiceConfig(configs);

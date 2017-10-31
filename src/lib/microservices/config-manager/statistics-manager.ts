@@ -5,6 +5,10 @@ import { JobStatus } from '../../enums/status';
 
 /**
  * Get the database basic information.
+ * # of scans
+ * # of scans in the last hour
+ * # of items in each status
+ * # of errors and jobs finished in the last hour
  */
 export const info = async (): Promise<Statistics> => {
     const anHourAgo = moment()
