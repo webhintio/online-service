@@ -124,7 +124,7 @@ button.mobile-nav-button {
 }
 
 .mobile-nav-button {
-    background-image: url("/images/mobile-menu-button.svg");
+    background-image: url("/admin/images/mobile-menu-button.svg");
     background-repeat: no-repeat;
     background-position: 1.2rem 50%;
     background-size: 2.5rem;
