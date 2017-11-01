@@ -7,6 +7,7 @@ import * as exphbs from 'express-handlebars';
 import * as handlebars from 'handlebars';
 import * as methodOverride from 'method-override';
 import * as session from 'express-session';
+import * as connectMongo from 'connect-mongo';
 
 import * as configManager from './config-manager';
 import * as userManager from './user-manager';
@@ -21,6 +22,7 @@ import * as passport from './auth/passport';
 const moduleName: string = 'Configuration Manager Server';
 const viewsPath: string = path.join(__dirname, 'views');
 const app = express();
+const MongoStore = connectMongo(session);
 
 const hbs = exphbs.create({
     compilerOptions: { preventIndent: true },
@@ -39,7 +41,8 @@ app.set('views', viewsPath);
 app.use(session({
     resave: false,
     saveUninitialized: false,
-    secret: process.env.sessionSecret // eslint-disable-line no-process-env
+    secret: process.env.sessionSecret, // eslint-disable-line no-process-env
+    store: new MongoStore({ url: process.env.database }) // eslint-disable-line no-process-env
 }));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -63,7 +66,7 @@ app.set('port', process.env.port || 3000); // eslint-disable-line no-process-env
 export const run = () => {
     return new Promise(async (resolve, reject) => {
         const server = http.createServer(app);
-        const port = parseInt(app.get('port'), 10) + 2;
+        const port = parseInt(app.get('port'), 10) + 1;
 
         try {
             await database.connect(process.env.database); // eslint-disable-line no-process-env
