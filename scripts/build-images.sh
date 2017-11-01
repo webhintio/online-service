@@ -3,6 +3,9 @@
 # Go to the parent folder
 cd ..
 
+# Build image for config manager
+docker build --file Dockerfile.configmanager . -t $1/config-manager
+
 # Build image for job manager
 docker build --file Dockerfile.jobmanager . -t $1/job-manager
 

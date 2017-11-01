@@ -12,6 +12,9 @@ then
     fi
 fi
 
+# Upload config manager image to the repository
+docker push $1/config-manager
+
 # Upload job manager image to the respository
 docker push $1/job-manager
 
