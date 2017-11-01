@@ -18,19 +18,19 @@ passport.deserializeUser((obj, done) => {
  * @param app express app.
  */
 const registerEndpoints = (app) => {
-    app.get('/login', (req, res) => {
+    app.get('/admin/login', (req, res) => {
         res.render('login', { user: req.user });
     });
 
-    app.get('/auth/github', passport.authenticate('github', {}), () => { });
+    app.get('/admin/auth/github', passport.authenticate('github', {}), () => { });
 
-    app.get('/auth/github/callback', passport.authenticate('github', { failureRedirect: '/login' }), (req, res) => {
-        res.redirect('/');
+    app.get('/admin/auth/github/callback', passport.authenticate('github', { failureRedirect: '/admin/login' }), (req, res) => {
+        res.redirect('/admin');
     });
 
-    app.get('/logout', (req, res) => {
+    app.get('/admin/logout', (req, res) => {
         req.logout();
-        res.redirect('/');
+        res.redirect('/admin');
     });
 };
 
@@ -67,5 +67,5 @@ export const ensureAuthenticated = (req, res, next) => {
         return next();
     }
 
-    return res.redirect('/login');
+    return res.redirect('/admin/login');
 };

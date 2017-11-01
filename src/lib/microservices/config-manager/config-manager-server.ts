@@ -24,6 +24,8 @@ const viewsPath: string = path.join(__dirname, 'views');
 const app = express();
 const MongoStore = connectMongo(session);
 
+const { database: connectionString, port, sessionSecret } = process.env; // eslint-disable-line no-process-env
+
 const hbs = exphbs.create({
     compilerOptions: { preventIndent: true },
     defaultLayout: 'main',
@@ -41,8 +43,8 @@ app.set('views', viewsPath);
 app.use(session({
     resave: false,
     saveUninitialized: false,
-    secret: process.env.sessionSecret, // eslint-disable-line no-process-env
-    store: new MongoStore({ url: process.env.database }) // eslint-disable-line no-process-env
+    secret: sessionSecret, // eslint-disable-line no-process-env
+    store: new MongoStore({ url: connectionString })
 }));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -60,31 +62,30 @@ app.use(methodOverride((req) => {
 }));
 
 passport.configure(app);
-app.set('port', process.env.port || 3000); // eslint-disable-line no-process-env
+app.set('port', parseInt(port, 10) + 1 || 3001);
 
 /** Initilize the server. */
 export const run = () => {
     return new Promise(async (resolve, reject) => {
         const server = http.createServer(app);
-        const port = parseInt(app.get('port'), 10) + 1;
 
         try {
-            await database.connect(process.env.database); // eslint-disable-line no-process-env
+            await database.connect(connectionString);
         } catch (err) {
             return reject(err);
         }
 
         server.on('listening', () => {
-            logger.log(`Server started on port ${port}`, moduleName);
+            logger.log(`Server started on port ${app.get('port')}`, moduleName);
             resolve();
         });
 
         server.on('error', (e) => {
-            logger.error(`Error listening on port ${port}`, moduleName);
+            logger.error(`Error listening on port ${app.get('port')}`, moduleName);
             reject(e);
         });
 
-        return server.listen(port);
+        return server.listen(app.get('port'));
     });
 };
 
@@ -169,7 +170,7 @@ const editConfig = async (req, res) => {
     try {
         await configManager.edit(oldName, configData);
 
-        res.redirect('/config/list');
+        res.redirect('/admin/config');
     } catch (err) {
         res.render('config-edit', {
             config: await configManager.get(oldName),
@@ -208,17 +209,17 @@ const generalStatistics = async (req, res) => {
 };
 
 // This endpoint is just for testing purpose
-app.get('/', passport.ensureAuthenticated, index);
-app.get('/config', passport.ensureAuthenticated, configList);
-app.post('/config', passport.ensureAuthenticated, addConfig);
-app.put('/config', passport.ensureAuthenticated, activateConfig);
-app.delete('/config', passport.ensureAuthenticated, deleteConfig);
-app.get('/config/edit/:name', passport.ensureAuthenticated, showConfig);
-app.post('/config/edit/:name', passport.ensureAuthenticated, editConfig);
-app.get('/users', passport.ensureAuthenticated, usersList);
-app.post('/users', passport.ensureAuthenticated, addUser);
-app.delete('/users', passport.ensureAuthenticated, deleteUser);
-app.get('/statistics', passport.ensureAuthenticated, generalStatistics);
+app.get('/admin', passport.ensureAuthenticated, index);
+app.get('/admin/config', passport.ensureAuthenticated, configList);
+app.post('/admin/config', passport.ensureAuthenticated, addConfig);
+app.put('/admin/config', passport.ensureAuthenticated, activateConfig);
+app.delete('/admin/config', passport.ensureAuthenticated, deleteConfig);
+app.get('/admin/config/edit/:name', passport.ensureAuthenticated, showConfig);
+app.post('/admin/config/edit/:name', passport.ensureAuthenticated, editConfig);
+app.get('/admin/users', passport.ensureAuthenticated, usersList);
+app.post('/admin/users', passport.ensureAuthenticated, addUser);
+app.delete('/admin/users', passport.ensureAuthenticated, deleteUser);
+app.get('/admin/statistics', passport.ensureAuthenticated, generalStatistics);
 
 if (process.argv[1].includes('config-manager-server.js')) {
     run();
