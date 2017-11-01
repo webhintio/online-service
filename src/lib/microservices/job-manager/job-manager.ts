@@ -6,12 +6,12 @@ import { loadRule } from '@sonarwhal/sonar/dist/src/lib/utils/resource-loader';
 
 import * as database from '../../common/database/database';
 import * as configManager from '../config-manager/config-manager';
-import { IJob, IServiceConfig, RequestData, Rule } from '../../types';
+import { IJob, IServiceConfig, RequestData, Rule, JobData } from '../../types';
 import { JobStatus, RuleStatus } from '../../enums/status';
 import { ConfigSource } from '../../enums/configsource';
 import { Queue } from '../../common/queue/queue';
 import { debug as d } from '../../utils/debug';
-import { validateServiceConfig } from '../../utils/misc';
+import { validateServiceConfig, readFileAsync } from '../../utils/misc';
 import * as logger from '../../utils/logging';
 
 const debug: debug.IDebugger = d(__filename);
@@ -71,7 +71,7 @@ const validateConfigs = (config: IConfig | Array<IConfig>) => {
  * Get the right configuration for the job.
  * @param {RequestData} data - The data the user sent in the request.
  */
-const getConfig = (data: RequestData, serviceConfig: IServiceConfig): Array<IConfig> => {
+const getConfig = (data: JobData, serviceConfig: IServiceConfig): Array<IConfig> => {
     const source: ConfigSource = data.source;
     let config: Array<IConfig>;
 
@@ -126,13 +126,38 @@ const sendMessagesToQueue = async (job: IJob) => {
 };
 
 /**
+ * Parse data sent in the request is valid
+ * @param {RequestData} data - Data received in the request
+ */
+const parseRequestData = async (data: RequestData): Promise<JobData> => {
+    if (!data.fields.url || !data.fields.url[0]) {
+        throw new Error('Url is required');
+    }
+
+    const file = data.files['config-file'] ? data.files['config-file'][0] : null;
+
+    try {
+        return {
+            config: file && file.size > 0 ? JSON.parse(await readFileAsync(file.path)) : null,
+            rules: data.fields.rules,
+            source: data.fields.source ? data.fields.source[0] : ConfigSource.default,
+            url: data.fields.url ? data.fields.url[0] : null
+        };
+    } catch (err) {
+        throw new Error('Error parsing request data');
+    }
+};
+
+/**
  * Create a new job into the database and into the queue to process the request.
  * @param {RequestData} data - The data the user sent in the request.
  */
 export const startJob = async (data: RequestData): Promise<IJob> => {
     /*
-        1. Lock database by url
-        2. Check if the job exists having into account if the configuration is the same
+        1. Validate input data
+        2. Parse input data
+        3. Lock database by url
+        4. Check if the job exists having into account if the configuration is the same
             a) If the job exists
                 I) The job is obsolete
                     i) Create a new job
@@ -141,19 +166,21 @@ export const startJob = async (data: RequestData): Promise<IJob> => {
             b) If the job doesn't exist
                 I) Create a new job
                 II) Add job to the queue
-        3. Unlock database by url
+        5. Unlock database by url
      */
-    const serviceConfig: IServiceConfig = await configManager.getActiveConfiguration();
-    const lock = await database.lock(data.url);
+    const jobData: JobData = await parseRequestData(data);
 
-    const config: Array<IConfig> = getConfig(data, serviceConfig);
-    const jobs: Array<IJob> = await database.getJobsByUrl(data.url);
+    const serviceConfig: IServiceConfig = await configManager.active();
+    const lock = await database.lock(jobData.url);
+
+    const config: Array<IConfig> = getConfig(jobData, serviceConfig);
+    const jobs: Array<IJob> = await database.getJobsByUrl(jobData.url);
     let job = getActiveJob(jobs, config, serviceConfig.jobCacheTime);
 
     if (jobs.length === 0 || !job) {
         logger.log('Active job not found, creating a new job', moduleName);
 
-        job = await createNewJob(data.url, config, serviceConfig.jobRunTime);
+        job = await createNewJob(jobData.url, config, serviceConfig.jobRunTime);
 
         logger.log(`Created new Job with id ${job.id}`, moduleName);
 

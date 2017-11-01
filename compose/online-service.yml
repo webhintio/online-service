@@ -1,6 +1,32 @@
 version: '3.3'
 
 services:
+    config-manager:
+        image: config-manager:latest
+        build:
+            context: ../
+            dockerfile: Dockerfile.configmanager
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: on-failure
+                delay: 5s
+                max_attemps: 3
+            update_config:
+                parallelism: 2
+                delay: 10s
+        environtment:
+            - port=80
+            - NODE_ENV=production
+            - auth=<YourAuthCode>
+            - queue=<YourAzureServiceBusConnectionString>
+            - database=<YourDatabaseConnectionString>
+            - sessionSecret=<YourSessionSecret>
+            - callbackURL=<YourCallbackUrl>
+            - githubId=<YourGithubClientId>
+            - githubSecret=<YourGithubSecret>
+        ports:
+            - "3001:81"
     job-manager:
         image: job-manager:latest
         build:

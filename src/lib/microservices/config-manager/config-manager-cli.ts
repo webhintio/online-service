@@ -54,11 +54,20 @@ const printOptions = (config: IConfig) => {
  * @param {CLIOptions} cliOptions Options from the CLI.
  */
 export const run = async (cliOptions: CLIOptions) => {
+    if (cliOptions.server) {
+        return 0;
+    }
+
     await database.connect(process.env.database); // eslint-disable-line no-process-env
 
     if (cliOptions.file) {
         try {
-            const newConfig: IServiceConfig = await configManager.createNewConfiguration(cliOptions.name, cliOptions.cache, cliOptions.run, cliOptions.file);
+            const newConfig: IServiceConfig = await configManager.add({
+                filePath: cliOptions.file,
+                jobCacheTime: cliOptions.cache,
+                jobRunTime: cliOptions.run,
+                name: cliOptions.name
+            });
 
             logger.log(`Configuration '${newConfig.name}' created.`, moduleName);
 
@@ -75,7 +84,7 @@ export const run = async (cliOptions: CLIOptions) => {
     }
 
     if (cliOptions.activate) {
-        const config: IServiceConfig = await configManager.activateConfiguration(cliOptions.name);
+        const config: IServiceConfig = await configManager.activate(cliOptions.name);
 
         logger.log(`Configuration '${config.name}' activated.`);
 
@@ -83,7 +92,7 @@ export const run = async (cliOptions: CLIOptions) => {
     }
 
     if (cliOptions.list) {
-        const configurations: Array<IServiceConfig> = await configManager.listConfigurations();
+        const configurations: Array<IServiceConfig> = await configManager.list();
 
         if (configurations.length === 0) {
             logger.log('There is no configuration stored in database');

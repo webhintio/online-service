@@ -1,0 +1,33 @@
+<section class="section">
+    <header>
+        <h2>Online Service Statistics</h2>
+    </header>
+    <div>
+        <ul>
+            <li>
+                <span># of scans: {{info.scans}}</span>
+            </li>
+            <li>
+                <span># of scans Last hour: {{info.scansLastHour}}</span>
+            </li>
+            <li>
+                <span># of errors: {{info.status.error}}</span>
+            </li>
+            <li>
+                <span># of errors last hour: {{info.statusLastHour.error}}</span>
+            </li>
+            <li>
+                <span># of finished: {{info.status.finished}}</span>
+            </li>
+            <li>
+                <span># of finished last hour: {{info.statusLastHour.finished}}</span>
+            </li>
+            <li>
+                <span># of pending: {{info.status.pending}}</span>
+            </li>
+            <li>
+                <span># of started: {{info.status.started}}</span>
+            </li>
+        </ul>
+    </div>
+</section>

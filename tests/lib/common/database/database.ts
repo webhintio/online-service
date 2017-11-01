@@ -20,7 +20,11 @@ const mongoDBLock = () => {
     return dbLock;
 };
 
-const query = { exec() { } };
+const query = {
+    count() { },
+    exec() { },
+    remove() { }
+};
 
 const modelObject = { save() { } };
 
@@ -42,9 +46,19 @@ ServiceConfig.findOne = () => { };
 
 const serviceConfigModels = { ServiceConfig };
 
+const User: any = function () {
+    return modelObject;
+};
+
+User.find = () => { };
+User.findOne = () => { };
+
+const userModels = { User };
+
 proxyquire('../../../../src/lib/common/database/database', {
     './models/job': jobModels,
     './models/serviceconfig': serviceConfigModels,
+    './models/user': userModels,
     'mongodb-lock': mongoDBLock,
     mongoose
 });
@@ -79,12 +93,17 @@ test.beforeEach((t) => {
     sinon.stub(Job, 'findOne').returns(query);
     sinon.stub(ServiceConfig, 'find').returns(query);
     sinon.stub(ServiceConfig, 'findOne').returns(query);
+    sinon.stub(User, 'find').returns(query);
+    sinon.stub(User, 'findOne').returns(query);
+    sinon.stub(query, 'remove').returns(query);
+    sinon.stub(query, 'count').returns(query);
 
     t.context.mongoose = mongoose;
     t.context.ServiceConfig = ServiceConfig;
     t.context.dbLock = dbLock;
     t.context.Job = Job;
     t.context.query = query;
+    t.context.User = User;
 });
 
 test.afterEach.always((t) => {
@@ -100,10 +119,14 @@ test.afterEach.always((t) => {
         t.context.dbLock.ensureIndexes.restore();
     }
 
+    t.context.query.remove.restore();
+    t.context.query.count.restore();
     t.context.Job.find.restore();
     t.context.Job.findOne.restore();
     t.context.ServiceConfig.find.restore();
     t.context.ServiceConfig.findOne.restore();
+    t.context.User.find.restore();
+    t.context.User.findOne.restore();
 });
 
 test.serial('unlock should fail if database is not connected', async (t) => {
@@ -184,6 +207,78 @@ test.serial('getActiveConfiguration should fail if database is not connected', a
     t.plan(1);
     try {
         await database.getActiveConfiguration();
+    } catch (err) {
+        t.is(err.message, 'Database not connected');
+    }
+});
+
+test.serial('getConfigurationByName should fail if database is not connected', async (t) => {
+    t.plan(1);
+    try {
+        await database.getConfigurationByName('name');
+    } catch (err) {
+        t.is(err.message, 'Database not connected');
+    }
+});
+
+test.serial('removeConfiguration should fail if database is not connected', async (t) => {
+    t.plan(1);
+    try {
+        await database.removeConfiguration('name');
+    } catch (err) {
+        t.is(err.message, 'Database not connected');
+    }
+});
+
+test.serial('editConfiguration should fail if database is not connected', async (t) => {
+    t.plan(1);
+    try {
+        await database.editConfiguration('name', 'newName', 100, 100, null);
+    } catch (err) {
+        t.is(err.message, 'Database not connected');
+    }
+});
+
+test.serial('addUser should fail if database is not connected', async (t) => {
+    t.plan(1);
+    try {
+        await database.addUser('name');
+    } catch (err) {
+        t.is(err.message, 'Database not connected');
+    }
+});
+
+test.serial('getUserByName should fail if database is not connected', async (t) => {
+    t.plan(1);
+    try {
+        await database.getUserByName('name');
+    } catch (err) {
+        t.is(err.message, 'Database not connected');
+    }
+});
+
+test.serial('removeUserByName should fail if database is not connected', async (t) => {
+    t.plan(1);
+    try {
+        await database.removeUserByName('name');
+    } catch (err) {
+        t.is(err.message, 'Database not connected');
+    }
+});
+
+test.serial('getStatusCount should fail if database is not connected', async (t) => {
+    t.plan(1);
+    try {
+        await database.getStatusCount(JobStatus.error);
+    } catch (err) {
+        t.is(err.message, 'Database not connected');
+    }
+});
+
+test.serial('getJobsCount should fail if database is not connected', async (t) => {
+    t.plan(1);
+    try {
+        await database.getJobsCount();
     } catch (err) {
         t.is(err.message, 'Database not connected');
     }
@@ -443,6 +538,232 @@ test.serial('listConfigurations should returns a list of configurations', async 
     const list = await database.listConfigurations();
 
     t.is(list, configurations);
+
+    t.context.query.exec.restore();
+});
+
+test.serial('getConfigurationByName should return a configuration', async (t) => {
+    await connectDatabase();
+    const config = { name: 'config' };
+
+    sinon.stub(query, 'exec').resolves(config);
+
+    const result = await database.getConfigurationByName('config');
+
+    t.true(t.context.query.exec.calledOnce);
+    t.true(t.context.ServiceConfig.findOne.calledOnce);
+    t.is(result, config);
+
+    t.context.query.exec.restore();
+});
+
+test.serial('removeConfiguration should remove a configuration', async (t) => {
+    await connectDatabase();
+
+    sinon.stub(query, 'exec').resolves();
+
+    await database.removeConfiguration('config');
+
+    t.true(t.context.query.exec.calledOnce);
+    t.true(t.context.query.remove.calledOnce);
+    t.true(t.context.ServiceConfig.findOne.calledOnce);
+
+    t.context.query.exec.restore();
+});
+
+test.serial('getActiveConfiguration should return the active configuration', async (t) => {
+    await connectDatabase();
+
+    sinon.stub(query, 'exec').resolves();
+
+    await database.getActiveConfiguration();
+
+    t.true(t.context.query.exec.calledOnce);
+    t.true(t.context.ServiceConfig.findOne.calledOnce);
+    t.true(t.context.ServiceConfig.findOne.args[0][0].active);
+
+    t.context.query.exec.restore();
+});
+
+test.serial(`editConfiguration shouldn't modify the sonarConfigs property if config is null`, async (t) => {
+    await connectDatabase();
+    const config = {
+        jobCacheTime: 1,
+        jobRunTime: 1,
+        markModified() { },
+        name: 'oldName',
+        save() { },
+        sonarConfigs: {}
+    };
+
+    t.context.config = config;
+
+    sinon.spy(config, 'markModified');
+    sinon.stub(query, 'exec').resolves(config);
+
+    const result = await database.editConfiguration('oldName', 'newName', 100, 200);
+
+    t.is(result.name, 'newName');
+    t.is(result.jobCacheTime, 100);
+    t.is(result.jobRunTime, 200);
+    t.is(result.sonarConfigs, config.sonarConfigs);
+    t.false(t.context.config.markModified.called);
+
+    t.context.config.markModified.restore();
+    t.context.query.exec.restore();
+});
+
+test.serial(`editConfiguration should modify the sonarConfigs property if config isn't null`, async (t) => {
+    await connectDatabase();
+    const config = {
+        jobCacheTime: 1,
+        jobRunTime: 1,
+        markModified() { },
+        name: 'oldName',
+        save() { },
+        sonarConfigs: {}
+    };
+
+    const sonarConfigs: Array<IConfig> = [{
+        connector: {
+            name: 'jsdom',
+            options: {}
+        }
+    }];
+
+    t.context.config = config;
+
+    sinon.spy(config, 'markModified');
+    sinon.stub(query, 'exec').resolves(config);
+
+    const result = await database.editConfiguration('oldName', 'newName', 100, 200, sonarConfigs);
+
+    t.is(result.name, 'newName');
+    t.is(result.jobCacheTime, 100);
+    t.is(result.jobRunTime, 200);
+    t.is(result.sonarConfigs, sonarConfigs);
+    t.true(t.context.config.markModified.calledOnce);
+    t.is(t.context.config.markModified.args[0][0], 'sonarConfigs');
+
+    t.context.config.markModified.restore();
+    t.context.query.exec.restore();
+});
+
+test.serial('newUser should save a new user in database', async (t) => {
+    await connectDatabase();
+
+    sinon.stub(modelObject, 'save').resolves();
+
+    t.context.modelObject = modelObject;
+
+    await database.addUser('userName');
+
+    t.true(t.context.modelObject.save.calledOnce);
+
+    t.context.modelObject.save.restore();
+});
+
+test.serial('getUsers should return all users in the database', async (t) => {
+    await connectDatabase();
+
+    sinon.stub(query, 'exec').resolves();
+
+    await database.getUsers();
+
+    t.deepEqual(t.context.User.find.args[0][0], {});
+    t.true(t.context.User.find.calledOnce);
+
+    t.context.query.exec.restore();
+});
+
+test.serial('getUserByName should return an user', async (t) => {
+    const name = 'userName';
+
+    await connectDatabase();
+
+    sinon.stub(query, 'exec').resolves();
+
+    await database.getUserByName(name);
+
+    t.deepEqual(t.context.User.findOne.args[0][0].name, name);
+    t.true(t.context.User.findOne.calledOnce);
+
+    t.context.query.exec.restore();
+});
+
+test.serial('removeUser should remove an user from the database', async (t) => {
+    const name = 'userName';
+
+    await connectDatabase();
+
+    sinon.stub(query, 'exec').resolves();
+
+    await database.removeUserByName(name);
+
+    t.true(t.context.query.exec.calledOnce);
+    t.true(t.context.query.remove.calledOnce);
+    t.true(t.context.User.findOne.calledOnce);
+    t.is(t.context.User.findOne.args[0][0].name, name);
+
+    t.context.query.exec.restore();
+});
+
+test.serial('getStatusCount should return the number of jobs with that status', async (t) => {
+    sinon.stub(query, 'exec').resolves();
+
+    await database.getStatusCount(JobStatus.error);
+
+    t.true(t.context.query.count.calledOnce);
+    t.true(t.context.query.exec.calledOnce);
+    t.true(t.context.Job.find.calledOnce);
+    t.is(t.context.Job.find.args[0][0].status, JobStatus.error);
+
+    t.context.query.exec.restore();
+});
+
+test.serial('getStatusCount with a since parameter should return the number of jobs since that date with that status', async (t) => {
+    sinon.stub(query, 'exec').resolves();
+
+    const since = new Date();
+
+    await database.getStatusCount(JobStatus.error, {
+        field: 'finished',
+        since
+    });
+
+    t.true(t.context.query.count.calledOnce);
+    t.true(t.context.query.exec.calledOnce);
+    t.true(t.context.Job.find.calledOnce);
+    t.is(t.context.Job.find.args[0][0].status, JobStatus.error);
+    t.is(t.context.Job.find.args[0][0].finished.$gte, since);
+
+    t.context.query.exec.restore();
+});
+
+test.serial('getJobsCount should return the number of jobs in the database', async (t) => {
+    sinon.stub(query, 'exec').resolves();
+
+    await database.getJobsCount();
+
+    t.true(t.context.query.count.calledOnce);
+    t.true(t.context.query.exec.calledOnce);
+    t.true(t.context.Job.find.calledOnce);
+    t.deepEqual(t.context.Job.find.args[0][0], {});
+
+    t.context.query.exec.restore();
+});
+
+test.serial('getJobsCount with a since parameter should return the number of jobs since that date', async (t) => {
+    sinon.stub(query, 'exec').resolves();
+
+    const since = new Date();
+
+    await database.getJobsCount({ since });
+
+    t.true(t.context.query.count.calledOnce);
+    t.true(t.context.query.exec.calledOnce);
+    t.true(t.context.Job.find.calledOnce);
+    t.is(t.context.Job.find.args[0][0].finished.$gte, since);
 
     t.context.query.exec.restore();
 });

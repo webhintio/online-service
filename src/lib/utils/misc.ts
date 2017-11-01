@@ -10,7 +10,6 @@ import normalizeRules from '@sonarwhal/sonar/dist/src/lib/utils/normalize-rules'
 import { IConfig } from '@sonarwhal/sonar/dist/src/lib/types';
 
 import { debug as d } from './debug';
-import { ConfigSource } from '../enums/configsource';
 import { JobStatus } from '../enums/status';
 import { RequestData, IJob } from '../types';
 
@@ -35,29 +34,15 @@ export const getDataFromRequest = (req: Request): Promise<RequestData> => {
     return new Promise((resolve, reject) => {
         const form = new multiparty.Form({ maxFilesSize });
 
-        form.parse(req, async (err, fields, files) => {
+        form.parse(req, (err, fields, files) => {
             if (err) {
                 return reject(err);
             }
 
-            // TODO: check if it is a valid URL
-            if (!fields.url) {
-                return reject('Url is required');
-            }
-
-            try {
-                const file = files['config-file'] ? files['config-file'][0] : null;
-                const data: RequestData = {
-                    config: file && file.size > 0 ? JSON.parse(await readFileAsync(file.path)) : null, // elsint-disable-line no-sync
-                    rules: fields.rules,
-                    source: fields.source ? fields.source[0] : ConfigSource.default,
-                    url: fields.url ? fields.url[0] : null
-                };
-
-                return resolve(data);
-            } catch (e) {
-                return reject('Error parsing form');
-            }
+            return resolve({
+                fields,
+                files
+            });
         });
     });
 };

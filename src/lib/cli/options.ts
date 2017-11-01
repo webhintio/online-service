@@ -17,13 +17,13 @@ export const options = optionator({
         concatRepeatedArrays: true,
         mergeRepeatedObjects: true
     },
-    mutuallyExclusive: ['file', 'activate', 'list', 'help'],
+    mutuallyExclusive: ['server', 'file', 'activate', 'list', 'help'],
     options: [
         { heading: 'Basic configuration' },
         {
             alias: 'm',
             description: 'Microservice to run',
-            enum: ['job-manager', 'config-manager', 'sync', 'worker', 'all'],
+            enum: ['server', 'config-manager', 'sync', 'worker', 'all'],
             option: 'microservice',
             type: 'String'
         }, {
@@ -33,6 +33,13 @@ export const options = optionator({
             type: 'Boolean'
         },
         { heading: 'Config Manager options' },
+        {
+            alias: 's',
+            description: 'Run config manager server',
+            example: 'online-service --microservice config-manager --server',
+            option: 'server',
+            type: 'Boolean'
+        },
         {
             alias: 'n',
             description: 'Name for the configuration',
@@ -83,5 +90,5 @@ export const options = optionator({
             type: 'Boolean'
         }
     ],
-    prepend: 'online-service --microservice job-manager|config-manager|sync|worker|all [options]'
+    prepend: 'online-service --microservice server|config-manager|sync|worker [options]'
 });

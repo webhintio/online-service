@@ -39,10 +39,6 @@ export const run = () => {
     return new Promise(async (resolve, reject) => {
         const server = http.createServer(app);
 
-        const startServer = () => {
-            server.listen(app.get('port'));
-        };
-
         try {
             await db.connect(database);
         } catch (err) {
@@ -51,6 +47,7 @@ export const run = () => {
 
         server.on('listening', () => {
             logger.log(`Server started on port ${app.get('port')}`, moduleName);
+            resolve();
         });
 
         server.on('error', (e) => {
@@ -58,7 +55,7 @@ export const run = () => {
             reject(e);
         });
 
-        return startServer();
+        return server.listen(app.get('port'));
     });
 };
 

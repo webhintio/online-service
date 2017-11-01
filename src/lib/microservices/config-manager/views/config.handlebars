@@ -1,0 +1,44 @@
+<section class="section">
+    <header>
+        <h2>Online service configuration panel</h2>
+        <h3>Configurations list</h3>
+    </header>
+    <div>
+        {{> new-config buttonText="Add new"}}
+    </div>
+    <p class="error">{{error}}</p>
+    <div class="table--overflow">
+        <table>
+            <caption>Configurations</caption>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each configs}}
+                <tr>
+                    <td>
+                        <a href="/admin/config/edit/{{name}}">{{name}}</a>
+                    </td>
+                    <td>
+                        {{#unless active}}
+                        <form class="admin-form" method="POST">
+                            <button type="submit">Activate</button>
+                            <input type="hidden" name="_method" value="PUT" />
+                            <input type="hidden" name="name" value="{{name}}" />
+                        </form>
+                        <form class="admin-form" method="POST">
+                            <button type="submit">Delete</button>
+                            <input type="hidden" name="_method" value="DELETE" />
+                            <input type="hidden" name="name" value="{{name}}" />
+                        </form>
+                        {{/unless}}
+                    </td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </div>
+</section>

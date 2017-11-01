@@ -1,0 +1,22 @@
+<section class="section">
+    <header>
+        <h2>Online service configuration panel</h2>
+        <h3>Edit online service configuration</h3>
+    </header>
+    <div class="body">
+        {{> new-config isEdit=true buttonText="Edit"}}
+
+        <div class="error">{{error}}</div>
+        {{#each config.sonarConfigs}}
+            <div class="rule-set">
+                <h4>Rule set {{@index}}</h4>
+
+                <div>
+                    <pre>
+{{stringify @this}}
+                    </pre>
+                </div>
+            </div>
+        {{/each}}
+    </div>
+</section>

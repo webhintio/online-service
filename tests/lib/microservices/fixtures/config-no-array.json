@@ -1,0 +1,19 @@
+{
+    "browserslist": [],
+    "connector": {
+        "name": "jsdom",
+        "options": {
+            "waitFor": 1000
+        }
+    },
+    "formatters": [
+        "summary"
+    ],
+    "ignoredUrls": [],
+    "rules": {
+        "apple-touch-icons": "error",
+        "axe": "error",
+        "content-type": "error"
+    },
+    "rulesTimeout": 120000
+}

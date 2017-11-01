@@ -5,6 +5,7 @@ export type CLIOptions = {
     microservice: Microservice;
     version: boolean;
     // Config manager options
+    server: boolean;
     name: string;
     file: string;
     activate: boolean;

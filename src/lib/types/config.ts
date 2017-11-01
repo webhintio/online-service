@@ -12,3 +12,10 @@ export interface IServiceConfig {
     /** Indicates if a configuration is the active one or not. */
     active: boolean;
 }
+
+export type ConfigData = {
+    name: string;
+    jobCacheTime: number;
+    jobRunTime: number;
+    filePath: string;
+};
