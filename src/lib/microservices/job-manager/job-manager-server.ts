@@ -60,13 +60,6 @@ const configureServer = () => {
 
     app.set('port', port || 3000);
 
-
-    // This endpoint is just for testing purpose
-    // app.get('/', (req, res) => {
-    //     const path = require('path');
-
-    //     res.sendfile(path.join(__dirname, 'test.html'));
-    // });
     app.post('/', createJob);
     app.get('/:id', getJobStatus);
 
