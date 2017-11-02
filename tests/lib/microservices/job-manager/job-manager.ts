@@ -31,6 +31,8 @@ const rule = { meta: { docs: { category: 'category' } } };
 
 const resourceLoader = { loadRule() { } };
 
+process.env.queue = 'connectionString'; // eslint-disable-line no-process-env
+
 proxyquire('../../../../src/lib/microservices/job-manager/job-manager', {
     '../../common/database/database': database,
     '../../common/queue/queue': queueObject,

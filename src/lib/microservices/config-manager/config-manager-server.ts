@@ -20,74 +20,7 @@ import { getDataFromRequest } from '../../utils/misc';
 import * as passport from './auth/passport';
 
 const moduleName: string = 'Configuration Manager Server';
-const viewsPath: string = path.join(__dirname, 'views');
-const app = express();
-const MongoStore = connectMongo(session);
-
 const { database: connectionString, port, sessionSecret } = process.env; // eslint-disable-line no-process-env
-
-const hbs = exphbs.create({
-    compilerOptions: { preventIndent: true },
-    defaultLayout: 'main',
-    handlebars,
-    helpers: Object.assign(handlebars.helpers, helpers),
-    layoutsDir: `${viewsPath}/layouts`,
-    partialsDir: `${viewsPath}/partials`
-});
-
-app.use('/admin', express.static(__dirname));
-
-app.engine('handlebars', hbs.engine);
-app.set('view engine', 'handlebars');
-app.set('views', viewsPath);
-app.use(session({
-    resave: false,
-    saveUninitialized: false,
-    secret: sessionSecret, // eslint-disable-line no-process-env
-    store: new MongoStore({ url: connectionString })
-}));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-
-app.use(methodOverride((req) => {
-    if (req.body && typeof req.body === 'object' && '_method' in req.body) {
-        const method = req.body._method;
-
-        delete req.body._method;
-
-        return method;
-    }
-
-    return null;
-}));
-
-passport.configure(app);
-app.set('port', parseInt(port, 10) + 1 || 3001);
-
-/** Initilize the server. */
-export const run = () => {
-    return new Promise(async (resolve, reject) => {
-        const server = http.createServer(app);
-
-        try {
-            await database.connect(connectionString);
-        } catch (err) {
-            return reject(err);
-        }
-
-        server.on('listening', () => {
-            logger.log(`Server started on port ${app.get('port')}`, moduleName);
-            resolve();
-        });
-
-        server.on('error', (e) => {
-            logger.error(`Error listening on port ${app.get('port')}`, moduleName);
-            reject(e);
-        });
-
-        return server.listen(app.get('port'));
-    });
-};
 
 const index = (req, res) => {
     res.render('index');
@@ -208,18 +141,91 @@ const generalStatistics = async (req, res) => {
     res.render('statistics', { info: await statisticsManager.info() });
 };
 
-// This endpoint is just for testing purpose
-app.get('/admin', passport.ensureAuthenticated, index);
-app.get('/admin/config', passport.ensureAuthenticated, configList);
-app.post('/admin/config', passport.ensureAuthenticated, addConfig);
-app.put('/admin/config', passport.ensureAuthenticated, activateConfig);
-app.delete('/admin/config', passport.ensureAuthenticated, deleteConfig);
-app.get('/admin/config/edit/:name', passport.ensureAuthenticated, showConfig);
-app.post('/admin/config/edit/:name', passport.ensureAuthenticated, editConfig);
-app.get('/admin/users', passport.ensureAuthenticated, usersList);
-app.post('/admin/users', passport.ensureAuthenticated, addUser);
-app.delete('/admin/users', passport.ensureAuthenticated, deleteUser);
-app.get('/admin/statistics', passport.ensureAuthenticated, generalStatistics);
+const configureServer = () => {
+    const viewsPath: string = path.join(__dirname, 'views');
+    const app = express();
+    const MongoStore = connectMongo(session);
+
+
+    const hbs = exphbs.create({
+        compilerOptions: { preventIndent: true },
+        defaultLayout: 'main',
+        handlebars,
+        helpers: Object.assign(handlebars.helpers, helpers),
+        layoutsDir: `${viewsPath}/layouts`,
+        partialsDir: `${viewsPath}/partials`
+    });
+
+    app.use('/admin', express.static(__dirname));
+
+    app.engine('handlebars', hbs.engine);
+    app.set('view engine', 'handlebars');
+    app.set('views', viewsPath);
+    app.use(session({
+        resave: false,
+        saveUninitialized: false,
+        secret: sessionSecret, // eslint-disable-line no-process-env
+        store: new MongoStore({ url: connectionString })
+    }));
+    app.use(bodyParser.json());
+    app.use(bodyParser.urlencoded({ extended: true }));
+
+    app.use(methodOverride((req) => {
+        if (req.body && typeof req.body === 'object' && '_method' in req.body) {
+            const method = req.body._method;
+
+            delete req.body._method;
+
+            return method;
+        }
+
+        return null;
+    }));
+
+    passport.configure(app);
+    app.set('port', parseInt(port, 10) + 1 || 3001);
+
+    app.get('/admin', passport.ensureAuthenticated, index);
+    app.get('/admin/config', passport.ensureAuthenticated, configList);
+    app.post('/admin/config', passport.ensureAuthenticated, addConfig);
+    app.put('/admin/config', passport.ensureAuthenticated, activateConfig);
+    app.delete('/admin/config', passport.ensureAuthenticated, deleteConfig);
+    app.get('/admin/config/edit/:name', passport.ensureAuthenticated, showConfig);
+    app.post('/admin/config/edit/:name', passport.ensureAuthenticated, editConfig);
+    app.get('/admin/users', passport.ensureAuthenticated, usersList);
+    app.post('/admin/users', passport.ensureAuthenticated, addUser);
+    app.delete('/admin/users', passport.ensureAuthenticated, deleteUser);
+    app.get('/admin/statistics', passport.ensureAuthenticated, generalStatistics);
+
+    return app;
+};
+
+/** Initilize the server. */
+export const run = () => {
+    const app = configureServer();
+
+    return new Promise(async (resolve, reject) => {
+        const server = http.createServer(app);
+
+        try {
+            await database.connect(connectionString);
+        } catch (err) {
+            return reject(err);
+        }
+
+        server.on('listening', () => {
+            logger.log(`Server started on port ${app.get('port')}`, moduleName);
+            resolve();
+        });
+
+        server.on('error', (e) => {
+            logger.error(`Error listening on port ${app.get('port')}`, moduleName);
+            reject(e);
+        });
+
+        return server.listen(app.get('port'));
+    });
+};
 
 if (process.argv[1].includes('config-manager-server.js')) {
     run();

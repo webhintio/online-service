@@ -10,6 +10,7 @@ import { generateLog } from '../../utils/misc';
 import * as appInsight from '../../utils/appinsights';
 
 const moduleName: string = 'Sync Service';
+const {database: dbConnectionString, queue: queueConnectionString} = process.env; // eslint-disable-line no-process-env
 const appInsightClient = appInsight.getClient();
 
 /**
@@ -53,9 +54,9 @@ const isJobFinished = (job: IJob) => {
  * Run the sync service.
  */
 export const run = async () => {
-    const queueResults = new Queue('sonar-results', process.env.queue); // eslint-disable-line no-process-env
+    const queueResults = new Queue('sonar-results', queueConnectionString);
 
-    await database.connect(process.env.database); // eslint-disable-line no-process-env
+    await database.connect(dbConnectionString);
 
     const listener = async (jobsArray: Array<IJob>) => {
         try {

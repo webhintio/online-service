@@ -12,6 +12,7 @@ import { JobStatus, RuleStatus } from '../../enums/status';
 import * as logger from '../../utils/logging';
 import { generateLog } from '../../utils/misc';
 
+const queueConnectionString = process.env.queue; // eslint-disable-line no-process-env
 const appInsightClient = appInsight.getClient();
 const debug: debug.IDebugger = d(__filename);
 const moduleName: string = 'Worker Service';
@@ -305,8 +306,8 @@ const sendErrorMessage = async (error, queue: Queue, job: IJob) => {
 };
 
 export const run = async () => {
-    const queue: Queue = new Queue('sonar-jobs', process.env.queue); // eslint-disable-line no-process-env
-    const queueResults: Queue = new Queue('sonar-results', process.env.queue); // eslint-disable-line no-process-env
+    const queue: Queue = new Queue('sonar-jobs', queueConnectionString);
+    const queueResults: Queue = new Queue('sonar-results', queueConnectionString);
     const sonarVersion: string = getSonarVersion();
 
     const listener = async (jobs: Array<IJob>) => {
@@ -357,9 +358,17 @@ export const run = async () => {
         }
     };
 
-    await queue.listen(listener, { messagesToGet: 1 });
+    try {
+        await queue.listen(listener, { messagesToGet: 1 });
 
-    return 0;
+        logger.log('Service finished\nExiting with status 0', moduleName);
+
+        return 0;
+    } catch (err) {
+        logger.error('Error in Worker service\nExiting with status 1', moduleName);
+
+        return 1;
+    }
 };
 
 if (process.argv[1].includes('worker-service.js')) {
