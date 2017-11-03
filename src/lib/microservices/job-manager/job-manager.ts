@@ -235,3 +235,7 @@ export const getJob = (jobId: string): Promise<IJob> => {
 export const markJobAsInvestigated = (jobId: string): Promise<IJob> => {
     return database.updateJobProperty(jobId, 'investigated', true);
 };
+
+export const unmarkJobAsInvestigated = (jobId: string): Promise<IJob> => {
+    return database.updateJobProperty(jobId, 'investigated', null);
+};

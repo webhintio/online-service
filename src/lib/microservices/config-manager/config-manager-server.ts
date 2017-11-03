@@ -153,13 +153,22 @@ const jobsForm = (req, res) => {
     renderJobs(res);
 };
 
-const markJob = async (req, res) => {
+const jobActions = {
+    mark: jobManager.markJobAsInvestigated,
+    unmark: jobManager.unmarkJobAsInvestigated
+};
+
+const markUmarkJob = async (req, res) => {
     if (!req.body.id) {
         return renderJobs(res, null, `Id can't be empty`);
     }
 
     try {
-        const job = await jobManager.markJobAsInvestigated(req.body.id);
+        const job = await jobActions[req.body.action](req.body.id);
+
+        if (!job) {
+            return renderJobs(res, `Job '${job.id}' doesn't exists`);
+        }
 
         return renderJobs(res, `Job '${job.id}' updated`);
     } catch (err) {
@@ -223,7 +232,7 @@ const configureServer = () => {
     app.delete('/admin/users', passport.ensureAuthenticated, deleteUser);
     app.get('/admin/statistics', passport.ensureAuthenticated, generalStatistics);
     app.get('/admin/jobs', passport.ensureAuthenticated, jobsForm);
-    app.put('/admin/jobs', passport.ensureAuthenticated, markJob);
+    app.put('/admin/jobs', passport.ensureAuthenticated, markUmarkJob);
 
     return app;
 };
