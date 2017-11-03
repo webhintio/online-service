@@ -1,0 +1,20 @@
+<section class="section">
+    <header>
+        <h2>Online Service Jobs Panel</h2>
+        <h3>Jobs</h3>
+    </header>
+    <div>
+        <form class="jobs-form" method="POST">
+            <fieldset>
+                <label for="job-id">Job ID:</label>
+                <input name="id" id="job-id" value="" required/>
+                <input name="_method" type="hidden" value="PUT" />
+            </fieldset>
+            <div class="actions">
+                <button type="submit">Mark as invetigated</button>
+            </div>
+        </form>
+    </div>
+    <p class="message">{{message}}</p>
+    <p class="error">{{error}}</p>
+</section>

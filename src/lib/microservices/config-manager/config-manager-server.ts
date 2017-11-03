@@ -9,6 +9,7 @@ import * as methodOverride from 'method-override';
 import * as session from 'express-session';
 import * as connectMongo from 'connect-mongo';
 
+import * as jobManager from '../job-manager/job-manager';
 import * as configManager from './config-manager';
 import * as userManager from './user-manager';
 import * as statisticsManager from './statistics-manager';
@@ -141,6 +142,31 @@ const generalStatistics = async (req, res) => {
     res.render('statistics', { info: await statisticsManager.info() });
 };
 
+const renderJobs = (res, message?: string, error?: string) => {
+    res.render('jobs', {
+        error,
+        message
+    });
+};
+
+const jobsForm = (req, res) => {
+    renderJobs(res);
+};
+
+const markJob = async (req, res) => {
+    if (!req.body.id) {
+        return renderJobs(res, null, `Id can't be empty`);
+    }
+
+    try {
+        const job = await jobManager.markJobAsInvestigated(req.body.id);
+
+        return renderJobs(res, `Job '${job.id}' updated`);
+    } catch (err) {
+        return renderJobs(res, null, err.message);
+    }
+};
+
 const configureServer = () => {
     const viewsPath: string = path.join(__dirname, 'views');
     const app = express();
@@ -196,6 +222,8 @@ const configureServer = () => {
     app.post('/admin/users', passport.ensureAuthenticated, addUser);
     app.delete('/admin/users', passport.ensureAuthenticated, deleteUser);
     app.get('/admin/statistics', passport.ensureAuthenticated, generalStatistics);
+    app.get('/admin/jobs', passport.ensureAuthenticated, jobsForm);
+    app.put('/admin/jobs', passport.ensureAuthenticated, markJob);
 
     return app;
 };

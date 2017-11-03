@@ -227,3 +227,11 @@ export const startJob = async (data: RequestData): Promise<IJob> => {
 export const getJob = (jobId: string): Promise<IJob> => {
     return database.getJob(jobId);
 };
+
+/**
+ * Mark a job as investigated.
+ * @param {string} jobId - The id for the job we want to mark as investigated
+ */
+export const markJobAsInvestigated = (jobId: string): Promise<IJob> => {
+    return database.updateJobProperty(jobId, 'investigated', true);
+};

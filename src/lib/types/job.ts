@@ -57,4 +57,6 @@ export interface IJob {
     messagesInQueue?: number;
     /** Partition information for a task */
     partInfo?: PartInfo;
+    /** Indicates if a job was investigated for someone */
+    investigated?: boolean;
 }
