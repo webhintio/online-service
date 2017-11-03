@@ -10,3 +10,4 @@ compose/
 .travis.yml
 scripts/
 Dockerfile.*
+.gitattributes

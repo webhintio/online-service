@@ -17,14 +17,11 @@ services:
                 delay: 10s
         environtment:
             - port=80
-            - NODE_ENV=production
-            - auth=<YourAuthCode>
-            - queue=<YourAzureServiceBusConnectionString>
-            - database=<YourDatabaseConnectionString>
             - sessionSecret=<YourSessionSecret>
             - callbackURL=<YourCallbackUrl>
             - githubId=<YourGithubClientId>
             - githubSecret=<YourGithubSecret>
+            - database=<YourDatabaseConnectionString>
         ports:
             - "3001:81"
     job-manager:
@@ -64,7 +61,7 @@ services:
                 parallelism: 2
                 delay: 10s
         environment:
-            - auth=<YourAuthCode>
+            - CLOUDINARY_URL=<YourCloudinaryUrl>
             - queue=<YourAzureServiceBusConnectionString>
             - APP_INSIGHTS_KEY=<YourAppInsightKey>
     sync-service:
@@ -82,7 +79,6 @@ services:
                 parallelism: 2
                 delay: 10s
         environment:
-            - auth=<YourAuthCode>
             - queue=<YourAzureServiceBusConnectionString>
             - database=<YourDatabaseConnectionString>
             - APP_INSIGHTS_KEY=<YourAppInsightKey>

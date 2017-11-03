@@ -15,8 +15,15 @@ import { validateServiceConfig, readFileAsync } from '../../utils/misc';
 import * as logger from '../../utils/logging';
 
 const debug: debug.IDebugger = d(__filename);
-const queue: Queue = new Queue('sonar-jobs', process.env.queue); // eslint-disable-line no-process-env
+const queueConnectionString: string = process.env.queue; // eslint-disable-line no-process-env
+let queue: Queue = null;
 const moduleName: string = 'Job Manager';
+
+if (queueConnectionString) {
+    queue = new Queue('sonar-jobs', queueConnectionString);
+} else {
+    logger.log('Queue connection string not found', moduleName);
+}
 
 /**
  * Create a new Job in the database.
