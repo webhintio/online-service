@@ -158,7 +158,7 @@ const jobActions = {
     unmark: jobManager.unmarkJobAsInvestigated
 };
 
-const markUmarkJob = async (req, res) => {
+const markUnmarkJob = async (req, res) => {
     if (!req.body.id) {
         return renderJobs(res, null, `Id can't be empty`);
     }
@@ -232,7 +232,7 @@ const configureServer = () => {
     app.delete('/admin/users', passport.ensureAuthenticated, deleteUser);
     app.get('/admin/statistics', passport.ensureAuthenticated, generalStatistics);
     app.get('/admin/jobs', passport.ensureAuthenticated, jobsForm);
-    app.put('/admin/jobs', passport.ensureAuthenticated, markUmarkJob);
+    app.put('/admin/jobs', passport.ensureAuthenticated, markUnmarkJob);
 
     return app;
 };
