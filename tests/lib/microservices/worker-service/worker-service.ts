@@ -473,7 +473,7 @@ test.serial(`If there is no problem running sonar, it should send a "Too many er
 });
 
 
-test.serial(`If sonar doesn't finish before the job.maxRunTime, it should send an error message to the queue`, async (t) => {
+test.serial(`If sonar doesn't finish before the job.maxRunTime, it should report an error message to the queue, but the job status is finished`, async (t) => {
     const job = {
         config: [{}],
         id: 0,
@@ -497,6 +497,6 @@ test.serial(`If sonar doesn't finish before the job.maxRunTime, it should send a
 
     const queueArgs = t.context.resultsQueue.sendMessage.args[1][0];
 
-    t.is(queueArgs.status, JobStatus.error);
+    t.is(queueArgs.status, JobStatus.finished);
     t.is(queueArgs.error.message, 'TIMEOUT');
 });
