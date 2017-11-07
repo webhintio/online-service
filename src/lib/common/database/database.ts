@@ -107,6 +107,9 @@ export const lock = async (url: string) => {
     return dbLock;
 };
 
+/* ******************************************** */
+/*                     JOBS                     */
+/* ******************************************** */
 /**
  * Get all the jobs from the database for a given url.
  * @param {string} url - Url we want to look for.
@@ -180,6 +183,19 @@ export const updateJob = async (job: IJobModel) => {
     await job.save();
 };
 
+/**
+ * Update a property in a job.
+ * @param jobId - ID for the job to update
+ * @param property - Property to update
+ * @param value - New value for the property
+ */
+export const updateJobProperty = (jobId: string, property: string, value): Promise<IJob> => {
+    return Job.findOneAndUpdate({ id: jobId }, { $set: { [property]: value } }).exec();
+};
+
+/* ******************************************** */
+/*                CONFIGURATIONS                */
+/* ******************************************** */
 /**
  * Create a new configuration in database.
  * @param {string} name - New configuration name.
