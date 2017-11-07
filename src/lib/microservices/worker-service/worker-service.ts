@@ -62,8 +62,13 @@ const ruleOff = (ruleConfiguration) => {
  * @param {IJob} job - Job to write the errors.
  * @param normalizedRules - Normalized job rules.
  */
-const setRulesToError = (job: IJob, normalizedRules) => {
+const setRulesToError = (job: IJob, normalizedRules, error) => {
     const rules: Array<Rule> = job.rules;
+    const isTimeOutError: boolean = error.message === 'TIMEOUT';
+    const messageOptions = {
+        general: 'Error in sonar analyzing this rule',
+        timeout: `Sonar didn't return the result faster enough. Please try later and if the problem continue, contact us.`
+    };
 
     rules.forEach((rule: Rule) => {
         const ruleConfiguration = normalizedRules[rule.name];
@@ -79,7 +84,9 @@ const setRulesToError = (job: IJob, normalizedRules) => {
             return;
         }
 
-        rule.status = RuleStatus.error;
+        rule.status = isTimeOutError ? RuleStatus.warning : RuleStatus.error;
+        const message = isTimeOutError ? messageOptions.timeout : messageOptions.general;
+        const severity = isTimeOutError ? Severity.error : Severity.warning;
 
         rule.messages = [{
             location: {
@@ -88,10 +95,10 @@ const setRulesToError = (job: IJob, normalizedRules) => {
                 elementLine: -1,
                 line: -1
             },
-            message: 'Error in sonar analyzing this rule',
+            message,
             resource: null,
             ruleId: rule.name,
-            severity: Severity.error,
+            severity,
             sourceCode: null
         }];
     });
@@ -288,6 +295,8 @@ const sendStartedMessage = async (queue: Queue, job: IJob) => {
  * @param {IJob} job - Job to send to the queue
  */
 const sendErrorMessage = async (error, queue: Queue, job: IJob) => {
+    const isTimeOutError: boolean = error.message === 'TIMEOUT';
+
     if (error instanceof Error) {
         // When we try to stringify an instance of Error, we just get an empty object.
         job.error = {
@@ -298,7 +307,7 @@ const sendErrorMessage = async (error, queue: Queue, job: IJob) => {
         job.error = error;
     }
 
-    job.status = JobStatus.error;
+    job.status = isTimeOutError ? JobStatus.finished : JobStatus.error;
     job.finished = new Date();
 
     debug(`Sending job result with status: ${job.status}`);
@@ -350,7 +359,7 @@ export const run = async () => {
             appInsightClient.trackException({ exception: err });
             debug(err);
 
-            setRulesToError(job, normalizedRules);
+            setRulesToError(job, normalizedRules, err);
 
             await sendErrorMessage(err, queueResults, job);
 
