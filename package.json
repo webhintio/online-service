@@ -31,7 +31,7 @@
     "@types/mongoose": "^4.7.19",
     "@types/multiparty": "0.0.31",
     "@types/node": "^8.0.19",
-    "@types/passport": "^0.3.4",
+    "@types/passport": "^0.4.0",
     "ava": "^0.23.0",
     "cpx": "^1.5.0",
     "eslint": "^4.3.0",
