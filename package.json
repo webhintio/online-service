@@ -47,7 +47,7 @@
     "typescript-eslint-parser": "^9.0.0"
   },
   "dependencies": {
-    "@sonarwhal/sonar": "^0.14.1",
+    "sonarwhal": "^0.16.0",
     "applicationinsights": "^1.0.0",
     "azure-sb": "^0.10.4",
     "body-parser": "^1.17.2",
@@ -88,5 +88,5 @@
     "sourceMap": true,
     "statements": 85
   },
-  "version": "0.0.1"
+  "version": "0.16.0"
 }

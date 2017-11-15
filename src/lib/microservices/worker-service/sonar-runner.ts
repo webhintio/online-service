@@ -2,7 +2,7 @@
 
 import * as url from 'url';
 
-import { Sonar } from '@sonarwhal/sonar/dist/src/lib/sonar';
+import { Sonarwhal } from 'sonarwhal/dist/src/lib/sonarwhal';
 
 import { IJob, JobResult } from '../../types';
 import * as logger from '../../utils/logging';
@@ -57,7 +57,7 @@ const run = async (job: IJob) => {
     };
 
     try {
-        const sonar = new Sonar(job.config[0]);
+        const sonar = new Sonarwhal(job.config[0]);
 
         result.messages = await sonar.executeOn(url.parse(job.url));
 

@@ -1,7 +1,7 @@
 import * as uuid from 'uuid/v4';
 import { promisify } from 'util';
 
-import { IConfig } from '@sonarwhal/sonar/dist/src/lib/types';
+import { IConfig } from 'sonarwhal/dist/src/lib/types';
 import * as mongoose from 'mongoose';
 (mongoose.Promise as any) = global.Promise;
 import * as mongoDBLock from 'mongodb-lock';

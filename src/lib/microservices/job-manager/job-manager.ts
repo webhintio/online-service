@@ -1,8 +1,8 @@
 import * as _ from 'lodash';
 import * as moment from 'moment';
-import { IConfig } from '@sonarwhal/sonar/dist/src/lib/types';
-import normalizeRules from '@sonarwhal/sonar/dist/src/lib/utils/normalize-rules';
-import { loadRule } from '@sonarwhal/sonar/dist/src/lib/utils/resource-loader';
+import { IConfig } from 'sonarwhal/dist/src/lib/types';
+import normalizeRules from 'sonarwhal/dist/src/lib/utils/normalize-rules';
+import { loadRule } from 'sonarwhal/dist/src/lib/utils/resource-loader';
 
 import * as database from '../../common/database/database';
 import * as configManager from '../config-manager/config-manager';

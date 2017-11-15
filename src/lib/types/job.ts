@@ -1,4 +1,4 @@
-import { IConfig, IProblem } from '@sonarwhal/sonar/dist/src/lib/types';
+import { IConfig, IProblem } from 'sonarwhal/dist/src/lib/types';
 
 import { ConfigSource } from '../enums/configsource';
 import { JobStatus, RuleStatus } from '../enums/status';

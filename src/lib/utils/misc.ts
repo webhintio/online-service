@@ -5,9 +5,9 @@ import { Request } from 'express';
 import * as multiparty from 'multiparty';
 import * as stripBom from 'strip-bom';
 import * as stripComments from 'strip-json-comments';
-import { validateConfig } from '@sonarwhal/sonar/dist/src/lib/config/config-validator';
-import normalizeRules from '@sonarwhal/sonar/dist/src/lib/utils/normalize-rules';
-import { IConfig } from '@sonarwhal/sonar/dist/src/lib/types';
+import { validateConfig } from 'sonarwhal/dist/src/lib/config/config-validator';
+import normalizeRules from 'sonarwhal/dist/src/lib/utils/normalize-rules';
+import { IConfig } from 'sonarwhal/dist/src/lib/types';
 
 import { debug as d } from './debug';
 import { JobStatus } from '../enums/status';
