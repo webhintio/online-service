@@ -4,34 +4,37 @@ export type DateParameter = {
     $gte?: Date;
 };
 
-export type StatisticsQueryParameter = {
+export type StatisticQueryParameter = {
     $or?: Array<any>;
     status?: JobStatus;
     finished?: DateParameter;
     'rules.status'?: RuleStatus;
 };
 
-export type StatisticsOptions = {
+export type StatisticOptions = {
     field?: string;
     since?: Date;
 };
 
-export type StatusStatistics = {
+export type StatusStatistic = {
     error?: number;
     finished?: number;
     pending?: number;
     started?: number;
 };
 
-export type UrlStatistics = {
+export type UrlStatistic = {
     count: number;
     warning: number;
     error: number;
 };
 
-export type Statistics = {
-    status: StatusStatistics;
-    statusLastHour: StatusStatistics;
+export type Statistic = {
+    date: Date;
+    status: StatusStatistic;
+    statusLastHour?: StatusStatistic;
     scans: number;
-    scansLastHour: number;
+    scansLastHour?: number;
+    resultsQueue: number;
+    syncQueue: number;
 };

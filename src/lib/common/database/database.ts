@@ -11,7 +11,8 @@ import { JobStatus } from '../../enums/status';
 import { Job, IJobModel } from './models/job';
 import { ServiceConfig, IServiceConfigModel } from './models/serviceconfig';
 import { User, IUserModel } from './models/user';
-import { IJob, IServiceConfig, IUser, Rule, StatisticsOptions, StatisticsQueryParameter } from '../../types';
+import { Status, IStatusModel } from './models/status';
+import { IJob, IServiceConfig, IStatus, IUser, Rule, StatisticOptions, StatisticQueryParameter } from '../../types';
 import { debug as d } from '../../utils/debug';
 import * as logger from '../../utils/logging';
 
@@ -191,6 +192,20 @@ export const updateJob = async (job: IJobModel) => {
  */
 export const updateJobProperty = (jobId: string, property: string, value): Promise<IJob> => {
     return Job.findOneAndUpdate({ id: jobId }, { $set: { [property]: value } }).exec();
+};
+
+export const getJobsByDate = async (field: string, from: Date, to: Date): Promise<Array<IJob>> => {
+    const x = {
+        [field]: {
+            $gte: from,
+            $lt: to
+        }
+    };
+    const query: mongoose.DocumentQuery<Array<IJobModel>, IJobModel> = Job.find(x);
+
+    const results: Array<IJob> = await query.exec();
+
+    return results;
 };
 
 /* ******************************************** */
@@ -397,9 +412,9 @@ export const removeUserByName = async (name: string) => {
 /* ******************************************** */
 /**
  * Return the count of a query.
- * @param {StatisticsQueryParameter} queryParameters - Query parameters.
+ * @param {StatisticQueryParameter} queryParameters - Query parameters.
  */
-const count = (queryParameters: StatisticsQueryParameter): Promise<number> => {
+const count = (queryParameters: StatisticQueryParameter): Promise<number> => {
     const query = Job.find(queryParameters);
 
     return query
@@ -410,12 +425,12 @@ const count = (queryParameters: StatisticsQueryParameter): Promise<number> => {
 /**
  * Get the number of jobs with a status.
  * @param {JobStatus} status - Job status.
- * @param {StatisticsOptions} options - Query options.
+ * @param {StatisticOptions} options - Query options.
  */
-export const getStatusCount = async (status: JobStatus, options?: StatisticsOptions): Promise<number> => {
+export const getStatusCount = async (status: JobStatus, options?: StatisticOptions): Promise<number> => {
     validateConnection();
 
-    const queryParameters: StatisticsQueryParameter = { status };
+    const queryParameters: StatisticQueryParameter = { status };
 
     if (options && options.since) {
         queryParameters[options.field] = { $gte: options.since };
@@ -430,12 +445,12 @@ export const getStatusCount = async (status: JobStatus, options?: StatisticsOpti
 
 /**
  * Get the number of jobs in the database.
- * @param {StatisticsOptions} options - Query options.
+ * @param {StatisticOptions} options - Query options.
  */
-export const getJobsCount = async (options?: StatisticsOptions): Promise<number> => {
+export const getJobsCount = async (options?: StatisticOptions): Promise<number> => {
     validateConnection();
 
-    const queryParameters: StatisticsQueryParameter = {};
+    const queryParameters: StatisticQueryParameter = {};
 
     if (options && options.since) {
         queryParameters.finished = { $gte: options.since };
@@ -444,6 +459,52 @@ export const getJobsCount = async (options?: StatisticsOptions): Promise<number>
     const total: number = await count(queryParameters);
 
     return total;
+};
+
+/* ******************************************** */
+/*                    STATUS                    */
+/* ******************************************** */
+
+/**
+ * Add a new status in the database.
+ * @param {IStatus} status - Status to save in database.
+ */
+export const addStatus = async (status: IStatus): Promise<IStatusModel> => {
+    validateConnection();
+
+    const newStatus = new Status(status);
+
+    await newStatus.save();
+
+    debug(`status created in database with date ${newStatus.date.toISOString()}`);
+
+    return newStatus;
+};
+
+/** Update an status in the database */
+export const updateStatus = async (status: IStatusModel, field) => {
+    status.markModified(field);
+
+    await status.save();
+};
+
+/**
+ * Get the last status in the database
+ */
+export const getMostRecentStatus = async (): Promise<IStatus> => {
+    validateConnection();
+    const result: IStatus = await Status.findOne()
+        .sort({ date: -1 })
+        .exec();
+
+    return result;
+};
+
+export const getStatusByDate = async (date: Date): Promise<IStatus> => {
+    validateConnection();
+    const result: IStatus = await Status.findOne({ date }).exec();
+
+    return result;
 };
 
 /**

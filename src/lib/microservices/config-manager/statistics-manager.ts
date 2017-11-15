@@ -1,6 +1,6 @@
 import * as moment from 'moment';
-import * as database from '../../common/database/database';
-import { Statistics } from '../../types';
+import * as db from '../../common/database/database';
+import { Statistic } from '../../types';
 import { JobStatus } from '../../enums/status';
 
 /**
@@ -10,23 +10,23 @@ import { JobStatus } from '../../enums/status';
  * # of items in each status
  * # of errors and jobs finished in the last hour
  */
-export const info = async (): Promise<Statistics> => {
+export const info = async (): Promise<Statistic> => {
     const anHourAgo = moment()
         .subtract(1, 'hour')
         .toDate();
 
     const promises = [
-        database.getJobsCount(),
-        database.getJobsCount({ since: anHourAgo }),
-        database.getStatusCount(JobStatus.error),
-        database.getStatusCount(JobStatus.finished),
-        database.getStatusCount(JobStatus.pending),
-        database.getStatusCount(JobStatus.started),
-        database.getStatusCount(JobStatus.error, {
+        db.getJobsCount(),
+        db.getJobsCount({ since: anHourAgo }),
+        db.getStatusCount(JobStatus.error),
+        db.getStatusCount(JobStatus.finished),
+        db.getStatusCount(JobStatus.pending),
+        db.getStatusCount(JobStatus.started),
+        db.getStatusCount(JobStatus.error, {
             field: 'finished',
             since: anHourAgo
         }),
-        database.getStatusCount(JobStatus.finished, {
+        db.getStatusCount(JobStatus.finished, {
             field: 'finished',
             since: anHourAgo
         })
@@ -44,6 +44,8 @@ export const info = async (): Promise<Statistics> => {
     ] = await Promise.all(promises);
 
     return {
+        date: null,
+        resultsQueue: null,
         scans,
         scansLastHour,
         status: {
@@ -55,6 +57,7 @@ export const info = async (): Promise<Statistics> => {
         statusLastHour: {
             error: statusErrorLastHour,
             finished: statusFinishedLastHour
-        }
+        },
+        syncQueue: null
     };
 };
