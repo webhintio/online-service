@@ -1,4 +1,4 @@
-import { IConfig } from '@sonarwhal/sonar/dist/src/lib/types';
+import { IConfig } from 'sonarwhal/dist/src/lib/types';
 
 export interface IServiceConfig {
     /** List of sonar configurations to split the job in messages. */

@@ -1,7 +1,7 @@
 import * as _ from 'lodash';
 import { fork, ChildProcess } from 'child_process';
-import { IProblem, Severity } from '@sonarwhal/sonar/dist/src/lib/types';
-import normalizeRules from '@sonarwhal/sonar/dist/src/lib/utils/normalize-rules';
+import { IProblem, Severity } from 'sonarwhal/dist/src/lib/types';
+import normalizeRules from 'sonarwhal/dist/src/lib/utils/normalize-rules';
 import * as path from 'path';
 
 import * as appInsight from '../../utils/appinsights';
@@ -158,7 +158,7 @@ const runSonar = (job: IJob): Promise<Array<IProblem>> => {
  * Return the sonar version the worker is using.
  */
 const getSonarVersion = (): string => {
-    const pkg = require('@sonarwhal/sonar/package.json');
+    const pkg = require('sonarwhal/package.json');
 
     return pkg.version;
 };

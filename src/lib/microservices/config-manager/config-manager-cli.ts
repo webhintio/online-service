@@ -1,4 +1,4 @@
-import { IConnectorConfig, IRuleConfigList, RuleConfig, IConfig } from '@sonarwhal/sonar/dist/src/lib/types';
+import { IConnectorConfig, IRuleConfigList, RuleConfig, IConfig } from 'sonarwhal/dist/src/lib/types';
 
 import { options } from '../../cli/options';
 import * as database from '../../common/database/database';

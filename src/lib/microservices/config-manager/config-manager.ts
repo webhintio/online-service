@@ -1,6 +1,6 @@
 import * as path from 'path';
 
-import { IConfig } from '@sonarwhal/sonar/dist/src/lib/types';
+import { IConfig } from 'sonarwhal/dist/src/lib/types';
 
 import * as database from '../../common/database/database';
 import { IServiceConfig, ConfigData } from '../../types';

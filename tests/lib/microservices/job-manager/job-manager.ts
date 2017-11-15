@@ -37,7 +37,7 @@ proxyquire('../../../../src/lib/microservices/job-manager/job-manager', {
     '../../common/database/database': database,
     '../../common/queue/queue': queueObject,
     '../config-manager/config-manager': configManager,
-    '@sonarwhal/sonar/dist/src/lib/utils/resource-loader': resourceLoader
+    'sonarwhal/dist/src/lib/utils/resource-loader': resourceLoader
 });
 
 import * as jobManager from '../../../../src/lib/microservices/job-manager/job-manager';
