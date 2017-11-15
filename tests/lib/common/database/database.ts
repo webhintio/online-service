@@ -1,7 +1,7 @@
 import test from 'ava';
 import * as sinon from 'sinon';
 import * as proxyquire from 'proxyquire';
-import { IConfig } from '@sonarwhal/sonar/dist/src/lib/types';
+import { IConfig } from 'sonarwhal/dist/src/lib/types';
 
 const mongoose = {
     connect() { },
