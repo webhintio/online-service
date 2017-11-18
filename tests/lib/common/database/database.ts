@@ -2,6 +2,9 @@ import test from 'ava';
 import * as sinon from 'sinon';
 import * as proxyquire from 'proxyquire';
 import { IConfig } from 'sonarwhal/dist/src/lib/types';
+import * as moment from 'moment';
+
+import { IStatus } from '../../../../src/lib/types';
 
 const mongoose = {
     connect() { },
@@ -23,7 +26,8 @@ const mongoDBLock = () => {
 const query = {
     count() { },
     exec() { },
-    remove() { }
+    remove() { },
+    sort() { }
 };
 
 const modelObject = { save() { } };
@@ -55,9 +59,18 @@ User.findOne = () => { };
 
 const userModels = { User };
 
+const Status: any = function () {
+    return modelObject;
+};
+
+Status.findOne = () => { };
+
+const statusModels = { Status };
+
 proxyquire('../../../../src/lib/common/database/database', {
     './models/job': jobModels,
     './models/serviceconfig': serviceConfigModels,
+    './models/status': statusModels,
     './models/user': userModels,
     'mongodb-lock': mongoDBLock,
     mongoose
@@ -95,8 +108,10 @@ test.beforeEach((t) => {
     sinon.stub(ServiceConfig, 'findOne').returns(query);
     sinon.stub(User, 'find').returns(query);
     sinon.stub(User, 'findOne').returns(query);
+    sinon.stub(Status, 'findOne').returns(query);
     sinon.stub(query, 'remove').returns(query);
     sinon.stub(query, 'count').returns(query);
+    sinon.stub(query, 'sort').returns(query);
 
     t.context.mongoose = mongoose;
     t.context.ServiceConfig = ServiceConfig;
@@ -104,6 +119,7 @@ test.beforeEach((t) => {
     t.context.Job = Job;
     t.context.query = query;
     t.context.User = User;
+    t.context.Status = Status;
 });
 
 test.afterEach.always((t) => {
@@ -121,12 +137,14 @@ test.afterEach.always((t) => {
 
     t.context.query.remove.restore();
     t.context.query.count.restore();
+    t.context.query.sort.restore();
     t.context.Job.find.restore();
     t.context.Job.findOne.restore();
     t.context.ServiceConfig.find.restore();
     t.context.ServiceConfig.findOne.restore();
     t.context.User.find.restore();
     t.context.User.findOne.restore();
+    t.context.Status.findOne.restore();
 });
 
 test.serial('unlock should fail if database is not connected', async (t) => {
@@ -162,6 +180,15 @@ test.serial('getJob should fail if database is not connected', async (t) => {
     t.plan(1);
     try {
         await database.getJob('url');
+    } catch (err) {
+        t.is(err.message, 'Database not connected');
+    }
+});
+
+test.serial('getJobsByDate should fail if database is not connected', async (t) => {
+    t.plan(1);
+    try {
+        await database.getJobsByDate('started', new Date(), new Date());
     } catch (err) {
         t.is(err.message, 'Database not connected');
     }
@@ -279,6 +306,42 @@ test.serial('getJobsCount should fail if database is not connected', async (t) =
     t.plan(1);
     try {
         await database.getJobsCount();
+    } catch (err) {
+        t.is(err.message, 'Database not connected');
+    }
+});
+
+test.serial('addStatus should fail if database is not connected', async (t) => {
+    t.plan(1);
+    try {
+        await database.addStatus(null);
+    } catch (err) {
+        t.is(err.message, 'Database not connected');
+    }
+});
+
+test.serial('updateStatus should fail if database is not connected', async (t) => {
+    t.plan(1);
+    try {
+        await database.updateStatus(null, null);
+    } catch (err) {
+        t.is(err.message, 'Database not connected');
+    }
+});
+
+test.serial('getMostRecentStatus should fail if database is not connected', async (t) => {
+    t.plan(1);
+    try {
+        await database.getMostRecentStatus();
+    } catch (err) {
+        t.is(err.message, 'Database not connected');
+    }
+});
+
+test.serial('getStatusByDate should fail if database is not connected', async (t) => {
+    t.plan(1);
+    try {
+        await database.getStatusByDate(null);
     } catch (err) {
         t.is(err.message, 'Database not connected');
     }
@@ -438,6 +501,29 @@ test.serial('newJob should save a new job in database', async (t) => {
     t.true(t.context.modelObject.save.calledOnce);
 
     t.context.modelObject.save.restore();
+});
+
+test.serial('getJobsByDate should return the jobs between both dates', async (t) => {
+    await connectDatabase();
+
+    sinon.stub(query, 'exec').resolves(jobResult);
+
+    const field = 'started';
+    const from = moment();
+    const to = moment().add(3, 'hour');
+
+    const result = await database.getJobsByDate(field, from.toDate(), to.toDate());
+
+    t.true(t.context.query.exec.calledOnce);
+    t.true(t.context.Job.find.calledOnce);
+
+    const args = t.context.Job.find.args[0][0];
+
+    t.true(from.isSame(moment(args[field].$gte)));
+    t.true(to.isSame(moment(args[field].$lt)));
+    t.is(result, jobResult);
+
+    t.context.query.exec.restore();
 });
 
 test.serial('newConfig should save a new configuration in database', async (t) => {
@@ -764,6 +850,36 @@ test.serial('getJobsCount with a since parameter should return the number of job
     t.true(t.context.query.exec.calledOnce);
     t.true(t.context.Job.find.calledOnce);
     t.is(t.context.Job.find.args[0][0].finished.$gte, since);
+
+    t.context.query.exec.restore();
+});
+
+test.serial('addStatus should create a new status in database', async (t) => {
+    await connectDatabase();
+
+    sinon.stub(modelObject, 'save').resolves();
+
+    t.context.modelObject = modelObject;
+
+    await database.addStatus({ date: new Date() } as IStatus);
+
+    t.true(t.context.modelObject.save.calledOnce);
+
+    t.context.modelObject.save.restore();
+});
+
+test.serial('getMostRecentStatus should return the newest item in the database', async (t) => {
+    await connectDatabase();
+
+    sinon.stub(query, 'exec').resolves();
+
+    await database.getMostRecentStatus();
+
+    t.true(t.context.query.sort.calledOnce);
+    t.true(t.context.query.exec.calledOnce);
+    t.true(t.context.Status.findOne.calledOnce);
+    t.is(t.context.Status.findOne.args[0][0], void 0);
+    t.is(t.context.query.sort.args[0][0].date, -1);
 
     t.context.query.exec.restore();
 });

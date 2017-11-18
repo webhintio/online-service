@@ -179,6 +179,8 @@ export const newJob = async (url: string, status: JobStatus, rules: Array<Rule>,
  * @param {IJobModel} job Job we want to update.
  */
 export const updateJob = async (job: IJobModel) => {
+    validateConnection();
+
     job.markModified('rules');
 
     await job.save();
@@ -191,10 +193,14 @@ export const updateJob = async (job: IJobModel) => {
  * @param value - New value for the property
  */
 export const updateJobProperty = (jobId: string, property: string, value): Promise<IJob> => {
+    validateConnection();
+
     return Job.findOneAndUpdate({ id: jobId }, { $set: { [property]: value } }).exec();
 };
 
 export const getJobsByDate = async (field: string, from: Date, to: Date): Promise<Array<IJob>> => {
+    validateConnection();
+
     const x = {
         [field]: {
             $gte: from,
@@ -476,13 +482,15 @@ export const addStatus = async (status: IStatus): Promise<IStatusModel> => {
 
     await newStatus.save();
 
-    debug(`status created in database with date ${newStatus.date.toISOString()}`);
+    debug(`status created in database with date ${status.date.toISOString()}`);
 
     return newStatus;
 };
 
 /** Update an status in the database */
 export const updateStatus = async (status: IStatusModel, field) => {
+    validateConnection();
+
     status.markModified(field);
 
     await status.save();
@@ -493,6 +501,7 @@ export const updateStatus = async (status: IStatusModel, field) => {
  */
 export const getMostRecentStatus = async (): Promise<IStatus> => {
     validateConnection();
+
     const result: IStatus = await Status.findOne()
         .sort({ date: -1 })
         .exec();
@@ -502,6 +511,7 @@ export const getMostRecentStatus = async (): Promise<IStatus> => {
 
 export const getStatusByDate = async (date: Date): Promise<IStatus> => {
     validateConnection();
+
     const result: IStatus = await Status.findOne({ date }).exec();
 
     return result;

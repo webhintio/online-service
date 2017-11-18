@@ -1,17 +1,16 @@
 import * as moment from 'moment';
-import * as db from '../../common/database/database';
+import * as db from '../database/database';
 import { IStatusModel } from '../database/models/status';
 import { IJob, IStatus, StatusAverage, StatusFinished, StatusScans, StatusQueue } from '../../types';
 import { JobStatus } from '../../enums/status';
 import { Queue } from '../queue/queue';
-import * as database from '../database/database';
 import * as logger from '../../utils/logging';
 
 const moduleName: string = 'Status service';
 const { database: dbConnectionString, queue: queueConnectionString } = process.env; // eslint-disable-line no-process-env
 let queueJobs: Queue;
 let queueResults: Queue;
-const updateTimeout = 15 * 60 * 1000; // 15 minutes.
+
 const cache: Map<string, IStatus> = new Map();
 // The last item '60' it is just for simplicity.
 const quarters: Array<number> = [0, 15, 30, 45, 60];
@@ -79,15 +78,11 @@ const updateStatusesSince = async (since: Date) => {
     let last: IStatusModel;
 
     while (to.isBefore(moment())) {
-        const now: number = Date.now();
         const [jobsCreated, jobsStarted, jobsFinished]: [Array<IJob>, Array<IJob>, Array<IJob>] = await Promise.all([
             db.getJobsByDate('queued', from.toDate(), to.toDate()),
             db.getJobsByDate('started', from.toDate(), to.toDate()),
             db.getJobsByDate('finished', from.toDate(), to.toDate())
         ]);
-
-        // TODO: remove this line
-        console.log(`Database request time: ${Date.now() - now}ms`);
 
         logger.log(`Found: ${jobsCreated.length} jobs created from ${from.toISOString()} to ${to.toISOString()}`, moduleName);
         logger.log(`Found: ${jobsCreated.length} jobs started from ${from.toISOString()} to ${to.toISOString()}`, moduleName);
@@ -107,7 +102,7 @@ const updateStatusesSince = async (since: Date) => {
             }
         };
 
-        last = await database.addStatus(result);
+        last = await db.addStatus(result);
 
 
         from = to;
@@ -125,14 +120,14 @@ const updateStatusesSince = async (since: Date) => {
             results: messagesResults
         };
 
-        await database.updateStatus(last, 'queues');
+        await db.updateStatus(last, 'queues');
     }
 };
 
 /**
  * Update the scanner status.
  */
-const updateStatuses = async () => {
+export const updateStatuses = async () => {
     await db.connect(dbConnectionString);
     if (!queueJobs) {
         queueJobs = new Queue('sonar-jobs', queueConnectionString);
@@ -153,8 +148,6 @@ const updateStatuses = async () => {
     logger.log(`Updating status since: ${since.toISOString()}`);
     await updateStatusesSince(since);
     logger.log(`Status database updated`);
-
-    setTimeout(updateStatuses, updateTimeout);
 };
 
 /**
@@ -189,9 +182,11 @@ export const getStatus = async (from: Date = new Date(), to: Date = new Date()):
         const isoString = fromQuarter.toISOString();
 
         if (!cache.has(isoString)) {
-            const newValue: IStatus = await database.getStatusByDate(fromQuarter.toDate());
+            const newValue: IStatus = await db.getStatusByDate(fromQuarter.toDate());
 
-            cache.set(isoString, new Status(newValue));
+            if (newValue) {
+                cache.set(isoString, new Status(newValue));
+            }
         }
 
         result.push(cache.get(isoString));
@@ -201,7 +196,3 @@ export const getStatus = async (from: Date = new Date(), to: Date = new Date()):
 
     return result;
 };
-
-if (dbConnectionString) {
-    updateStatuses();
-}
