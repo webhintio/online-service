@@ -12,7 +12,7 @@ import { Job, IJobModel } from './models/job';
 import { ServiceConfig, IServiceConfigModel } from './models/serviceconfig';
 import { User, IUserModel } from './models/user';
 import { Status, IStatusModel } from './models/status';
-import { IJob, IServiceConfig, IStatus, IUser, Rule, StatisticOptions, StatisticQueryParameter } from '../../types';
+import { IJob, IServiceConfig, IStatus, IUser, Rule, StatOptions, StatQueryParameter } from '../../types';
 import { debug as d } from '../../utils/debug';
 import * as logger from '../../utils/logging';
 
@@ -418,9 +418,9 @@ export const removeUserByName = async (name: string) => {
 /* ******************************************** */
 /**
  * Return the count of a query.
- * @param {StatisticQueryParameter} queryParameters - Query parameters.
+ * @param {StatQueryParameter} queryParameters - Query parameters.
  */
-const count = (queryParameters: StatisticQueryParameter): Promise<number> => {
+const count = (queryParameters: StatQueryParameter): Promise<number> => {
     const query = Job.find(queryParameters);
 
     return query
@@ -431,12 +431,12 @@ const count = (queryParameters: StatisticQueryParameter): Promise<number> => {
 /**
  * Get the number of jobs with a status.
  * @param {JobStatus} status - Job status.
- * @param {StatisticOptions} options - Query options.
+ * @param {StatOptions} options - Query options.
  */
-export const getStatusCount = async (status: JobStatus, options?: StatisticOptions): Promise<number> => {
+export const getStatusCount = async (status: JobStatus, options?: StatOptions): Promise<number> => {
     validateConnection();
 
-    const queryParameters: StatisticQueryParameter = { status };
+    const queryParameters: StatQueryParameter = { status };
 
     if (options && options.since) {
         queryParameters[options.field] = { $gte: options.since };
@@ -451,12 +451,12 @@ export const getStatusCount = async (status: JobStatus, options?: StatisticOptio
 
 /**
  * Get the number of jobs in the database.
- * @param {StatisticOptions} options - Query options.
+ * @param {StatOptions} options - Query options.
  */
-export const getJobsCount = async (options?: StatisticOptions): Promise<number> => {
+export const getJobsCount = async (options?: StatOptions): Promise<number> => {
     validateConnection();
 
-    const queryParameters: StatisticQueryParameter = {};
+    const queryParameters: StatQueryParameter = {};
 
     if (options && options.since) {
         queryParameters.finished = { $gte: options.since };
@@ -487,7 +487,7 @@ export const addStatus = async (status: IStatus): Promise<IStatusModel> => {
     return newStatus;
 };
 
-/** Update an status in the database */
+/** Update an status in the database. */
 export const updateStatus = async (status: IStatusModel, field) => {
     validateConnection();
 
@@ -509,10 +509,20 @@ export const getMostRecentStatus = async (): Promise<IStatus> => {
     return result;
 };
 
-export const getStatusByDate = async (date: Date): Promise<IStatus> => {
+/**
+ * Get the statuses between two dates.
+ * @param {Date} from - Initial date.
+ * @param {Date} to - End date.
+ */
+export const getStatusesByDate = async (from: Date, to: Date): Promise<Array<IStatus>> => {
     validateConnection();
 
-    const result: IStatus = await Status.findOne({ date }).exec();
+    const result: Array<IStatus> = await Status.find({
+        date: {
+            $gte: from,
+            $lte: to
+        }
+    }).exec();
 
     return result;
 };

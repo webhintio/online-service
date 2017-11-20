@@ -338,10 +338,10 @@ test.serial('getMostRecentStatus should fail if database is not connected', asyn
     }
 });
 
-test.serial('getStatusByDate should fail if database is not connected', async (t) => {
+test.serial('getStatusesByDate should fail if database is not connected', async (t) => {
     t.plan(1);
     try {
-        await database.getStatusByDate(null);
+        await database.getStatusesByDate(null, null);
     } catch (err) {
         t.is(err.message, 'Database not connected');
     }

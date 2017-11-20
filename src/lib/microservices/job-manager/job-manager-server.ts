@@ -40,8 +40,8 @@ const getJobStatus = async (req, res) => {
 };
 
 const getScannerStatus = async (req, res) => {
-    const to = moment().subtract(1, 'day');
-    const status = await statusManager.getStatus(to.toDate());
+    const from = moment().subtract(1, 'day');
+    const status = await statusManager.getStatus(from.toDate());
 
     res.send(status);
 };
@@ -70,8 +70,8 @@ const configureServer = () => {
     app.set('port', port || 3000);
 
     app.post('/', createJob);
-    app.get('/:id', getJobStatus);
     app.get('/status', getScannerStatus);
+    app.get('/:id', getJobStatus);
 
     return app;
 };

@@ -1,6 +1,6 @@
 import * as moment from 'moment';
 import * as db from '../../common/database/database';
-import { Statistic } from '../../types';
+import { Stat } from '../../types';
 import { JobStatus } from '../../enums/status';
 
 /**
@@ -10,7 +10,7 @@ import { JobStatus } from '../../enums/status';
  * # of items in each status
  * # of errors and jobs finished in the last hour
  */
-export const info = async (): Promise<Statistic> => {
+export const info = async (): Promise<Stat> => {
     const anHourAgo = moment()
         .subtract(1, 'hour')
         .toDate();

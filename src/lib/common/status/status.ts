@@ -11,8 +11,10 @@ const { database: dbConnectionString, queue: queueConnectionString } = process.e
 let queueJobs: Queue;
 let queueResults: Queue;
 
-const cache: Map<string, IStatus> = new Map();
-// The last item '60' it is just for simplicity.
+// The last item '60' it is just to make the algorightm
+// easier to calculate the closest quarter of an hour.
+// If we don't have the 60, then we need to check always if
+// quarters[i] or quarters[i+1] exists or not.
 const quarters: Array<number> = [0, 15, 30, 45, 60];
 
 class Status implements IStatus {
@@ -30,14 +32,13 @@ class Status implements IStatus {
 }
 
 /**
- * Calculate the time average in an array of jobs.
+ * Calculate the average time in an array of jobs.
  * @param {Array<IJob>} jobs - Jobs to calculate the average.
  * @param {string} fieldEnd - First field to calculate the average.
  * @param {string} fieldStart - Second field to calculate the average.
  */
 const average = (jobs: Array<IJob>, fieldEnd: string, fieldStart: string): number => {
     if (jobs.length === 0) {
-        // QUESTION: return null or return 0?
         return null;
     }
 
@@ -78,14 +79,17 @@ const updateStatusesSince = async (since: Date) => {
     let last: IStatusModel;
 
     while (to.isBefore(moment())) {
+        const fromDate = from.toDate();
+        const toDate = to.toDate();
+
         const [jobsCreated, jobsStarted, jobsFinished]: [Array<IJob>, Array<IJob>, Array<IJob>] = await Promise.all([
-            db.getJobsByDate('queued', from.toDate(), to.toDate()),
-            db.getJobsByDate('started', from.toDate(), to.toDate()),
-            db.getJobsByDate('finished', from.toDate(), to.toDate())
+            db.getJobsByDate('queued', fromDate, toDate),
+            db.getJobsByDate('started', fromDate, toDate),
+            db.getJobsByDate('finished', fromDate, toDate)
         ]);
 
         logger.log(`Found: ${jobsCreated.length} jobs created from ${from.toISOString()} to ${to.toISOString()}`, moduleName);
-        logger.log(`Found: ${jobsCreated.length} jobs started from ${from.toISOString()} to ${to.toISOString()}`, moduleName);
+        logger.log(`Found: ${jobsStarted.length} jobs started from ${from.toISOString()} to ${to.toISOString()}`, moduleName);
         logger.log(`Found: ${jobsFinished.length} jobs finished from ${from.toISOString()} to ${to.toISOString()}`, moduleName);
 
         const result: IStatus = {
@@ -103,7 +107,6 @@ const updateStatusesSince = async (since: Date) => {
         };
 
         last = await db.addStatus(result);
-
 
         from = to;
         to = moment(from).add(15, 'm');
@@ -138,7 +141,7 @@ export const updateStatuses = async () => {
     }
 
     const lastStatus: IStatus = await db.getMostRecentStatus();
-    // Any date before the online scanner exists.
+    // Online scanner was published in this date, no results before.
     let since: Date = moment('2017-10-15').toDate();
 
     if (lastStatus) {
@@ -152,7 +155,7 @@ export const updateStatuses = async () => {
 
 /**
  * Calculate the closest quarter of an hour.
- * @param {Date} date Date calculate the closest quarter of an hour
+ * @param {Date} date - Date to calculate the closest quarter of an hour
  */
 const getCloserQuarter = (date: Date): moment.Moment => {
     const d: moment.Moment = moment(date);
@@ -174,25 +177,11 @@ const getCloserQuarter = (date: Date): moment.Moment => {
  * @param {Date} to - Time until we want to get results.
  */
 export const getStatus = async (from: Date = new Date(), to: Date = new Date()): Promise<Array<IStatus>> => {
-    const fromQuarter: moment.Moment = getCloserQuarter(from);
-    const toQuarter: moment.Moment = getCloserQuarter(to);
-    const result: Array<IStatus> = [];
+    const fromQuarter: Date = getCloserQuarter(from).toDate();
+    const toQuarter: Date = getCloserQuarter(to).toDate();
+    const result: Array<IStatus> = await db.getStatusesByDate(fromQuarter, toQuarter);
 
-    while (fromQuarter.isSameOrBefore(toQuarter)) {
-        const isoString = fromQuarter.toISOString();
-
-        if (!cache.has(isoString)) {
-            const newValue: IStatus = await db.getStatusByDate(fromQuarter.toDate());
-
-            if (newValue) {
-                cache.set(isoString, new Status(newValue));
-            }
-        }
-
-        result.push(cache.get(isoString));
-
-        fromQuarter.add(15, 'm');
-    }
-
-    return result;
+    return result.map((status) => {
+        return new Status(status);
+    });
 };

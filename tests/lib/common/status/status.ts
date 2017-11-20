@@ -29,7 +29,7 @@ const database = {
     connect() { },
     getJobsByDate() { },
     getMostRecentStatus() { },
-    getStatusByDate() { },
+    getStatusesByDate() { },
     updateStatus() { }
 };
 
@@ -66,8 +66,8 @@ test.afterEach.always((t) => {
     t.context.database.updateStatus.restore();
     t.context.queueMethods.getMessagesCount.restore();
 
-    if (t.context.database.getStatusByDate.restore) {
-        t.context.database.getStatusByDate.restore();
+    if (t.context.database.getStatusesByDate.restore) {
+        t.context.database.getStatusesByDate.restore();
     }
     if (t.context.database.getMostRecentStatus.restore) {
         t.context.database.getMostRecentStatus.restore();
@@ -78,58 +78,42 @@ test.afterEach.always((t) => {
 });
 
 test.serial('getStatus should return the items in the database between the dates (1/3)', async (t) => {
-    sinon.stub(database, 'getStatusByDate').resolves(validStatus);
+    sinon.stub(database, 'getStatusesByDate').resolves([validStatus]);
 
     await status.getStatus(new Date('2017-10-15T08:29:59.999Z'), new Date('2017-10-15T08:30:00.000Z'));
 
-    t.is(t.context.database.getStatusByDate.callCount, 2);
+    t.is(t.context.database.getStatusesByDate.callCount, 1);
 
-    const args = t.context.database.getStatusByDate.args;
+    const args = t.context.database.getStatusesByDate.args;
 
     t.true(moment(args[0][0]).isSame(moment('2017-10-15T08:15:00.000Z')));
-    t.true(moment(args[1][0]).isSame(moment('2017-10-15T08:30:00.000Z')));
+    t.true(moment(args[0][1]).isSame(moment('2017-10-15T08:30:00.000Z')));
 });
 
 test.serial('getStatus should return the items in the database between the dates (2/3)', async (t) => {
-    sinon.stub(database, 'getStatusByDate').resolves(validStatus);
+    sinon.stub(database, 'getStatusesByDate').resolves([validStatus]);
 
     await status.getStatus(new Date('2017-10-15T09:15:00.000Z'), new Date('2017-10-15T09:38:00.000Z'));
 
-    t.is(t.context.database.getStatusByDate.callCount, 2);
+    t.is(t.context.database.getStatusesByDate.callCount, 1);
 
-    const args = t.context.database.getStatusByDate.args;
+    const args = t.context.database.getStatusesByDate.args;
 
     t.true(moment(args[0][0]).isSame(moment('2017-10-15T09:15:00.000Z')));
-    t.true(moment(args[1][0]).isSame(moment('2017-10-15T09:30:00.000Z')));
+    t.true(moment(args[0][1]).isSame(moment('2017-10-15T09:30:00.000Z')));
 });
 
 test.serial('getStatus should return the items in the database between the dates (3/3)', async (t) => {
-    sinon.stub(database, 'getStatusByDate').resolves(validStatus);
+    sinon.stub(database, 'getStatusesByDate').resolves([validStatus]);
 
     await status.getStatus(new Date('2017-10-15T10:00:00.000Z'), new Date('2017-10-15T10:59:59.999Z'));
 
-    t.is(t.context.database.getStatusByDate.callCount, 4);
+    t.is(t.context.database.getStatusesByDate.callCount, 1);
 
-    const args = t.context.database.getStatusByDate.args;
+    const args = t.context.database.getStatusesByDate.args;
 
     t.true(moment(args[0][0]).isSame(moment('2017-10-15T10:00:00.000Z')));
-    t.true(moment(args[1][0]).isSame(moment('2017-10-15T10:15:00.000Z')));
-    t.true(moment(args[2][0]).isSame(moment('2017-10-15T10:30:00.000Z')));
-    t.true(moment(args[3][0]).isSame(moment('2017-10-15T10:45:00.000Z')));
-});
-
-test.serial(`getStatus shouldn't call to the database if the data is in the cache`, async (t) => {
-    sinon.stub(database, 'getStatusByDate').resolves(validStatus);
-
-    await status.getStatus(new Date('2017-10-15T11:15:00.000Z'), new Date('2017-10-15T11:30:00.000Z'));
-    await status.getStatus(new Date('2017-10-15T11:15:00.000Z'), new Date('2017-10-15T11:30:00.000Z'));
-
-    t.is(t.context.database.getStatusByDate.callCount, 2);
-
-    const args = t.context.database.getStatusByDate.args;
-
-    t.true(moment(args[0][0]).isSame(moment('2017-10-15T11:15:00.000Z')));
-    t.true(moment(args[1][0]).isSame(moment('2017-10-15T11:30:00.000Z')));
+    t.true(moment(args[0][1]).isSame(moment('2017-10-15T10:45:00.000Z')));
 });
 
 test.serial('updateStatuses should get results every 15 minutes', async (t) => {
