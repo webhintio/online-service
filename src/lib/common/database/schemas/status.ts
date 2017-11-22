@@ -4,5 +4,6 @@ export const StatusSchema: Schema = new Schema({
     average: {},
     date: Date,
     queues: {},
+    rules: {},
     scans: {}
 });

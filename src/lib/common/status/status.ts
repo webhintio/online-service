@@ -1,8 +1,11 @@
 import * as moment from 'moment';
+import * as _ from 'lodash';
+import { Severity } from 'sonarwhal/dist/src/lib/types';
+
 import * as db from '../database/database';
 import { IStatusModel } from '../database/models/status';
-import { IJob, IStatus, StatusAverage, StatusFinished, StatusScans, StatusQueue } from '../../types';
-import { JobStatus } from '../../enums/status';
+import { IJob, IStatus, IStatusRuleDetail, IStatusRules, IStatusUrl, Rule, StatusAverage, StatusFinished, StatusRuleDetailList, StatusScans, StatusQueue } from '../../types';
+import { JobStatus, RuleStatus } from '../../enums/status';
 import { Queue } from '../queue/queue';
 import * as logger from '../../utils/logging';
 
@@ -22,12 +25,56 @@ class Status implements IStatus {
     public date: Date;
     public queues: StatusQueue;
     public scans: StatusScans;
+    public rules: StatusRules;
 
     public constructor(status: IStatus) {
         this.average = status.average;
         this.date = status.date;
         this.queues = status.queues;
+        this.rules = status.rules;
         this.scans = status.scans;
+    }
+}
+
+class StatusUrl implements IStatusUrl {
+    public errors: number;
+    public passes: number;
+    public warnings: number;
+    public url: string;
+
+    public constructor(url: string) {
+        this.errors = 0;
+        this.passes = 0;
+        this.warnings = 0;
+        this.url = url;
+    }
+}
+
+class StatusRuleDetail implements IStatusRuleDetail {
+    public errors: number;
+    public passes: number;
+    public warnings: number;
+    public urls: Array<IStatusUrl>;
+
+    public constructor() {
+        this.errors = 0;
+        this.passes = 0;
+        this.urls = [];
+        this.warnings = 0;
+    }
+}
+
+class StatusRules implements IStatusRules {
+    public errors: number;
+    public passes: number;
+    public warnings: number;
+    public rules: StatusRuleDetailList;
+
+    public constructor() {
+        this.errors = 0;
+        this.passes = 0;
+        this.warnings = 0;
+        this.rules = {};
     }
 }
 
@@ -70,6 +117,70 @@ const getFinishedByStatus = (jobs: Array<IJob>): StatusFinished => {
 };
 
 /**
+ * Set the number of errors and warnings in a rule.
+ * @param {StatusUrl} url - Url status where we want to set the number of errors and warnings.
+ * @param {Rule} rule - Rule with the error messages.
+ */
+const setUrlCounts = (url: StatusUrl, rule: Rule) => {
+    const messagesGrouped = _.groupBy(rule.messages, 'severity');
+    const errors = messagesGrouped[Severity.error.toString()];
+    const warnings = messagesGrouped[Severity.warning.toString()];
+
+    url.errors = errors ? errors.length : 0;
+    url.warnings = warnings ? warnings.length : 0;
+};
+
+/**
+ * Get the status of the rules in a collection of IJobs.
+ * @param {Array<IJob>} jobs -Jobs to get the Status of the rules.
+ */
+const getRulesStatus = (jobs: Array<IJob>) => {
+    const result: IStatusRules = new StatusRules();
+
+    jobs.reduce((total, job) => {
+        job.rules.forEach((rule) => {
+            let detail: IStatusRuleDetail = total.rules[rule.name];
+
+            if (!detail) {
+                detail = new StatusRuleDetail();
+
+                total.rules[rule.name] = detail;
+            }
+
+            const url = new StatusUrl(job.url);
+
+            detail.urls.push(url);
+
+            switch (rule.status) {
+                case RuleStatus.pass:
+                    url.passes++;
+                    detail.passes++;
+                    total.passes++;
+                    break;
+                case RuleStatus.error: {
+                    setUrlCounts(url, rule);
+
+                    detail.errors++;
+                    total.errors++;
+                    break;
+                }
+                case RuleStatus.warning:
+                    setUrlCounts(url, rule);
+                    detail.warnings++;
+                    total.warnings++;
+                    break;
+                default:
+                    break;
+            }
+        });
+
+        return total;
+    }, result);
+
+    return result;
+};
+
+/**
  * Update the statuses since a date.
  * @param {Date} since - Date to start calculating the statuses.
  */
@@ -99,6 +210,7 @@ const updateStatusesSince = async (since: Date) => {
             },
             date: to.toDate(),
             queues: null,
+            rules: getRulesStatus(jobsFinished),
             scans: {
                 created: jobsCreated.length,
                 finished: getFinishedByStatus(jobsFinished),
@@ -155,7 +267,7 @@ export const updateStatuses = async () => {
 
 /**
  * Calculate the closest quarter of an hour.
- * @param {Date} date - Date to calculate the closest quarter of an hour
+ * @param {Date} date - Date to calculate the closest quarter of an hour.
  */
 const getCloserQuarter = (date: Date): moment.Moment => {
     const d: moment.Moment = moment(date);

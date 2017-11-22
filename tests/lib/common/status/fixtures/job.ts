@@ -34,13 +34,33 @@ export const job = {
         },
         {
             category: 'security',
-            messages: [],
+            messages: [{
+                location: {
+                    column: -1,
+                    line: -1
+                },
+                message: `Error message`,
+                resource: '',
+                ruleId: 'no-disallowed-headers',
+                severity: 2,
+                sourceCode: null
+            }, {
+                location: {
+                    column: -1,
+                    line: -1
+                },
+                message: `Error message`,
+                resource: '',
+                ruleId: 'no-disallowed-headers',
+                severity: 1,
+                sourceCode: null
+            }],
             name: 'no-disallowed-headers',
-            status: 'pass'
+            status: 'error'
         }
     ],
     sonarVersion: '0.12.3',
     started: new Date('2017-10-30T17:54:23.540Z'),
     status: 'finished',
-    url: 'https://app.demo.diplomasafe.com/da-DK/dip/dc786061808ac501f53e11f216d33604c4188a793/kompetencebaseret-interviewteknik10'
+    url: 'https://www.url.com'
 };

@@ -14,6 +14,7 @@ const validStatus: IStatus = {
     },
     date: new Date('2017-10-15T08:15:00.000Z'),
     queues: null,
+    rules: null,
     scans: {
         created: 0,
         finished: {
@@ -152,11 +153,7 @@ test.serial('updateStatuses should just update the queue status for the last per
     t.true(t.context.database.updateStatus.calledOnce);
 });
 
-test.serial('updateStatuses should calculate the averages', async (t) => {
-    const recentDate = moment()
-        .subtract(16, 'm')
-        .startOf('minute');
-
+const getValidTestData = () => {
     const validJob2 = _.cloneDeep(validJob);
     const validJob3 = _.cloneDeep(validJob);
 
@@ -180,6 +177,7 @@ test.serial('updateStatuses should calculate the averages', async (t) => {
         .add(1, 'm')
         .add(30, 's')
         .toDate();
+    validJob2.url = 'http://www.new-url.com';
 
     validJob3.queued = moment()
         .startOf('hour')
@@ -190,9 +188,18 @@ test.serial('updateStatuses should calculate the averages', async (t) => {
     validJob3.finished = moment(validJob3.started)
         .add(2, 'm')
         .toDate();
+    validJob3.rules[1].status = 'warning';
+
+    return [validJob, validJob2, validJob3];
+};
+
+test.serial('updateStatuses should calculate the averages', async (t) => {
+    const recentDate = moment()
+        .subtract(16, 'm')
+        .startOf('minute');
 
     sinon.stub(database, 'getMostRecentStatus').resolves({ date: recentDate });
-    sinon.stub(database, 'getJobsByDate').resolves([validJob, validJob2, validJob3]);
+    sinon.stub(database, 'getJobsByDate').resolves(getValidTestData());
 
     await status.updateStatuses();
 
@@ -204,4 +211,39 @@ test.serial('updateStatuses should calculate the averages', async (t) => {
 
     t.is(args.average.start, 3000);
     t.is(args.average.finish, 90000);
+});
+
+test.serial('updateStatuses should calculate rules status', async (t) => {
+    const recentDate = moment()
+        .subtract(16, 'm')
+        .startOf('minute');
+
+    sinon.stub(database, 'getMostRecentStatus').resolves({ date: recentDate });
+    sinon.stub(database, 'getJobsByDate').resolves(getValidTestData());
+
+    await status.updateStatuses();
+
+    t.is(t.context.database.getJobsByDate.callCount, 3);
+    t.true(t.context.database.addStatus.calledOnce);
+    t.true(t.context.database.updateStatus.calledOnce);
+
+    const args = t.context.database.addStatus.args[0][0];
+
+    t.is(args.rules.errors, 2);
+    t.is(args.rules.warnings, 1);
+    t.is(args.rules.passes, 3);
+
+    const noDisallowedHeaders = args.rules.rules['no-disallowed-headers'];
+    const noFriendlyErrorPages = args.rules.rules['no-friendly-error-pages'];
+
+    t.is(noDisallowedHeaders.errors, 2);
+    t.is(noDisallowedHeaders.warnings, 1);
+    t.is(noDisallowedHeaders.passes, 0);
+    t.is(noDisallowedHeaders.urls.length, 3);
+    t.is(noDisallowedHeaders.urls[0].errors, 1);
+    t.is(noDisallowedHeaders.urls[0].warnings, 1);
+    t.is(noFriendlyErrorPages.urls.length, 3);
+    t.is(noFriendlyErrorPages.passes, 3);
+    t.is(noFriendlyErrorPages.errors, 0);
+    t.is(noFriendlyErrorPages.warnings, 0);
 });
