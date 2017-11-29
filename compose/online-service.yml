@@ -82,3 +82,20 @@ services:
             - queue=<YourAzureServiceBusConnectionString>
             - database=<YourDatabaseConnectionString>
             - APP_INSIGHTS_KEY=<YourAppInsightKey>
+    status-service:
+        image: status-service:latest
+        build:
+            context: ../
+            dockerfile: Dockerfile.status
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: on-failure
+                delay: 5s
+                max_attempts: 3
+            update_config:
+                parallelism: 1
+                delay: 10s
+        environment:
+            - queue=<YourAzureServiceBusConnectionString>
+            - database=<YourDatabaseConnectionString>

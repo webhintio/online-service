@@ -19,7 +19,7 @@ import * as logger from './utils/logging';
 import { loadJSONFile } from './utils/misc';
 import * as worker from './microservices/worker-service/worker-service';
 import * as sync from './microservices/sync-service/sync-service';
-import * as statusServer from './microservices/status-service/status-service';
+import * as statusService from './microservices/status-service/status-service';
 
 const pkg = loadJSONFile(path.join(__dirname, '../../../package.json'));
 const moduleName: string = 'cli';
@@ -63,7 +63,7 @@ export const execute = async (args: string | Array<string> | object): Promise<nu
             microservices.push(sync.run());
         }
         if (microservice === Microservice.status || microservice === Microservice.all) {
-            microservices.push(statusServer.run());
+            microservices.push(statusService.run());
         }
 
         await Promise.all(microservices);
