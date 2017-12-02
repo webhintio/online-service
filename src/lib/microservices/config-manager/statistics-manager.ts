@@ -16,17 +16,17 @@ export const info = async (): Promise<Stat> => {
         .toDate();
 
     const promises = [
-        db.getJobsCount(),
-        db.getJobsCount({ since: anHourAgo }),
-        db.getStatusCount(JobStatus.error),
-        db.getStatusCount(JobStatus.finished),
-        db.getStatusCount(JobStatus.pending),
-        db.getStatusCount(JobStatus.started),
-        db.getStatusCount(JobStatus.error, {
+        db.job.getCount(),
+        db.job.getCount({ since: anHourAgo }),
+        db.job.getStatusCount(JobStatus.error),
+        db.job.getStatusCount(JobStatus.finished),
+        db.job.getStatusCount(JobStatus.pending),
+        db.job.getStatusCount(JobStatus.started),
+        db.job.getStatusCount(JobStatus.error, {
             field: 'finished',
             since: anHourAgo
         }),
-        db.getStatusCount(JobStatus.finished, {
+        db.job.getStatusCount(JobStatus.finished, {
             field: 'finished',
             since: anHourAgo
         })

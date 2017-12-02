@@ -65,7 +65,7 @@ export const run = async () => {
 
             for (const [id, jobs] of Object.entries(groups)) {
                 const lock = await database.lock(id);
-                const dbJob: IJobModel = await database.getJob(id);
+                const dbJob: IJobModel = await database.job.get(id);
 
                 if (!dbJob) {
                     logger.error(`Job ${id} not found in database`, moduleName);
@@ -116,7 +116,7 @@ export const run = async () => {
                     logger.log(generateLog(`Synchronized Job`, job, { showRule: true }), moduleName);
                 }
 
-                await database.updateJob(dbJob);
+                await database.job.update(dbJob);
 
                 logger.log(`Job ${id} updated in database`);
 

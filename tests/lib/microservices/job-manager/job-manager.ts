@@ -6,12 +6,14 @@ import * as proxyquire from 'proxyquire';
 import * as moment from 'moment';
 
 const database = {
-    getJob() { },
-    getJobsByUrl() { },
+    job: {
+        add() { },
+        get() { },
+        getByUrl() { },
+        update() { }
+    },
     lock() { },
-    newJob() { },
-    unlock() { },
-    updateJob() { }
+    unlock() { }
 };
 
 const configManager = { active() { } };
@@ -65,10 +67,10 @@ const activeConfig = {
 const validatedJobCreatedInDatabase = (t, jobInput) => {
     t.true(t.context.database.lock.calledOnce);
     t.true(t.context.database.unlock.calledOnce);
-    t.true(t.context.database.newJob.calledOnce);
+    t.true(t.context.database.job.add.calledOnce);
     t.true(t.context.queueMethods.sendMessage.calledTwice);
 
-    const args = t.context.database.newJob.args[0];
+    const args = t.context.database.job.add.args[0];
 
     t.is(args[0], jobInput.url);
     t.is(args[1], JobStatus.pending);
@@ -108,10 +110,10 @@ const validatedJobCreatedInDatabase = (t, jobInput) => {
 };
 
 test.beforeEach(async (t) => {
-    sinon.stub(database, 'getJob').resolves({});
+    sinon.stub(database.job, 'get').resolves({});
     sinon.stub(database, 'lock').resolves({});
     sinon.stub(database, 'unlock').resolves({});
-    sinon.spy(database, 'updateJob');
+    sinon.spy(database.job, 'update');
     sinon.stub(configManager, 'active').resolves(activeConfig);
     sinon.spy(queueMethods, 'getMessagesCount');
     sinon.stub(resourceLoader, 'loadRule').returns(rule);
@@ -124,18 +126,18 @@ test.beforeEach(async (t) => {
 });
 
 test.afterEach.always((t) => {
-    t.context.database.getJob.restore();
+    t.context.database.job.get.restore();
     t.context.database.lock.restore();
     t.context.database.unlock.restore();
-    t.context.database.updateJob.restore();
-    if (t.context.database.newJob.restore) {
-        t.context.database.newJob.restore();
+    t.context.database.job.update.restore();
+    if (t.context.database.job.add.restore) {
+        t.context.database.job.add.restore();
     }
     if (t.context.queueMethods.sendMessage.restore) {
         t.context.queueMethods.sendMessage.restore();
     }
-    if (t.context.database.getJobsByUrl.restore) {
-        t.context.database.getJobsByUrl.restore();
+    if (t.context.database.job.getByUrl.restore) {
+        t.context.database.job.getByUrl.restore();
     }
     t.context.queueMethods.getMessagesCount.restore();
     t.context.configManager.active.restore();
@@ -153,7 +155,7 @@ test.serial(`if there is no url, it should return an error`, async (t) => {
         files: {}
     };
 
-    sinon.stub(database, 'newJob').resolves(jobInput);
+    sinon.stub(database.job, 'add').resolves(jobInput);
 
     try {
         await jobManager.startJob(jobInput);
@@ -164,7 +166,7 @@ test.serial(`if there is no url, it should return an error`, async (t) => {
 
 test.serial(`if the job doesn't exist, it should create a new job and add it to the queue`, async (t) => {
     sinon.spy(queueMethods, 'sendMessage');
-    sinon.stub(database, 'getJobsByUrl').resolves([]);
+    sinon.stub(database.job, 'getByUrl').resolves([]);
     const jobInput = {
         fields: {
             config: null,
@@ -181,7 +183,7 @@ test.serial(`if the job doesn't exist, it should create a new job and add it to 
         url: 'http://sonarwhal.com'
     };
 
-    sinon.stub(database, 'newJob').resolves(jobResult);
+    sinon.stub(database.job, 'add').resolves(jobResult);
 
     await jobManager.startJob(jobInput);
 
@@ -190,7 +192,7 @@ test.serial(`if the job doesn't exist, it should create a new job and add it to 
 
 test.serial(`if the job doesn't exist, but there is an error in Service Bus, it should set the status or the job to error`, async (t) => {
     sinon.stub(queueMethods, 'sendMessage').rejects();
-    sinon.stub(database, 'getJobsByUrl').resolves([]);
+    sinon.stub(database.job, 'getByUrl').resolves([]);
     const jobInput = {
         fields: {
             config: null,
@@ -207,16 +209,16 @@ test.serial(`if the job doesn't exist, but there is an error in Service Bus, it 
         url: 'http://sonarwhal.com'
     };
 
-    sinon.stub(database, 'newJob').resolves(jobResult);
+    sinon.stub(database.job, 'add').resolves(jobResult);
 
     await jobManager.startJob(jobInput);
 
-    t.true(t.context.database.updateJob.calledOnce);
+    t.true(t.context.database.job.update.calledOnce);
 });
 
 test.serial(`if the job doesn't exist, it should use the defaul configuration if source is not set`, async (t) => {
     sinon.spy(queueMethods, 'sendMessage');
-    sinon.stub(database, 'getJobsByUrl').resolves([]);
+    sinon.stub(database.job, 'getByUrl').resolves([]);
     const jobInput = {
         fields: {
             config: null,
@@ -233,7 +235,7 @@ test.serial(`if the job doesn't exist, it should use the defaul configuration if
         url: 'http://sonarwhal.com'
     };
 
-    sinon.stub(database, 'newJob').resolves(jobResult);
+    sinon.stub(database.job, 'add').resolves(jobResult);
 
     await jobManager.startJob(jobInput);
 
@@ -257,7 +259,7 @@ test.serial(`if the job exists, but it is expired, it should create a new job an
     setExpired(jobs[0]);
 
     sinon.spy(queueMethods, 'sendMessage');
-    sinon.stub(database, 'getJobsByUrl').resolves(jobs);
+    sinon.stub(database.job, 'getByUrl').resolves(jobs);
     const jobInput = {
         fields: {
             config: null,
@@ -274,7 +276,7 @@ test.serial(`if the job exists, but it is expired, it should create a new job an
         url: 'http://sonarwhal.com'
     };
 
-    sinon.stub(database, 'newJob').resolves(jobResult);
+    sinon.stub(database.job, 'add').resolves(jobResult);
 
     await jobManager.startJob(jobInput);
 
@@ -292,7 +294,7 @@ test.serial(`if the job exists, but config is different, it should create a new 
     }];
 
     sinon.spy(queueMethods, 'sendMessage');
-    sinon.stub(database, 'getJobsByUrl').resolves(jobs);
+    sinon.stub(database.job, 'getByUrl').resolves(jobs);
     const jobInput = {
         fields: {
             config: null,
@@ -309,7 +311,7 @@ test.serial(`if the job exists, but config is different, it should create a new 
         url: 'http://sonarwhal.com'
     };
 
-    sinon.stub(database, 'newJob').resolves(jobResult);
+    sinon.stub(database.job, 'add').resolves(jobResult);
 
     await jobManager.startJob(jobInput);
 
@@ -318,7 +320,7 @@ test.serial(`if the job exists, but config is different, it should create a new 
 
 test.serial(`if the source is a file and the config is not valid, it should return an error`, async (t) => {
     sinon.spy(queueMethods, 'sendMessage');
-    sinon.stub(database, 'getJobsByUrl').resolves([]);
+    sinon.stub(database.job, 'getByUrl').resolves([]);
     const jobInput = {
         fields: {
             rules: null,
@@ -333,19 +335,19 @@ test.serial(`if the source is a file and the config is not valid, it should retu
         }
     };
 
-    sinon.spy(database, 'newJob');
+    sinon.spy(database.job, 'add');
     t.plan(2);
     try {
         await jobManager.startJob(jobInput);
     } catch (err) {
-        t.false(t.context.database.newJob.called);
+        t.false(t.context.database.job.add.called);
         t.true(err.message.startsWith('Invalid Configuration'));
     }
 });
 
 test.serial(`if the source is a file and the config has duplicated rules, it should return an error`, async (t) => {
     sinon.spy(queueMethods, 'sendMessage');
-    sinon.stub(database, 'getJobsByUrl').resolves([]);
+    sinon.stub(database.job, 'getByUrl').resolves([]);
     const jobInput = {
         fields: {
             rules: null,
@@ -360,19 +362,19 @@ test.serial(`if the source is a file and the config has duplicated rules, it sho
         }
     };
 
-    sinon.spy(database, 'newJob');
+    sinon.spy(database.job, 'add');
     t.plan(2);
     try {
         await jobManager.startJob(jobInput);
     } catch (err) {
-        t.false(t.context.database.newJob.called);
+        t.false(t.context.database.job.add.called);
         t.is(err.message, 'Rule manifest-is-valid repeated');
     }
 });
 
 test.serial(`if the source is a file and the config is valid, it should create a new job`, async (t) => {
     sinon.spy(queueMethods, 'sendMessage');
-    sinon.stub(database, 'getJobsByUrl').resolves([]);
+    sinon.stub(database.job, 'getByUrl').resolves([]);
     const jobInput = {
         fields: {
             rules: null,
@@ -394,16 +396,16 @@ test.serial(`if the source is a file and the config is valid, it should create a
         url: 'http://sonarwhal.com'
     };
 
-    sinon.stub(database, 'newJob').resolves(jobResult);
+    sinon.stub(database.job, 'add').resolves(jobResult);
 
     await jobManager.startJob(jobInput);
 
     t.true(t.context.database.lock.calledOnce);
     t.true(t.context.database.unlock.calledOnce);
-    t.true(t.context.database.newJob.calledOnce);
+    t.true(t.context.database.job.add.calledOnce);
     t.is(t.context.queueMethods.sendMessage.callCount, 7);
 
-    const args = t.context.database.newJob.args[0];
+    const args = t.context.database.job.add.args[0];
 
     t.is(args[0], jobResult.url);
     t.is(args[1], JobStatus.pending);
@@ -417,7 +419,7 @@ test.serial(`if the job exists and it isn't expired, it shouldn't create a new j
     setNoExpired(jobs[0]);
 
     sinon.spy(queueMethods, 'sendMessage');
-    sinon.stub(database, 'getJobsByUrl').resolves(jobs);
+    sinon.stub(database.job, 'getByUrl').resolves(jobs);
     const jobInput = {
         fields: {
             config: null,
@@ -428,13 +430,13 @@ test.serial(`if the job exists and it isn't expired, it shouldn't create a new j
         files: {}
     };
 
-    sinon.spy(database, 'newJob');
+    sinon.spy(database.job, 'add');
 
     const result = await jobManager.startJob(jobInput);
 
     t.true(t.context.database.lock.calledOnce);
     t.true(t.context.database.unlock.calledOnce);
-    t.false(t.context.database.newJob.called);
+    t.false(t.context.database.job.add.called);
     t.false(t.context.queueMethods.sendMessage.called);
     t.is(result, jobs[0]);
 });
@@ -445,7 +447,7 @@ test.serial(`if the job exists, the status is neither finish or error, but finis
     jobs[0].finished = new Date();
 
     sinon.spy(queueMethods, 'sendMessage');
-    sinon.stub(database, 'getJobsByUrl').resolves(jobs);
+    sinon.stub(database.job, 'getByUrl').resolves(jobs);
     const jobInput = {
         fields: {
             config: null,
@@ -456,13 +458,13 @@ test.serial(`if the job exists, the status is neither finish or error, but finis
         files: {}
     };
 
-    sinon.spy(database, 'newJob');
+    sinon.spy(database.job, 'add');
 
     const result = await jobManager.startJob(jobInput);
 
     t.true(t.context.database.lock.calledOnce);
     t.true(t.context.database.unlock.calledOnce);
-    t.false(t.context.database.newJob.called);
+    t.false(t.context.database.job.add.called);
     t.false(t.context.queueMethods.sendMessage.called);
     t.is(result, jobs[0]);
 });
@@ -471,7 +473,7 @@ test.serial(`if the job is still running, it shouldn't create a new job`, async 
     const jobs = t.context.jobs;
 
     sinon.spy(queueMethods, 'sendMessage');
-    sinon.stub(database, 'getJobsByUrl').resolves(jobs);
+    sinon.stub(database.job, 'getByUrl').resolves(jobs);
     const jobInput = {
         fields: {
             config: null,
@@ -482,13 +484,13 @@ test.serial(`if the job is still running, it shouldn't create a new job`, async 
         files: {}
     };
 
-    sinon.spy(database, 'newJob');
+    sinon.spy(database.job, 'add');
 
     const result = await jobManager.startJob(jobInput);
 
     t.true(t.context.database.lock.calledOnce);
     t.true(t.context.database.unlock.calledOnce);
-    t.false(t.context.database.newJob.called);
+    t.false(t.context.database.job.add.called);
     t.false(t.context.queueMethods.sendMessage.called);
     t.is(result, jobs[0]);
 
@@ -498,5 +500,5 @@ test.serial(`if the job is still running, it shouldn't create a new job`, async 
 test.serial('jobManager.getJob should call to the database to get the job', async (t) => {
     await jobManager.getJob('jobId');
 
-    t.true(t.context.database.getJob.calledOnce);
+    t.true(t.context.database.job.get.calledOnce);
 });

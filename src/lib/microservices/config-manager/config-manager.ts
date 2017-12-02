@@ -57,7 +57,7 @@ export const add = (configData: ConfigData): Promise<IServiceConfig> => {
     validateConfigData(configData);
     const newConfigs: Array<IConfig> = getConfigsFromFile(configData.filePath);
 
-    return database.newConfig(configData.name, configData.jobCacheTime, configData.jobRunTime, newConfigs);
+    return database.serviceConfig.add(configData.name, configData.jobCacheTime, configData.jobRunTime, newConfigs);
 };
 
 /**
@@ -65,14 +65,14 @@ export const add = (configData: ConfigData): Promise<IServiceConfig> => {
  * @param {string} name Configuration name.
  */
 export const activate = (name: string): Promise<IServiceConfig> => {
-    return database.activateConfiguration(name);
+    return database.serviceConfig.activate(name);
 };
 
 /**
  * Get a list of all the configurations in the database.
  */
 export const list = (): Promise<Array<IServiceConfig>> => {
-    return database.listConfigurations();
+    return database.serviceConfig.getAll();
 };
 
 /**
@@ -80,20 +80,20 @@ export const list = (): Promise<Array<IServiceConfig>> => {
  * @param {string} name - Configuration name.
  */
 export const remove = async (name: string) => {
-    const config = await database.getConfigurationByName(name);
+    const config = await database.serviceConfig.get(name);
 
     if (config.active) {
         throw new Error('Configuration is already active');
     }
 
-    await database.removeConfiguration(name);
+    await database.serviceConfig.remove(name);
 };
 
 /**
  * Get the current active configuration.
  */
 export const active = async (): Promise<IServiceConfig> => {
-    const currentConfig: IServiceConfig = await database.getActiveConfiguration();
+    const currentConfig: IServiceConfig = await database.serviceConfig.getActive();
 
     if (!currentConfig) {
         throw new Error('There is no active configuration');
@@ -115,7 +115,7 @@ export const active = async (): Promise<IServiceConfig> => {
  * @param {string} name Configuration name.
  */
 export const get = async (name: string): Promise<IServiceConfig> => {
-    const config: IServiceConfig = await database.getConfigurationByName(name);
+    const config: IServiceConfig = await database.serviceConfig.get(name);
 
     if (!config) {
         throw new Error(`The configuration ${name} doesn't exist`);
@@ -130,7 +130,7 @@ export const get = async (name: string): Promise<IServiceConfig> => {
  * @param {ConfigData} configData New configuration values.
  */
 export const edit = async (oldName: string, configData: ConfigData): Promise<IServiceConfig> => {
-    const config: IServiceConfig = await database.getConfigurationByName(oldName);
+    const config: IServiceConfig = await database.serviceConfig.get(oldName);
 
     if (!config) {
         throw new Error(`The configuration ${oldName} doesn't exist`);
@@ -140,5 +140,5 @@ export const edit = async (oldName: string, configData: ConfigData): Promise<ISe
 
     const newConfigs: Array<IConfig> = configData.filePath ? getConfigsFromFile(configData.filePath) : null;
 
-    return await database.editConfiguration(oldName, configData.name, configData.jobCacheTime, configData.jobRunTime, newConfigs);
+    return await database.serviceConfig.edit(oldName, configData.name, configData.jobCacheTime, configData.jobRunTime, newConfigs);
 };

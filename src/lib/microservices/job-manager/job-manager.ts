@@ -47,7 +47,7 @@ const createNewJob = async (url: string, configs: Array<IConfig>, jobRunTime: nu
         rules = rules.concat(partialRules);
     }
 
-    const databaseJob = await database.newJob(url, JobStatus.pending, rules, configs, jobRunTime);
+    const databaseJob = await database.job.add(url, JobStatus.pending, rules, configs, jobRunTime);
 
     return {
         config: databaseJob.config,
@@ -181,7 +181,7 @@ export const startJob = async (data: RequestData): Promise<IJob> => {
     const lock = await database.lock(jobData.url);
 
     const config: Array<IConfig> = getConfig(jobData, serviceConfig);
-    const jobs: Array<IJob> = await database.getJobsByUrl(jobData.url);
+    const jobs: Array<IJob> = await database.job.getByUrl(jobData.url);
     let job = getActiveJob(jobs, config, serviceConfig.jobCacheTime);
 
     if (jobs.length === 0 || !job) {
@@ -198,7 +198,7 @@ export const startJob = async (data: RequestData): Promise<IJob> => {
             logger.log(`all messages sent to Service Bus`, moduleName);
         } catch (err) {
             // Update the job status to Error.
-            const dbJob = await database.getJob(job.id);
+            const dbJob = await database.job.get(job.id);
 
             dbJob.status = JobStatus.error;
             dbJob.finished = new Date();
@@ -211,7 +211,7 @@ export const startJob = async (data: RequestData): Promise<IJob> => {
                 dbJob.error = JSON.stringify(err);
             }
 
-            await database.updateJob(dbJob);
+            await database.job.update(dbJob);
         }
     }
 
@@ -225,7 +225,7 @@ export const startJob = async (data: RequestData): Promise<IJob> => {
  * @param {string} jobId - The id for the job the user wants to check.
  */
 export const getJob = (jobId: string): Promise<IJob> => {
-    return database.getJob(jobId);
+    return database.job.get(jobId);
 };
 
 /**
@@ -233,9 +233,13 @@ export const getJob = (jobId: string): Promise<IJob> => {
  * @param {string} jobId - The id for the job we want to mark as investigated
  */
 export const markJobAsInvestigated = (jobId: string): Promise<IJob> => {
-    return database.updateJobProperty(jobId, 'investigated', true);
+    return database.job.updateProperty(jobId, 'investigated', true);
 };
 
+/**
+ * Remove investigated mark in a job.
+ * @param {string} jobId - The id for the job we want to mark as investigated
+ */
 export const unmarkJobAsInvestigated = (jobId: string): Promise<IJob> => {
-    return database.updateJobProperty(jobId, 'investigated', null);
+    return database.job.updateProperty(jobId, 'investigated', null);
 };

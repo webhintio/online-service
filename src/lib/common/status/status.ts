@@ -194,9 +194,9 @@ const updateStatusesSince = async (since: Date) => {
         const toDate = to.toDate();
 
         const [jobsCreated, jobsStarted, jobsFinished]: [Array<IJob>, Array<IJob>, Array<IJob>] = await Promise.all([
-            db.getJobsByDate('queued', fromDate, toDate),
-            db.getJobsByDate('started', fromDate, toDate),
-            db.getJobsByDate('finished', fromDate, toDate)
+            db.job.getByDate('queued', fromDate, toDate),
+            db.job.getByDate('started', fromDate, toDate),
+            db.job.getByDate('finished', fromDate, toDate)
         ]);
 
         logger.log(`Found: ${jobsCreated.length} jobs created from ${from.toISOString()} to ${to.toISOString()}`, moduleName);
@@ -218,7 +218,7 @@ const updateStatusesSince = async (since: Date) => {
             }
         };
 
-        last = await db.addStatus(result);
+        last = await db.status.add(result);
 
         from = to;
         to = moment(from).add(15, 'm');
@@ -235,7 +235,7 @@ const updateStatusesSince = async (since: Date) => {
             results: messagesResults
         };
 
-        await db.updateStatus(last, 'queues');
+        await db.status.update(last, 'queues');
     }
 };
 
@@ -252,7 +252,7 @@ export const updateStatuses = async () => {
         queueResults = new Queue('sonar-results', queueConnectionString);
     }
 
-    const lastStatus: IStatus = await db.getMostRecentStatus();
+    const lastStatus: IStatus = await db.status.getMostRecent();
     // Online scanner was published in this date, no results before.
     let since: Date = moment('2017-10-15').toDate();
 
@@ -291,7 +291,7 @@ const getCloserQuarter = (date: Date): moment.Moment => {
 export const getStatus = async (from: Date = new Date(), to: Date = new Date()): Promise<Array<IStatus>> => {
     const fromQuarter: Date = getCloserQuarter(from).toDate();
     const toQuarter: Date = getCloserQuarter(to).toDate();
-    const result: Array<IStatus> = await db.getStatusesByDate(fromQuarter, toQuarter);
+    const result: Array<IStatus> = await db.status.getByDate(fromQuarter, toQuarter);
 
     return result.map((status) => {
         return new Status(status);
