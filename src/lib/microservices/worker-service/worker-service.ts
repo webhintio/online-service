@@ -67,7 +67,7 @@ const setRulesToError = (job: IJob, normalizedRules, error) => {
     const isTimeOutError: boolean = error.message === 'TIMEOUT';
     const messageOptions = {
         general: 'Error in sonar analyzing this rule',
-        timeout: `Sonar didn't return the result faster enough. Please try later and if the problem continue, contact us.`
+        timeout: `sonarwhal didn't return the result fast enough. Please try later and if the problem continues, contact us.`
     };
 
     rules.forEach((rule: Rule) => {
