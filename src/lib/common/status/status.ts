@@ -14,12 +14,6 @@ const { database: dbConnectionString, queue: queueConnectionString } = process.e
 let queueJobs: Queue;
 let queueResults: Queue;
 
-// The last item '60' it is just to make the algorightm
-// easier to calculate the closest quarter of an hour.
-// If we don't have the 60, then we need to check always if
-// quarters[i] or quarters[i+1] exists or not.
-const quarters: Array<number> = [0, 15, 30, 45, 60];
-
 class Status implements IStatus {
     public average: StatusAverage;
     public date: Date;
@@ -272,15 +266,8 @@ export const updateStatuses = async () => {
 const getCloserQuarter = (date: Date): moment.Moment => {
     const d: moment.Moment = moment(date);
     const currentMinute: number = d.minutes();
-    let i: number = 0;
-    let nextQuarter: number = quarters[i + 1];
 
-    while (currentMinute >= nextQuarter && nextQuarter !== quarters[quarters.length - 1]) {
-        i++;
-        nextQuarter = quarters[i + 1];
-    }
-
-    return d.minutes(quarters[i]).startOf('minute');
+    return d.minutes(Math.floor(currentMinute / 15) * 15).startOf('minute');
 };
 
 /**

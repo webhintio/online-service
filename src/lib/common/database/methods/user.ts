@@ -1,4 +1,4 @@
-import * as mongoose from 'mongoose'; // eslint-disable-line no-unused-vars
+import { DocumentQuery } from 'mongoose';
 
 import { debug as d } from '../../../utils/debug';
 import { IUser } from '../../../types';
@@ -31,7 +31,7 @@ export const add = async (name: string): Promise<IUser> => {
 export const getAll = async (): Promise<Array<IUser>> => {
     validateConnection();
 
-    const query: mongoose.DocumentQuery<Array<IUserModel>, IUserModel> = User.find({});
+    const query: DocumentQuery<Array<IUserModel>, IUserModel> = User.find({});
     const users: Array<IUser> = await query.exec();
 
     return users;
@@ -43,7 +43,7 @@ export const getAll = async (): Promise<Array<IUser>> => {
  */
 export const get = async (name: string): Promise<IUser> => {
     validateConnection();
-    const query: mongoose.DocumentQuery<IUserModel, IUserModel> = User.findOne({ name });
+    const query: DocumentQuery<IUserModel, IUserModel> = User.findOne({ name });
     const user: IUser = await query.exec();
 
     return user;
@@ -55,7 +55,7 @@ export const get = async (name: string): Promise<IUser> => {
  */
 export const remove = async (name: string) => {
     validateConnection();
-    const query: mongoose.DocumentQuery<IUserModel, IUserModel> = User.findOne({ name });
+    const query: DocumentQuery<IUserModel, IUserModel> = User.findOne({ name });
 
     await query.remove().exec();
 };

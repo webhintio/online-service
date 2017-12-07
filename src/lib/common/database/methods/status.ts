@@ -21,7 +21,9 @@ export const add = async (status: IStatus): Promise<IStatusModel> => {
     return newStatus;
 };
 
-/** Update an status in the database. */
+/**
+ * Update an status in the database.
+ */
 export const update = async (status: IStatusModel, field) => {
     validateConnection();
 
@@ -31,7 +33,7 @@ export const update = async (status: IStatusModel, field) => {
 };
 
 /**
- * Get the last status in the database
+ * Get the last status in the database.
  */
 export const getMostRecent = async (): Promise<IStatus> => {
     validateConnection();

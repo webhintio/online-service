@@ -1,7 +1,7 @@
 import * as uuid from 'uuid/v4';
 
 import { IConfig } from 'sonarwhal/dist/src/lib/types';
-import * as mongoose from 'mongoose'; // eslint-disable-line no-unused-vars
+import { DocumentQuery } from 'mongoose';
 
 import { debug as d } from '../../../utils/debug';
 import { IJob } from '../../../types';
@@ -89,9 +89,9 @@ export const update = async (job: IJobModel) => {
 
 /**
  * Update a property in a job.
- * @param jobId - ID for the job to update
- * @param property - Property to update
- * @param value - New value for the property
+ * @param jobId - ID for the job to update.
+ * @param property - Property to update.
+ * @param value - New value for the property.
  */
 export const updateProperty = (jobId: string, property: string, value): Promise<IJob> => {
     validateConnection();
@@ -99,6 +99,12 @@ export const updateProperty = (jobId: string, property: string, value): Promise<
     return Job.findOneAndUpdate({ id: jobId }, { $set: { [property]: value } }).exec();
 };
 
+/**
+ * Get all jobs between two dates using an specific field.
+ * @param {string} field - Field to filter.
+ * @param {Date} from - Initial date.
+ * @param {Date} to - End date.
+ */
 export const getByDate = async (field: string, from: Date, to: Date): Promise<Array<IJob>> => {
     validateConnection();
 
@@ -108,7 +114,7 @@ export const getByDate = async (field: string, from: Date, to: Date): Promise<Ar
             $lt: to
         }
     };
-    const query: mongoose.DocumentQuery<Array<IJobModel>, IJobModel> = Job.find(x);
+    const query: DocumentQuery<Array<IJobModel>, IJobModel> = Job.find(x);
 
     const results: Array<IJob> = await query.exec();
 

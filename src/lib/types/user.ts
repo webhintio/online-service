@@ -1,4 +1,4 @@
 export interface IUser {
-    /** Username in github. */
+    /** Username in GitHub. */
     name: string;
 }

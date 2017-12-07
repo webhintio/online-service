@@ -6,7 +6,6 @@ import * as user from './methods/user';
 
 const { connect, createLock, disconnect, lock, unlock } = common;
 
-
 export {
     connect,
     createLock,

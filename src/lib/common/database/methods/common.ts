@@ -16,12 +16,12 @@ const moduleName: string = 'Database:common';
 
 /**
  * Create a lock object.
- * @param {string} url - Url to lock in the database.
+ * @param {string} url - URL to lock in the database.
  */
 export const createLock = (url: string) => {
     const lock = mongoDBLock(db.db, 'locks', url, { removeExpired: true });
 
-    debug(`Creating lock object to url: ${url ? url : 'initial'}`);
+    debug(`Creating lock object for url: ${url ? url : 'initial'}`);
     lock.acquireAsync = promisify(lock.acquire);
     lock.releaseAsync = promisify(lock.release);
     lock.ensureIndexesAsync = promisify(lock.ensureIndexes);
@@ -72,7 +72,7 @@ export const connect = async (connectionString: string) => {
 
 /**
  * Create a lock for an url.
- * @param {string} url - Url to lock in the database.
+ * @param {string} url - URL to lock in the database.
  */
 export const lock = async (url: string) => {
     validateConnection();
