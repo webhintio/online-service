@@ -44,7 +44,7 @@ export const configure = (app) => {
         clientID: githubId,
         clientSecret: githubSecret
     }, async (accessToken, refresToken, profile, done) => {
-        const user = await database.getUserByName(profile.username);
+        const user = await database.user.get(profile.username);
 
         if (!user) {
             return done(new Error('Invalid User'));

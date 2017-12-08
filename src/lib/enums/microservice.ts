@@ -3,5 +3,6 @@ export enum Microservice {
     configManager = 'config-manager',
     sync = 'sync',
     worker = 'worker',
+    status = 'status',
     all = 'all'
 }

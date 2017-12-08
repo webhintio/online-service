@@ -5,13 +5,15 @@ import * as sinon from 'sinon';
 import * as proxyquire from 'proxyquire';
 
 const database = {
-    activateConfiguration() { },
-    editConfiguration() { },
-    getActiveConfiguration() { },
-    getConfigurationByName() { },
-    listConfigurations() { },
-    newConfig() { },
-    removeConfiguration() { }
+    serviceConfig: {
+        activate() { },
+        add() { },
+        edit() { },
+        get() { },
+        getActive() { },
+        getAll() { },
+        remove() { }
+    }
 };
 
 proxyquire('../../../../src/lib/microservices/config-manager/config-manager', { '../../common/database/database': database });
@@ -21,23 +23,23 @@ import { readFileAsync } from '../../../../src/lib/utils/misc';
 import { ConfigData } from '../../../../src/lib/types';
 
 test.beforeEach((t) => {
-    sinon.stub(database, 'newConfig').resolves();
-    sinon.stub(database, 'activateConfiguration').resolves();
-    sinon.stub(database, 'listConfigurations').resolves();
-    sinon.stub(database, 'removeConfiguration').resolves();
-    sinon.stub(database, 'editConfiguration').resolves();
+    sinon.stub(database.serviceConfig, 'add').resolves();
+    sinon.stub(database.serviceConfig, 'activate').resolves();
+    sinon.stub(database.serviceConfig, 'getAll').resolves();
+    sinon.stub(database.serviceConfig, 'remove').resolves();
+    sinon.stub(database.serviceConfig, 'edit').resolves();
 
     t.context.database = database;
 });
 
 test.afterEach.always((t) => {
-    t.context.database.newConfig.restore();
-    t.context.database.activateConfiguration.restore();
-    t.context.database.listConfigurations.restore();
-    t.context.database.removeConfiguration.restore();
-    t.context.database.editConfiguration.restore();
-    if (t.context.database.getConfigurationByName.restore) {
-        t.context.database.getConfigurationByName.restore();
+    t.context.database.serviceConfig.add.restore();
+    t.context.database.serviceConfig.activate.restore();
+    t.context.database.serviceConfig.getAll.restore();
+    t.context.database.serviceConfig.remove.restore();
+    t.context.database.serviceConfig.edit.restore();
+    if (t.context.database.serviceConfig.get.restore) {
+        t.context.database.serviceConfig.get.restore();
     }
 });
 
@@ -52,8 +54,8 @@ test.serial('add should create a new configuration in database', async (t) => {
 
     await configManager.add(configData);
 
-    t.true(t.context.database.newConfig.called);
-    t.deepEqual(t.context.database.newConfig.args[0][3], configurationFromFile);
+    t.true(t.context.database.serviceConfig.add.called);
+    t.deepEqual(t.context.database.serviceConfig.add.args[0][3], configurationFromFile);
 });
 
 test.serial('add should throw an error if the configuration file is invalid', async (t) => {
@@ -180,32 +182,32 @@ test.serial('activate should activate the configuration in database with the giv
 
     await configManager.activate(name);
 
-    t.true(t.context.database.activateConfiguration.called);
-    t.is(t.context.database.activateConfiguration.args[0][0], name);
+    t.true(t.context.database.serviceConfig.activate.called);
+    t.is(t.context.database.serviceConfig.activate.args[0][0], name);
 });
 
-test.serial('listConfigurations should return a list of configurations', async (t) => {
+test.serial('getAll should return a list of configurations', async (t) => {
     await configManager.list();
 
-    t.true(t.context.database.listConfigurations.called);
+    t.true(t.context.database.serviceConfig.getAll.called);
 });
 
 test.serial('active should fail if there is no active configuration', async (t) => {
-    sinon.stub(database, 'getActiveConfiguration').resolves();
+    sinon.stub(database.serviceConfig, 'getActive').resolves();
     t.plan(2);
 
     try {
         await configManager.active();
     } catch (err) {
-        t.true(t.context.database.getActiveConfiguration.called);
+        t.true(t.context.database.serviceConfig.getActive.called);
         t.is(err.message, 'There is no active configuration');
     }
 
-    t.context.database.getActiveConfiguration.restore();
+    t.context.database.serviceConfig.getActive.restore();
 });
 
 test.serial('active should return a IServiceConfig object', async (t) => {
-    sinon.stub(database, 'getActiveConfiguration').resolves({
+    sinon.stub(database.serviceConfig, 'getActive').resolves({
         active: true,
         field: 'value',
         jobCacheTime: 1,
@@ -218,7 +220,7 @@ test.serial('active should return a IServiceConfig object', async (t) => {
 
     const config = await configManager.active();
 
-    t.true(t.context.database.getActiveConfiguration.called);
+    t.true(t.context.database.serviceConfig.getActive.called);
 
     const isIServiceConfig = Object.keys(config).every((key) => {
         return fields.includes(key);
@@ -226,55 +228,55 @@ test.serial('active should return a IServiceConfig object', async (t) => {
 
     t.true(isIServiceConfig);
 
-    t.context.database.getActiveConfiguration.restore();
+    t.context.database.serviceConfig.getActive.restore();
 });
 
 test.serial('remove should throw an error if the config is active', async (t) => {
-    sinon.stub(database, 'getConfigurationByName').resolves({ active: true });
+    sinon.stub(database.serviceConfig, 'get').resolves({ active: true });
 
     t.plan(2);
     try {
         await configManager.remove('config name');
     } catch (err) {
         t.is(err.message, 'Configuration is already active');
-        t.true(t.context.database.getConfigurationByName.calledOnce);
+        t.true(t.context.database.serviceConfig.get.calledOnce);
     }
 });
 
 test.serial('remove should remove a configuration from the database', async (t) => {
-    sinon.stub(database, 'getConfigurationByName').resolves({ active: false });
+    sinon.stub(database.serviceConfig, 'get').resolves({ active: false });
 
     await configManager.remove('config name');
 
-    t.true(t.context.database.getConfigurationByName.calledOnce);
-    t.true(t.context.database.removeConfiguration.calledOnce);
+    t.true(t.context.database.serviceConfig.get.calledOnce);
+    t.true(t.context.database.serviceConfig.remove.calledOnce);
 });
 
 test.serial(`get should throw an error if the configuration doesn't exist in the database`, async (t) => {
-    sinon.stub(database, 'getConfigurationByName').resolves(null);
+    sinon.stub(database.serviceConfig, 'get').resolves(null);
 
     t.plan(2);
     try {
         await configManager.get('config name');
     } catch (err) {
         t.is(err.message, `The configuration config name doesn't exist`);
-        t.true(t.context.database.getConfigurationByName.calledOnce);
+        t.true(t.context.database.serviceConfig.get.calledOnce);
     }
 });
 
 test.serial(`get should return a configuration`, async (t) => {
     const name = 'config name';
 
-    sinon.stub(database, 'getConfigurationByName').resolves({ name });
+    sinon.stub(database.serviceConfig, 'get').resolves({ name });
 
     const config = await configManager.get(name);
 
     t.is(config.name, name);
-    t.true(t.context.database.getConfigurationByName.calledOnce);
+    t.true(t.context.database.serviceConfig.get.calledOnce);
 });
 
 test.serial(`edit should throw an error if the configuration doesn't exist in the database`, async (t) => {
-    sinon.stub(database, 'getConfigurationByName').resolves(null);
+    sinon.stub(database.serviceConfig, 'get').resolves(null);
     const configData: ConfigData = {
         filePath: 'dist/tests/lib/microservices/fixtures/config-no-array.json',
         jobCacheTime: 120,
@@ -287,14 +289,14 @@ test.serial(`edit should throw an error if the configuration doesn't exist in th
         await configManager.edit('config name', configData);
     } catch (err) {
         t.is(err.message, `The configuration config name doesn't exist`);
-        t.true(t.context.database.getConfigurationByName.calledOnce);
+        t.true(t.context.database.serviceConfig.get.calledOnce);
     }
 });
 
 test.serial(`edit should throw an error if the name doesn't exist`, async (t) => {
     const name = 'oldName';
 
-    sinon.stub(database, 'getConfigurationByName').resolves({ name });
+    sinon.stub(database.serviceConfig, 'get').resolves({ name });
     t.plan(1);
 
     const configData: ConfigData = {
@@ -314,7 +316,7 @@ test.serial(`edit should throw an error if the name doesn't exist`, async (t) =>
 test.serial(`edit should throw an error if the jobCacheTime doesn't exist`, async (t) => {
     const name = 'oldName';
 
-    sinon.stub(database, 'getConfigurationByName').resolves({ name });
+    sinon.stub(database.serviceConfig, 'get').resolves({ name });
     t.plan(1);
 
     const configData: ConfigData = {
@@ -334,7 +336,7 @@ test.serial(`edit should throw an error if the jobCacheTime doesn't exist`, asyn
 test.serial(`edit should throw an error if the jobRunTime doesn't exist`, async (t) => {
     const name = 'oldName';
 
-    sinon.stub(database, 'getConfigurationByName').resolves({ name });
+    sinon.stub(database.serviceConfig, 'get').resolves({ name });
     t.plan(1);
 
     const configData: ConfigData = {
@@ -354,7 +356,7 @@ test.serial(`edit should throw an error if the jobRunTime doesn't exist`, async 
 test.serial(`edit should edit the configuration`, async (t) => {
     const name = 'oldName';
 
-    sinon.stub(database, 'getConfigurationByName').resolves({ name });
+    sinon.stub(database.serviceConfig, 'get').resolves({ name });
 
     const configData: ConfigData = {
         filePath: 'dist/tests/lib/microservices/fixtures/config.json',
@@ -365,13 +367,13 @@ test.serial(`edit should edit the configuration`, async (t) => {
 
     await configManager.edit(name, configData);
 
-    t.true(t.context.database.editConfiguration.calledOnce);
+    t.true(t.context.database.serviceConfig.edit.calledOnce);
 });
 
 test.serial(`edit should edit the configuration even if there is no filePath`, async (t) => {
     const name = 'oldName';
 
-    sinon.stub(database, 'getConfigurationByName').resolves({ name });
+    sinon.stub(database.serviceConfig, 'get').resolves({ name });
 
     const configData: ConfigData = {
         filePath: null,
@@ -382,6 +384,6 @@ test.serial(`edit should edit the configuration even if there is no filePath`, a
 
     await configManager.edit(name, configData);
 
-    t.true(t.context.database.editConfiguration.calledOnce);
-    t.is(t.context.database.editConfiguration.args[0][4], null);
+    t.true(t.context.database.serviceConfig.edit.calledOnce);
+    t.is(t.context.database.serviceConfig.edit.args[0][4], null);
 });

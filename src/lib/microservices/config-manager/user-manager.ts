@@ -5,7 +5,7 @@ import { IUser } from '../../types';
  * Get all users from the database.
  */
 export const list = (): Promise<Array<IUser>> => {
-    return database.getUsers();
+    return database.user.getAll();
 };
 
 /**
@@ -17,7 +17,7 @@ export const add = (name: string): Promise<IUser> => {
         throw new Error('Name empty');
     }
 
-    return database.addUser(name);
+    return database.user.add(name);
 };
 
 /**
@@ -29,11 +29,11 @@ export const remove = async (name: string) => {
         throw new Error('Name empty');
     }
 
-    const user = await database.getUserByName(name);
+    const user = await database.user.get(name);
 
     if (!user) {
         throw new Error(`User ${name} doesn't exists`);
     }
 
-    return database.removeUserByName(name);
+    return database.user.remove(name);
 };

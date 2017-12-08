@@ -2,8 +2,10 @@ import * as http from 'http';
 
 import * as bodyParser from 'body-parser';
 import * as express from 'express';
+import * as moment from 'moment';
 
 import * as jobManager from './job-manager';
+import * as statusManager from '../../common/status/status';
 import * as db from '../../common/database/database';
 import { IJob, RequestData } from '../../types';
 import * as logger from '../../utils/logging';
@@ -37,6 +39,13 @@ const getJobStatus = async (req, res) => {
     res.send(job);
 };
 
+const getScannerStatus = async (req, res) => {
+    const from = moment().subtract(1, 'day');
+    const status = await statusManager.getStatus(from.toDate());
+
+    res.send(status);
+};
+
 const configureServer = () => {
     const app = express();
 
@@ -61,6 +70,7 @@ const configureServer = () => {
     app.set('port', port || 3000);
 
     app.post('/', createJob);
+    app.get('/status', getScannerStatus);
     app.get('/:id', getJobStatus);
 
     return app;
