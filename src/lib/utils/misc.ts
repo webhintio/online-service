@@ -3,7 +3,7 @@ import { promisify } from 'util';
 
 import { Request } from 'express';
 import * as multiparty from 'multiparty';
-import * as stripBom from 'strip-bom';
+import stripBom = require('strip-bom');
 import * as stripComments from 'strip-json-comments';
 import { validateConfig } from 'sonarwhal/dist/src/lib/config/config-validator';
 import normalizeRules from 'sonarwhal/dist/src/lib/utils/normalize-rules';
