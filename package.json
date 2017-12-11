@@ -44,7 +44,7 @@
     "rimraf": "^2.6.1",
     "ts-node": "^3.3.0",
     "typescript": "^2.6.1",
-    "typescript-eslint-parser": "^9.0.0"
+    "typescript-eslint-parser": "^10.0.0"
   },
   "dependencies": {
     "sonarwhal": "^0.17.0",
