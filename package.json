@@ -47,7 +47,6 @@
     "typescript-eslint-parser": "^9.0.0"
   },
   "dependencies": {
-    "sonarwhal": "^0.17.0",
     "applicationinsights": "^1.0.0",
     "azure-sb": "^0.10.4",
     "body-parser": "^1.17.2",
@@ -66,6 +65,7 @@
     "passport-github2": "^0.1.11",
     "proxyquire": "^1.8.0",
     "sinon": "^4.0.0",
+    "sonarwhal": "^0.19.0",
     "strip-bom": "^3.0.0",
     "strip-json-comments": "^2.0.1",
     "tri": "^1.0.2",
