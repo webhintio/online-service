@@ -17,7 +17,14 @@ const childProcess = {
     fork() { }
 };
 
+const ntp = {
+    getTime() {
+        Promise.resolve({ now: new Date() });
+    }
+};
+
 proxyquire('../../../../src/lib/microservices/worker-service/worker-service', {
+    '../../common/ntp/ntp': ntp,
     '../../common/queue/queue': queueObject,
     child_process: childProcess // eslint-disable-line camelcase
 });

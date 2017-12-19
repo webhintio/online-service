@@ -11,6 +11,7 @@ import { IJob, JobResult, Rule } from '../../types';
 import { JobStatus, RuleStatus } from '../../enums/status';
 import * as logger from '../../utils/logging';
 import { generateLog } from '../../utils/misc';
+import { getTime } from '../../common/ntp/ntp';
 
 const queueConnectionString = process.env.queue; // eslint-disable-line no-process-env
 const appInsightClient = appInsight.getClient();
@@ -279,7 +280,7 @@ const sendResults = async (queue: Queue, job: IJob, normalizedRules) => {
  * @param {IJob} job - Job to send in the message.
  */
 const sendStartedMessage = async (queue: Queue, job: IJob) => {
-    job.started = new Date();
+    job.started = await getTime();
     job.status = JobStatus.started;
 
     debug(`Changing job status to ${job.status}`);
@@ -308,7 +309,7 @@ const sendErrorMessage = async (error, queue: Queue, job: IJob) => {
     }
 
     job.status = isTimeOutError ? JobStatus.finished : JobStatus.error;
-    job.finished = new Date();
+    job.finished = await getTime();
 
     debug(`Sending job result with status: ${job.status}`);
     await queue.sendMessage(job);
@@ -341,7 +342,7 @@ export const run = async () => {
 
             parseResult(job, result, normalizedRules);
 
-            job.finished = new Date();
+            job.finished = await getTime();
             job.status = JobStatus.finished;
 
             debug(`Sending job result with status: ${job.status}`);
