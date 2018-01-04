@@ -9,6 +9,7 @@ import { IJobModel, Job } from '../models/job';
 import { JobStatus } from '../../../enums/status';
 import { Rule, StatOptions, StatQueryParameter } from '../../../types';
 import { validateConnection } from './common';
+import { getTime } from '../../ntp/ntp';
 
 const debug: debug.IDebugger = d(__filename);
 
@@ -62,7 +63,7 @@ export const add = async (url: string, status: JobStatus, rules: Array<Rule>, co
         config,
         id: uuid(),
         maxRunTime: jobRunTime,
-        queued: new Date(),
+        queued: await getTime(),
         rules,
         status,
         url

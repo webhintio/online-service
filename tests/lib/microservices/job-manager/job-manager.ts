@@ -33,10 +33,17 @@ const rule = { meta: { docs: { category: 'category' } } };
 
 const resourceLoader = { loadRule() { } };
 
+const ntp = {
+    getTime() {
+        Promise.resolve({ now: new Date() });
+    }
+};
+
 process.env.queue = 'connectionString'; // eslint-disable-line no-process-env
 
 proxyquire('../../../../src/lib/microservices/job-manager/job-manager', {
     '../../common/database/database': database,
+    '../../common/ntp/ntp': ntp,
     '../../common/queue/queue': queueObject,
     '../config-manager/config-manager': configManager,
     'sonarwhal/dist/src/lib/utils/resource-loader': resourceLoader

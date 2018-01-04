@@ -13,6 +13,7 @@ import { Queue } from '../../common/queue/queue';
 import { debug as d } from '../../utils/debug';
 import { validateServiceConfig, readFileAsync } from '../../utils/misc';
 import * as logger from '../../utils/logging';
+import { getTime } from '../../common/ntp/ntp';
 
 const debug: debug.IDebugger = d(__filename);
 const queueConnectionString: string = process.env.queue; // eslint-disable-line no-process-env
@@ -201,7 +202,7 @@ export const startJob = async (data: RequestData): Promise<IJob> => {
             const dbJob = await database.job.get(job.id);
 
             dbJob.status = JobStatus.error;
-            dbJob.finished = new Date();
+            dbJob.finished = await getTime();
             if (err instanceof Error) {
                 dbJob.error = JSON.stringify({
                     message: err.message,

@@ -24,7 +24,14 @@ Job.findOne = () => { };
 
 const jobModels = { Job };
 
+const ntp = {
+    getTime() {
+        Promise.resolve({ now: new Date() });
+    }
+};
+
 proxyquire('../../../../src/lib/common/database/methods/job', {
+    '../../ntp/ntp': ntp,
     '../models/job': jobModels,
     './common': common
 });
