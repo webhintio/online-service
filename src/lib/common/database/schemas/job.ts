@@ -12,4 +12,4 @@ export const JobSchema: Schema = new Schema({
     started: Date,
     status: {},
     url: String
-});
+}, { usePushEach: true }); // usePushEach for compatibility with mongodb 3.6

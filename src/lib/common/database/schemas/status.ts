@@ -6,4 +6,4 @@ export const StatusSchema: Schema = new Schema({
     queues: {},
     rules: {},
     scans: {}
-});
+}, { usePushEach: true }); // usePushEach for compatibility with mongodb 3.6

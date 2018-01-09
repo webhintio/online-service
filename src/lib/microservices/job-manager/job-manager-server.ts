@@ -34,16 +34,27 @@ const createJob = async (req, res) => {
 
 /** Get the status of a job. */
 const getJobStatus = async (req, res) => {
-    const job: IJob = await jobManager.getJob(req.params.id);
+    try {
+        const job: IJob = await jobManager.getJob(req.params.id);
 
-    res.send(job);
+        res.send(job);
+    } catch (err) {
+        logger.error(err, moduleName);
+        res.status(500).send(err);
+    }
 };
 
 const getScannerStatus = async (req, res) => {
     const from = moment().subtract(1, 'day');
-    const status = await statusManager.getStatus(from.toDate());
 
-    res.send(status);
+    try {
+        const status = await statusManager.getStatus(from.toDate());
+
+        res.send(status);
+    } catch (err) {
+        logger.error(err, moduleName);
+        res.status(500).send(err);
+    }
 };
 
 const configureServer = () => {
