@@ -1,13 +1,18 @@
 import * as statusManager from '../../common/status/status';
 import * as db from '../../common/database/database';
+import * as logger from '../../utils/logging';
 import { setTimeout } from 'timers';
 
+const moduleName = 'Status Service';
 const { database: dbConnectionString } = process.env; // eslint-disable-line no-process-env
 const updateTimeout = 15 * 60 * 1000; // 15 minutes.
 
 const updateStatuses = async () => {
-    await statusManager.updateStatuses();
-
+    try {
+        await statusManager.updateStatuses();
+    } catch (err) {
+        logger.error(err, moduleName);
+    }
     setTimeout(updateStatuses, updateTimeout);
 };
 
