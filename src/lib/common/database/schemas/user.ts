@@ -5,4 +5,4 @@ export const UserSchema: Schema = new Schema({
         index: { unique: true },
         type: String
     }
-});
+}, { usePushEach: true }); // usePushEach for compatibility with mongodb 3.6

@@ -2,6 +2,7 @@ import * as uuid from 'uuid/v4';
 
 import { IConfig } from 'sonarwhal/dist/src/lib/types';
 import { DocumentQuery } from 'mongoose';
+import * as moment from 'moment';
 
 import { debug as d } from '../../../utils/debug';
 import { IJob } from '../../../types';
@@ -45,6 +46,21 @@ export const get = async (id: string): Promise<IJobModel> => {
     debug(`job with id ${id} ${job ? 'found' : 'not found'}`);
 
     return job;
+};
+
+/**
+ * Get all unfinished jobs.
+ */
+export const getUnfinished = async (): Promise<Array<IJobModel>> => {
+    validateConnection();
+    debug(`Getting unfinished jobs`);
+    const query = Job.find({$and: [{ $nor: [{ status: JobStatus.finished }, { status: JobStatus.error }] }, { queued: { $lt: moment().subtract(1, 'day') } }]});
+
+    const jobs: Array<IJobModel> = await query.exec();
+
+    debug(`Found ${jobs.length} unfinished jobs`);
+
+    return jobs;
 };
 
 /**

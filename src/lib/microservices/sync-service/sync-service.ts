@@ -63,6 +63,8 @@ export const run = async () => {
             const start = Date.now();
             const groups = _.groupBy(jobsArray, 'id');
 
+            logger.log(`Synchronizing ${jobsArray.length} jobs messages in ${Object.entries(groups).length} groups`, moduleName);
+
             for (const [id, jobs] of Object.entries(groups)) {
                 const lock = await database.lock(id);
                 const dbJob: IJobModel = await database.job.get(id);

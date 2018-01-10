@@ -9,4 +9,4 @@ export const ServiceConfigSchema: Schema = new Schema({
         type: String
     },
     sonarConfigs: [{}]
-});
+}, { usePushEach: true }); // usePushEach for compatibility with mongodb 3.6
