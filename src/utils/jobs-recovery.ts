@@ -1,3 +1,9 @@
+/*
+ * If for some reason, a message is lost in any of the queues (jobs or results),
+ * the jobs related with that message never will have the status finished or
+ * error.
+ * This util regenerate the messages for jobs that doesn't have finish in 1 day.
+ */
 import * as _ from 'lodash';
 
 import { JobStatus } from '../lib/enums/status';
@@ -72,7 +78,7 @@ const run = async () => {
         const unFinishedJobs: Array<IJob> = await db.job.getUnfinished();
 
         for (const job of unFinishedJobs) {
-            // Just doble check
+            // Just double check
             if (job.status !== JobStatus.pending && job.status !== JobStatus.started) {
                 continue; // eslint-disable-line no-continue
             }
