@@ -23,7 +23,7 @@ export const options = optionator({
         {
             alias: 'm',
             description: 'Microservice to run',
-            enum: ['job-manager', 'config-manager', 'sync', 'worker', 'status', 'all'],
+            enum: ['job-manager', 'config-manager', 'sync', 'worker', 'status', 'backup', 'all'],
             option: 'microservice',
             type: 'String'
         }, {

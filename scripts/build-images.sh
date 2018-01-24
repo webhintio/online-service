@@ -18,6 +18,9 @@ docker build --file Dockerfile.sync . -t $1/sync-service
 # Build image for status service
 docker build --file Dockerfile.status . -t $1/status-service
 
+# Build image for backup service
+docker build --file Dockerfile.backup . -t $1/backup-service
+
 # Build image for nginx
 docker build --file Dockerfile.nginx . -t $1/nginx
 

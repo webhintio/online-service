@@ -27,6 +27,9 @@ docker push $1/sync-service
 # Upload status service image to the respository
 docker push $1/status-service
 
+# Upload backup service image to the respository
+docker push $1/backup-service
+
 # Upload nginx image to the respository
 docker push $1/nginx
 

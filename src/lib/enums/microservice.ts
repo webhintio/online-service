@@ -4,5 +4,6 @@ export enum Microservice {
     sync = 'sync',
     worker = 'worker',
     status = 'status',
+    backup = 'backup',
     all = 'all'
 }
