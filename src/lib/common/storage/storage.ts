@@ -4,6 +4,9 @@ import * as storage from 'azure-storage';
 
 const { storageAccount, storageAccessKey } = process.env; // eslint-disable-line no-process-env
 
+/**
+ * Wrapper for all the actions we need in a azure storage container.
+ */
 export class StorageContainer {
     public name: string;
     private blobService: storage.BlobService;
@@ -21,10 +24,18 @@ export class StorageContainer {
         this.listBlobsSegmented = promisify(blobService.listBlobsSegmented.bind(blobService));
     }
 
+    /**
+     * Upload a new blob to the container.
+     * @param {string} blobName - Name for the new blob.
+     * @param {string} filePath - File path to upload.
+     */
     public uploadFile(blobName: string, filePath: string) {
         return this.uploadBlob(this.name, blobName, filePath);
     }
 
+    /**
+     * Get a list with all the blobs in a container.
+     */
     public getBlobs(): Promise<Array<storage.BlobService.BlobResult>> {
         let entries: Array<storage.BlobService.BlobResult> = [];
 
@@ -43,15 +54,29 @@ export class StorageContainer {
         return get(null);
     }
 
-    public copyBlob(blob: string, target: StorageContainer, targetName: string) {
-        return this.startCopyBlob(`https://${storageAccount}.blob.core.windows.net/${this.name}/${blob}`, target.name, targetName);
+    /**
+     * Copy a blob from a container to another.
+     * @param {string} blobName - Blob to copy.
+     * @param {StorageContainer} target - Target container.
+     * @param {string} targetName - Name in the new container.
+     */
+    public copyBlob(blobName: string, target: StorageContainer, targetName: string) {
+        return this.startCopyBlob(`https://${storageAccount}.blob.core.windows.net/${this.name}/${blobName}`, target.name, targetName);
     }
 
+    /**
+     * Delete a blob from the container.
+     * @param {string} blobName - Blob name.
+     */
     public deleteBlob(blobName: string) {
         return this.deleteBlobIfExists(this.name, blobName);
     }
 }
 
+/**
+ * Create and return a storage container.
+ * @param {string} name - Container name. 
+ */
 export const getContainer = async (name: string): Promise<StorageContainer> => {
     const service: storage.BlobService = storage.createBlobService(storageAccount, storageAccessKey).withFilter(new storage.ExponentialRetryPolicyFilter());
     const createContainer = promisify(service.createContainerIfNotExists.bind(service));

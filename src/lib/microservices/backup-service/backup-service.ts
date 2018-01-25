@@ -23,10 +23,17 @@ let backupJob;
 let weeklyJob;
 let monthlyJob;
 
+/**
+ * Connect to the database.
+ */
 const connectToDatabase = () => {
     return db.connect(database);
 };
 
+/**
+ * Calculate the host for `mongodump`.
+ * @param {string} replicaStatus - Database replica information.
+ */
 const getHosts = (replicaStatus) => {
     if (!replicaStatus) {
         return db.host();
@@ -39,6 +46,10 @@ const getHosts = (replicaStatus) => {
     return `${replicaStatus.set}/${hosts.join(',')}`;
 };
 
+/**
+ * Create a database backup using `mongodump`.
+ * @param {string} outPath - Path to write the backup.
+ */
 const createBackup = async (outPath: string) => {
     const replicaStatus = await db.replicaSetStatus();
     const hosts = await getHosts(replicaStatus);
@@ -55,6 +66,10 @@ const createBackup = async (outPath: string) => {
 
         backup.stderr.setEncoding('utf8');
         backup.stderr.on('data', (data) => {
+            /*
+             * mongodump messaging is done via standard error.
+             * https://jira.mongodb.org/browse/TOOLS-1484
+             */
             logger.log(`${data ? (data as string).trim() : ''}`);
         });
 
@@ -72,6 +87,11 @@ const createBackup = async (outPath: string) => {
     });
 };
 
+/**
+ * Pack in a tar file and upload the backup to an azure storage account.
+ * @param {storage.StorageContainer} container - Storage container to upload the backup.
+ * @param {string} backupPath - Path to the backup files.
+ */
 const uploadBackup = async (container: storage.StorageContainer, backupPath: string): Promise<string> => {
     const date: string = backupPath.replace(path.join(backupPath, '..'), '').substring(1);
     const files: Array<string> = await globby('**/*.gz', { cwd: backupPath });
@@ -85,10 +105,19 @@ const uploadBackup = async (container: storage.StorageContainer, backupPath: str
     return name;
 };
 
+/**
+ * Remove files created for the backup.
+ * @param {string} backupPath - Path to delete.
+ */
 const removeLocalFiles = (backupPath: string) => {
     return rimrafAsync(backupPath);
 };
 
+/**
+ * Remove old backups from a container.
+ * @param {storage.StorageContainer} container - Storage container to remove files.
+ * @param {number} maxItems - Max number of items to keep in the storage container.
+ */
 const removeOldBackups = async (container: storage.StorageContainer, maxItems: number) => {
     const blobs = await container.getBlobs();
 
@@ -110,6 +139,9 @@ const removeOldBackups = async (container: storage.StorageContainer, maxItems: n
     }
 };
 
+/**
+ * Create a database backup.
+ */
 export const backup = async () => {
     try {
         const start = Date.now();
@@ -120,8 +152,9 @@ export const backup = async () => {
 
         logger.log('Database connected.', moduleName);
 
-        logger.log('Starting backup.', moduleName);
         const outPath = path.join(__dirname, 'backup', moment().format('YYYYMMDDHHmmssSSS'));
+
+        logger.log(`Baking db in ${outPath}.`, moduleName);
 
         await createBackup(outPath);
         logger.log(`Backup complete in ${((Date.now() - start) / 60000).toFixed(2)} minutes`, moduleName);
@@ -147,6 +180,11 @@ export const backup = async () => {
     }
 };
 
+/**
+ * Copy the most recent backup from a container to another.
+ * @param {storage.StorageContainer} originContainer - Container with the file we want to copy.
+ * @param {storage.StorageContainer} targetContainer - Container where we want to copy the file.
+ */
 const copyMostRecentBlob = async (originContainer: storage.StorageContainer, targetContainer: storage.StorageContainer): Promise<string> => {
     const backups = await originContainer.getBlobs();
     const newestBackup = _(backups)
@@ -163,6 +201,9 @@ const copyMostRecentBlob = async (originContainer: storage.StorageContainer, tar
     return blobName;
 };
 
+/**
+ * Copy the most recent backup in another container.
+ */
 export const weeklyBackup = async () => {
     try {
         const dailyContainer: storage.StorageContainer = await storage.getContainer('backup');
@@ -184,6 +225,9 @@ export const weeklyBackup = async () => {
     }
 };
 
+/**
+ * Copy the most recent backup in onther container.
+ */
 export const monthlyBackup = async () => {
     try {
         const dailyContainer: storage.StorageContainer = await storage.getContainer('backup');

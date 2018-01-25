@@ -106,6 +106,9 @@ export const lock = async (url: string) => {
     return dbLock;
 };
 
+/**
+ * Get the data about the replica set.
+ */
 export const replicaSetStatus = async () => {
     validateConnection();
     try {
@@ -121,6 +124,9 @@ export const replicaSetStatus = async () => {
     }
 };
 
+/**
+ * Get an string with the database host with the format host:port.
+ */
 export const host = () => {
     validateConnection();
 
