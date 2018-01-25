@@ -75,7 +75,7 @@ export class StorageContainer {
 
 /**
  * Create and return a storage container.
- * @param {string} name - Container name. 
+ * @param {string} name - Container name.
  */
 export const getContainer = async (name: string): Promise<StorageContainer> => {
     const service: storage.BlobService = storage.createBlobService(storageAccount, storageAccessKey).withFilter(new storage.ExponentialRetryPolicyFilter());
