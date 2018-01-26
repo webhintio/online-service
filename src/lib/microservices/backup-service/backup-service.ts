@@ -12,6 +12,7 @@ import * as tar from 'tar';
 import * as db from '../../common/database/database';
 import * as logger from '../../utils/logging';
 import * as storage from '../../common/storage/storage';
+import { Email } from '../../common/email/email';
 
 const rimrafAsync = promisify(rimraf);
 
@@ -19,9 +20,17 @@ const { database, adminUser, adminPassword } = process.env; // eslint-disable-li
 const moduleName: string = 'Backup service';
 const maxWeeklyCopies: number = 4;
 const maxDailyCopies: number = 7;
+const email = new Email();
 let backupJob;
 let weeklyJob;
 let monthlyJob;
+
+const sendEmail = (text: string, subject: string) => {
+    return email.send({
+        subject,
+        text
+    });
+};
 
 /**
  * Connect to the database.
@@ -163,7 +172,7 @@ export const backup = async () => {
 
         const container = await storage.getContainer('backup');
 
-        await uploadBackup(container, outPath);
+        const backupName = await uploadBackup(container, outPath);
 
         await removeLocalFiles(outPath);
 
@@ -171,8 +180,11 @@ export const backup = async () => {
 
         logger.log('Upload backup completed.', moduleName);
 
+        await sendEmail(`Backup "${backupName}" created.`, 'Backup created');
     } catch (err) {
         logger.error('Error creating backup.', moduleName, err);
+        await sendEmail(`Error creating backup:
+${err.toString()}`, 'Error creating Backup');
     }
 
     if (backupJob) {
@@ -216,8 +228,12 @@ export const weeklyBackup = async () => {
         await removeOldBackups(weeklyContainer, maxWeeklyCopies);
 
         logger.log('Weekly backup copy complete.', moduleName);
+
+        await sendEmail(`Weekly backup "${blobName}" created.`, 'Weekly backup completed.');
     } catch (err) {
         logger.error('Error copying weekly backup.', moduleName, err);
+        await sendEmail(`Error creating weekly backup:
+${err.toString()}`, 'Error creating weekly backup');
     }
 
     if (weeklyJob) {
@@ -233,11 +249,14 @@ export const monthlyBackup = async () => {
         const dailyContainer: storage.StorageContainer = await storage.getContainer('backup');
         const monthlyContainer: storage.StorageContainer = await storage.getContainer('backupmonthly');
 
-        await copyMostRecentBlob(dailyContainer, monthlyContainer);
+        const blobName = await copyMostRecentBlob(dailyContainer, monthlyContainer);
 
         logger.log('Monthly backup copy complete.', moduleName);
+        await sendEmail(`Monthly backup "${blobName}" created.`, 'Montly backup completed.');
     } catch (err) {
         logger.error('Error copying monthly backup.', moduleName, err);
+        await sendEmail(`Error creating monthly backup:
+${err.toString()}`, 'Error creating monthly backup');
     }
 
     if (monthlyJob) {
@@ -258,7 +277,6 @@ export const run = () => {
     logger.log(`Backup Job will start at: ${backupJob.nextInvocation().toISOString()}`, moduleName);
     logger.log(`Weekly copy Job will start at: ${weeklyJob.nextInvocation().toISOString()}`, moduleName);
     logger.log(`Monthly copy Job will start at: ${monthlyJob.nextInvocation().toISOString()}`, moduleName);
-
 };
 
 if (process.argv[1].includes('db-backup.js')) {
