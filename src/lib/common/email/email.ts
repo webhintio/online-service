@@ -7,7 +7,11 @@ import * as logger from '../../utils/logging';
 const moduleName = 'Email';
 const { emailUser: user, emailPassword: password, smtpHost, smtpPort, emailFrom, emailTo } = process.env; // eslint-disable-line no-process-env
 
-const stringToArray = (stringToConvert: string) => {
+/**
+ * Convert an string comma separated into an Array.
+ * @param {string} stringToConvert String comma separated
+ */
+const stringToArray = (stringToConvert: string): Array<string> => {
     if (!stringToConvert) {
         return [];
     }
@@ -16,6 +20,9 @@ const stringToArray = (stringToConvert: string) => {
     return stringSplit;
 };
 
+/**
+ * Wrapper for nodemailer to send emails.
+ */
 export class Email {
     private transporter;
     private config = {
@@ -38,6 +45,10 @@ export class Email {
         }
     }
 
+    /**
+     * Send an email.
+     * @param options Options for the email.
+     */
     public send(options) {
         if (!this.transporter) {
             logger.log('The email account is not configured', moduleName);
