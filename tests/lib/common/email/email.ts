@@ -66,7 +66,34 @@ test.serial('If host exists, we can send emails', async (t) => {
     t.true(t.context.transporter.sendMail.calledOnce);
 });
 
-test.serial('If sendEmail fail, nothing should happen', async (t) => {
+test.serial('If sendEmail fail, it should retry it', async (t) => {
+    const sandbox = t.context.sandbox;
+
+    sandbox.stub(transporter, 'sendMail')
+    .onFirstCall()
+    .callsFake((config, callback) => {
+        callback(new Error('error'));
+    })
+    .onSecondCall()
+    .callsFake((config, callback) => {
+        callback(null, 'ok');
+    });
+    t.context.transporter = transporter;
+
+    process.env.smtpHost = 'smtp.host.com'; // eslint-disable-line no-process-env
+
+    proxyquire('../../../../src/lib/common/email/email.js', { nodemailer });
+
+    const Email = require('../../../../src/lib/common/email/email.js').Email;
+
+    const email = new Email();
+
+    await email.send({});
+
+    t.is(t.context.transporter.sendMail.callCount, 2);
+});
+
+test.serial('If sendEmail fail 10 times, nothing should happen', async (t) => {
     const sandbox = t.context.sandbox;
 
     sandbox.stub(transporter, 'sendMail').callsFake((config, callback) => {
@@ -85,5 +112,5 @@ test.serial('If sendEmail fail, nothing should happen', async (t) => {
     const result = await email.send({});
 
     t.is(result, null);
-    t.true(t.context.transporter.sendMail.calledOnce);
+    t.is(t.context.transporter.sendMail.callCount, 10);
 });

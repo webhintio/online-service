@@ -214,7 +214,7 @@ const copyMostRecentBlob = async (originContainer: storage.StorageContainer, tar
 };
 
 /**
- * Copy the most recent backup in another container.
+ * Copy the most recent backup in the weekly backups container.
  */
 export const weeklyBackup = async () => {
     try {
@@ -242,7 +242,7 @@ ${err.toString()}`, 'Error creating weekly backup');
 };
 
 /**
- * Copy the most recent backup in onther container.
+ * Copy the most recent backup in the monthly backups container.
  */
 export const monthlyBackup = async () => {
     try {

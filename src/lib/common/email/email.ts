@@ -1,6 +1,7 @@
 import { promisify } from 'util';
 
 import * as nodemailer from 'nodemailer';
+import * as tri from 'tri';
 
 import * as logger from '../../utils/logging';
 
@@ -60,7 +61,12 @@ export class Email {
         options.to = this.to;
 
         try {
-            const result = await this.sendMail(options);
+            const result = await tri(() => {
+                return this.sendMail(options);
+            }, {
+                delay: 500,
+                maxAttempts: 10
+            });
 
             return result;
         } catch (err) {
