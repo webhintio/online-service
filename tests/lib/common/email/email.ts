@@ -65,3 +65,25 @@ test.serial('If host exists, we can send emails', async (t) => {
 
     t.true(t.context.transporter.sendMail.calledOnce);
 });
+
+test.serial('If sendEmail fail, nothing should happen', async (t) => {
+    const sandbox = t.context.sandbox;
+
+    sandbox.stub(transporter, 'sendMail').callsFake((config, callback) => {
+        callback(new Error('error'));
+    });
+    t.context.transporter = transporter;
+
+    process.env.smtpHost = 'smtp.host.com'; // eslint-disable-line no-process-env
+
+    proxyquire('../../../../src/lib/common/email/email.js', { nodemailer });
+
+    const Email = require('../../../../src/lib/common/email/email.js').Email;
+
+    const email = new Email();
+
+    const result = await email.send({});
+
+    t.is(result, null);
+    t.true(t.context.transporter.sendMail.calledOnce);
+});

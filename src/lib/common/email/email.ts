@@ -49,7 +49,7 @@ export class Email {
      * Send an email.
      * @param options Options for the email.
      */
-    public send(options) {
+    public async send(options) {
         if (!this.transporter) {
             logger.log('The email account is not configured', moduleName);
 
@@ -59,6 +59,14 @@ export class Email {
         options.from = this.from;
         options.to = this.to;
 
-        return this.sendMail(options);
+        try {
+            const result = await this.sendMail(options);
+
+            return result;
+        } catch (err) {
+            logger.error(`Error sending email to ${options.to}`, moduleName);
+
+            return null;
+        }
     }
 }
