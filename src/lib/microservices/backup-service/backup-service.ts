@@ -28,7 +28,7 @@ let monthlyJob;
 const sendEmail = (text: string, subject: string) => {
     return email.send({
         subject,
-        text
+        text: `${text}\n\n`
     });
 };
 
@@ -180,7 +180,7 @@ export const backup = async () => {
 
         logger.log('Upload backup completed.', moduleName);
 
-        await sendEmail(`Backup "${backupName}" created.`, 'Backup created');
+        await sendEmail(`Backup "${backupName}" created at ${moment().toISOString()}`, 'Backup created');
     } catch (err) {
         logger.error('Error creating backup.', moduleName, err);
         await sendEmail(`Error creating backup:
@@ -229,7 +229,7 @@ export const weeklyBackup = async () => {
 
         logger.log('Weekly backup copy complete.', moduleName);
 
-        await sendEmail(`Weekly backup "${blobName}" created.`, 'Weekly backup completed.');
+        await sendEmail(`Weekly backup "${blobName}" created at ${moment().toISOString()}`, 'Weekly backup completed.');
     } catch (err) {
         logger.error('Error copying weekly backup.', moduleName, err);
         await sendEmail(`Error creating weekly backup:
@@ -252,7 +252,7 @@ export const monthlyBackup = async () => {
         const blobName = await copyMostRecentBlob(dailyContainer, monthlyContainer);
 
         logger.log('Monthly backup copy complete.', moduleName);
-        await sendEmail(`Monthly backup "${blobName}" created.`, 'Montly backup completed.');
+        await sendEmail(`Monthly backup "${blobName}" created at ${moment().toISOString()}`, 'Montly backup completed.');
     } catch (err) {
         logger.error('Error copying monthly backup.', moduleName, err);
         await sendEmail(`Error creating monthly backup:

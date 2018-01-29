@@ -6,7 +6,7 @@ import * as tri from 'tri';
 import * as logger from '../../utils/logging';
 
 const moduleName = 'Email';
-const { emailUser: user, emailPassword: password, smtpHost, smtpPort, emailFrom, emailTo } = process.env; // eslint-disable-line no-process-env
+const { emailUser: user, emailPassword: password, smtpHost, smtpPort, smtpSecure, emailFrom, emailTo } = process.env; // eslint-disable-line no-process-env
 
 /**
  * Convert an string comma separated into an Array.
@@ -33,7 +33,7 @@ export class Email {
         },
         host: smtpHost,
         port: smtpPort,
-        secure: true
+        secure: !!smtpSecure
     }
     private from: string = emailFrom;
     private to: Array<string> = stringToArray(emailTo);
@@ -67,6 +67,8 @@ export class Email {
                 delay: 500,
                 maxAttempts: 10
             });
+
+            logger.log(`Email sent to ${options.to}`, moduleName);
 
             return result;
         } catch (err) {
