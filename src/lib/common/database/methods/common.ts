@@ -107,6 +107,33 @@ export const lock = async (url: string) => {
 };
 
 /**
+ * Get the data about the replica set.
+ */
+export const replicaSetStatus = async () => {
+    validateConnection();
+    try {
+        const status = await db.db.command({ replSetGetStatus: 1 });
+
+        return status;
+    } catch (err) {
+        if (err.message.toLowerCase() === 'not running with --replset') {
+            return null;
+        }
+
+        throw err;
+    }
+};
+
+/**
+ * Get an string with the database host with the format host:port.
+ */
+export const host = () => {
+    validateConnection();
+
+    return `${db.host}:${db.port}`;
+};
+
+/**
  * Disconnect from the database.
  */
 export const disconnect = async () => {

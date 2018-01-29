@@ -19,6 +19,12 @@ const mongoDBLock = () => {
     return dbLock;
 };
 
+const db = {
+    db: { command() { } },
+    host: 'localhost',
+    port: 27017
+};
+
 proxyquire('../../../../src/lib/common/database/methods/common', {
     'mongodb-lock': mongoDBLock,
     mongoose
@@ -27,7 +33,7 @@ proxyquire('../../../../src/lib/common/database/methods/common', {
 import * as dbCommon from '../../../../src/lib/common/database/methods/common';
 
 const connectDatabase = async () => {
-    sinon.stub(mongoose, 'connect').resolves({});
+    sinon.stub(mongoose, 'connect').resolves(db);
     sinon.stub(dbLock, 'ensureIndexes').callsArg(0);
 
     // We need to be connected to the database before lock it
@@ -35,6 +41,7 @@ const connectDatabase = async () => {
 };
 
 test.beforeEach((t) => {
+    t.context.db = db;
     t.context.mongoose = mongoose;
     t.context.dbLock = dbLock;
 });
@@ -50,6 +57,10 @@ test.afterEach.always((t) => {
 
     if (t.context.dbLock.ensureIndexes.restore) {
         t.context.dbLock.ensureIndexes.restore();
+    }
+
+    if (t.context.db.db.command.restore) {
+        t.context.db.db.command.restore();
     }
 });
 
@@ -72,6 +83,27 @@ test.serial('lock should fail if database is not connected', async (t) => {
         t.is(err.message, 'Database not connected');
     }
 });
+
+test.serial('replicaSetStatus should fail if database is not connected', async (t) => {
+    t.plan(1);
+
+    try {
+        await dbCommon.replicaSetStatus();
+    } catch (err) {
+        t.is(err.message, 'Database not connected');
+    }
+});
+
+test.serial('host should fail if database is not connected', async (t) => {
+    t.plan(1);
+
+    try {
+        await dbCommon.host();
+    } catch (err) {
+        t.is(err.message, 'Database not connected');
+    }
+});
+
 
 test.serial('disconnect should do nothing if database is not connected', async (t) => {
     sinon.spy(mongoose, 'disconnect');
@@ -185,6 +217,46 @@ test.serial('if database is locked for a long time, it should throw an error', a
     }
 
     t.context.dbLock.acquireAsync.restore();
+});
+
+test.serial('replicaSetStatus should run the right command', async (t) => {
+    sinon.stub(db.db, 'command').resolves({});
+
+    await dbCommon.replicaSetStatus();
+
+    t.true(t.context.db.db.command.called);
+
+    const arg = t.context.db.db.command.args[0][0];
+
+    t.is(arg.replSetGetStatus, 1);
+});
+
+test.serial('replicaSetStatus should return null if the database is not running --replset', async (t) => {
+    sinon.stub(db.db, 'command').rejects(new Error('not running with --replset'));
+
+    const status = await dbCommon.replicaSetStatus();
+
+    t.true(t.context.db.db.command.called);
+
+    t.is(status, null);
+});
+
+test.serial('replicaSetStatus should fail if there is an error runing the command', async (t) => {
+    sinon.stub(db.db, 'command').rejects(new Error('error'));
+
+    t.plan(1);
+
+    try {
+        await dbCommon.replicaSetStatus();
+    } catch (err) {
+        t.is(err.message, 'error');
+    }
+});
+
+test.serial('host should return the string "host:port"', (t) => {
+    const host = dbCommon.host();
+
+    t.is(host, 'localhost:27017');
 });
 
 test.serial('disconnect should call to mongoose.disconnect', async (t) => {
