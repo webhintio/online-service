@@ -4,9 +4,7 @@ import test from 'ava';
 import * as sinon from 'sinon';
 import * as proxyquire from 'proxyquire';
 
-const transporter = { sendMail() { } };
-
-const nodemailer = { createTransport() { } };
+const request = { post() { } };
 
 test.beforeEach((t) => {
     /*
@@ -18,7 +16,6 @@ test.beforeEach((t) => {
     const sandbox = sinon.sandbox.create();
 
     t.context.sandbox = sandbox;
-    sandbox.stub(nodemailer, 'createTransport').returns(transporter);
 });
 
 test.afterEach.always((t) => {
@@ -28,12 +25,12 @@ test.afterEach.always((t) => {
 test.serial(`If host is not defined, we can't send emails`, async (t) => {
     const sandbox = t.context.sandbox;
 
-    sandbox.spy(transporter, 'sendMail');
-    t.context.transporter = transporter;
+    sandbox.spy(request, 'post');
+    t.context.request = request;
 
-    process.env.smtpHost = ''; // eslint-disable-line no-process-env
+    process.env.emailUrl = ''; // eslint-disable-line no-process-env
 
-    proxyquire('../../../../src/lib/common/email/email.js', { nodemailer });
+    proxyquire('../../../../src/lib/common/email/email.js', { request });
 
     const Email = require('../../../../src/lib/common/email/email.js').Email;
 
@@ -42,20 +39,20 @@ test.serial(`If host is not defined, we can't send emails`, async (t) => {
     const result = await email.send({});
 
     t.is(result, null);
-    t.false(t.context.transporter.sendMail.called);
+    t.false(t.context.request.post.called);
 });
 
 test.serial('If host exists, we can send emails', async (t) => {
     const sandbox = t.context.sandbox;
 
-    sandbox.stub(transporter, 'sendMail').callsFake((config, callback) => {
-        callback(null, 'ok');
+    sandbox.stub(request, 'post').callsFake((url, config, callback) => {
+        callback(null, { body: { success: true } });
     });
-    t.context.transporter = transporter;
+    t.context.request = request;
 
-    process.env.smtpHost = 'smtp.host.com'; // eslint-disable-line no-process-env
+    process.env.emailUrl = 'https://url.com'; // eslint-disable-line no-process-env
 
-    proxyquire('../../../../src/lib/common/email/email.js', { nodemailer });
+    proxyquire('../../../../src/lib/common/email/email.js', { request });
 
     const Email = require('../../../../src/lib/common/email/email.js').Email;
 
@@ -63,26 +60,26 @@ test.serial('If host exists, we can send emails', async (t) => {
 
     await email.send({});
 
-    t.true(t.context.transporter.sendMail.calledOnce);
+    t.true(t.context.request.post.calledOnce);
 });
 
 test.serial('If sendEmail fail, it should retry it', async (t) => {
     const sandbox = t.context.sandbox;
 
-    sandbox.stub(transporter, 'sendMail')
-    .onFirstCall()
-    .callsFake((config, callback) => {
-        callback(new Error('error'));
-    })
-    .onSecondCall()
-    .callsFake((config, callback) => {
-        callback(null, 'ok');
-    });
-    t.context.transporter = transporter;
+    sandbox.stub(request, 'post')
+        .onFirstCall()
+        .callsFake((url, config, callback) => {
+            callback(new Error('error'));
+        })
+        .onSecondCall()
+        .callsFake((url, config, callback) => {
+            callback(null, { body: { success: true } });
+        });
+    t.context.request = request;
 
-    process.env.smtpHost = 'smtp.host.com'; // eslint-disable-line no-process-env
+    process.env.emailUrl = 'https://url.com'; // eslint-disable-line no-process-env
 
-    proxyquire('../../../../src/lib/common/email/email.js', { nodemailer });
+    proxyquire('../../../../src/lib/common/email/email.js', { request });
 
     const Email = require('../../../../src/lib/common/email/email.js').Email;
 
@@ -90,20 +87,20 @@ test.serial('If sendEmail fail, it should retry it', async (t) => {
 
     await email.send({});
 
-    t.is(t.context.transporter.sendMail.callCount, 2);
+    t.is(t.context.request.post.callCount, 2);
 });
 
 test.serial('If sendEmail fail 10 times, nothing should happen', async (t) => {
     const sandbox = t.context.sandbox;
 
-    sandbox.stub(transporter, 'sendMail').callsFake((config, callback) => {
+    sandbox.stub(request, 'post').callsFake((url, config, callback) => {
         callback(new Error('error'));
     });
-    t.context.transporter = transporter;
+    t.context.request = request;
 
-    process.env.smtpHost = 'smtp.host.com'; // eslint-disable-line no-process-env
+    process.env.emailUrl = 'https://url.com'; // eslint-disable-line no-process-env
 
-    proxyquire('../../../../src/lib/common/email/email.js', { nodemailer });
+    proxyquire('../../../../src/lib/common/email/email.js', { request });
 
     const Email = require('../../../../src/lib/common/email/email.js').Email;
 
@@ -112,5 +109,5 @@ test.serial('If sendEmail fail 10 times, nothing should happen', async (t) => {
     const result = await email.send({});
 
     t.is(result, null);
-    t.is(t.context.transporter.sendMail.callCount, 10);
+    t.is(t.context.request.post.callCount, 10);
 });
