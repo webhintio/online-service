@@ -56,19 +56,17 @@ export const unlock = async (dbLock) => {
  */
 export const connect = async (connectionString: string) => {
     try {
-        db = await mongoose.connect(connectionString, {
+        db = (await mongoose.connect(connectionString, {
             connectTimeoutMS: 30000,
             keepAlive: 1000,
-            poolSize: 10,
-            useMongoClient: true
-        });
+            poolSize: 10
+        })).connection;
         debug('Connected to database');
 
         const indexLock = createLock(lockName);
 
         debug('Creating index in database');
         await indexLock.ensureIndexesAsync();
-
     } catch (err) {
         debug('Error connecting to the database');
         throw err;

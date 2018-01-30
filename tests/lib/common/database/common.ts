@@ -20,9 +20,11 @@ const mongoDBLock = () => {
 };
 
 const db = {
-    db: { command() { } },
-    host: 'localhost',
-    port: 27017
+    connection: {
+        db: { command() { } },
+        host: 'localhost',
+        port: 27017
+    }
 };
 
 proxyquire('../../../../src/lib/common/database/methods/common', {
@@ -59,8 +61,8 @@ test.afterEach.always((t) => {
         t.context.dbLock.ensureIndexes.restore();
     }
 
-    if (t.context.db.db.command.restore) {
-        t.context.db.db.command.restore();
+    if (t.context.db.connection.db.command.restore) {
+        t.context.db.connection.db.command.restore();
     }
 });
 
@@ -154,7 +156,7 @@ test.serial('if connect fail, it should throw an error', async (t) => {
 test.serial('if ensureIndexes fail, it should throw an error', async (t) => {
     const errorMessage = 'error connecting';
 
-    sinon.stub(mongoose, 'connect').resolves({});
+    sinon.stub(mongoose, 'connect').resolves({ connection: {} });
     sinon.stub(dbLock, 'ensureIndexes').callsArgWith(0, errorMessage);
 
     t.plan(3);
@@ -220,29 +222,29 @@ test.serial('if database is locked for a long time, it should throw an error', a
 });
 
 test.serial('replicaSetStatus should run the right command', async (t) => {
-    sinon.stub(db.db, 'command').resolves({});
+    sinon.stub(db.connection.db, 'command').resolves({});
 
     await dbCommon.replicaSetStatus();
 
-    t.true(t.context.db.db.command.called);
+    t.true(t.context.db.connection.db.command.called);
 
-    const arg = t.context.db.db.command.args[0][0];
+    const arg = t.context.db.connection.db.command.args[0][0];
 
     t.is(arg.replSetGetStatus, 1);
 });
 
 test.serial('replicaSetStatus should return null if the database is not running --replset', async (t) => {
-    sinon.stub(db.db, 'command').rejects(new Error('not running with --replset'));
+    sinon.stub(db.connection.db, 'command').rejects(new Error('not running with --replset'));
 
     const status = await dbCommon.replicaSetStatus();
 
-    t.true(t.context.db.db.command.called);
+    t.true(t.context.db.connection.db.command.called);
 
     t.is(status, null);
 });
 
 test.serial('replicaSetStatus should fail if there is an error runing the command', async (t) => {
-    sinon.stub(db.db, 'command').rejects(new Error('error'));
+    sinon.stub(db.connection.db, 'command').rejects(new Error('error'));
 
     t.plan(1);
 
