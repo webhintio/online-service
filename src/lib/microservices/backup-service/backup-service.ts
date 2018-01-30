@@ -26,10 +26,7 @@ let weeklyJob;
 let monthlyJob;
 
 const sendEmail = (text: string, subject: string) => {
-    return email.send({
-        subject,
-        text: `${text}\n\n`
-    });
+    return email.send(subject, `${text}\n\n`);
 };
 
 /**
