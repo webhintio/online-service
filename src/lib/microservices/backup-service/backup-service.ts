@@ -16,7 +16,7 @@ import { Email } from '../../common/email/email';
 
 const rimrafAsync = promisify(rimraf);
 
-const { database, adminUser, adminPassword } = process.env; // eslint-disable-line no-process-env
+const { database, adminUser, adminPassword, authDatabase } = process.env; // eslint-disable-line no-process-env
 const moduleName: string = 'Backup service';
 const maxWeeklyCopies: number = 4;
 const maxDailyCopies: number = 7;
@@ -60,7 +60,12 @@ const createBackup = async (outPath: string) => {
     const replicaStatus = await db.replicaSetStatus();
     const hosts = await getHosts(replicaStatus);
     const isSSL = database.match(/ssl=true/g);
-    const command = `mongodump --host ${hosts} --gzip ${replicaStatus ? '--oplog' : ''} ${isSSL ? '--ssl' : ''} --out ${outPath} --username ${adminUser} --password ${adminPassword}`;
+
+    /*
+     * For more information related to this command, please visit:
+     * https://docs.mongodb.com/manual/reference/program/mongodump/
+     */
+    const command = `mongodump --host ${hosts}${authDatabase ? ` --authenticationDatabase ${authDatabase}` : ''} --gzip ${replicaStatus ? '--oplog' : ''} ${isSSL ? '--ssl' : ''} --out ${outPath} --username ${adminUser} --password ${adminPassword}`;
 
     return new Promise((resolve, reject) => {
         const backup = spawn(command, [], { shell: true });
@@ -106,7 +111,7 @@ const uploadBackup = async (container: storage.StorageContainer, backupPath: str
 
     await tar.c({ cwd: backupPath, file }, files);
 
-    await container.uploadFile(`${date}.tar`, file);
+    await container.uploadFile(name, file);
 
     return name;
 };
@@ -158,7 +163,7 @@ export const backup = async () => {
 
         logger.log('Database connected.', moduleName);
 
-        const outPath = path.join(__dirname, 'backup', moment().format('YYYYMMDDHHmmssSSS'));
+        const outPath = path.join(__dirname, 'backup', moment().format('YYYY-MM-DD-HH-mm'));
 
         logger.log(`Baking db in ${outPath}.`, moduleName);
 
@@ -203,7 +208,7 @@ const copyMostRecentBlob = async (originContainer: storage.StorageContainer, tar
         .reverse()
         .first();
 
-    const blobName: string = `${moment().format('YYYYMMDDHHmmss')}.tar`;
+    const blobName: string = `${moment().format('YYYY-MM-DD-HH-mm')}.tar`;
 
     await originContainer.copyBlob(newestBackup.name, targetContainer, blobName);
 

@@ -180,6 +180,47 @@ test.serial('"backup" a no replica set with ssl should run the right command', a
     t.true(command.includes(`--password ${process.env.adminPassword}`));
 });
 
+test.serial('"backup" with the var authDatabase should run the right command', async (t) => {
+    const sandbox = t.context.sandbox;
+    const emitter = getEmitter();
+
+    process.env.database = 'mongodb://user:pass@localhost:27017?ssl=true';
+    process.env.adminUser = 'adminUserName';
+    process.env.adminPassword = 'adminPassword';
+    process.env.authDatabase = 'authDatabase';
+    sandbox.stub(db, 'host').returns('localhost');
+    sandbox.stub(db, 'replicaSetStatus').returns(null);
+    sandbox.stub(child_process, 'spawn').returns(emitter);
+    sandbox.stub(storage, 'getContainer').resolves(container);
+    sandbox.stub(container, 'getBlobs').resolves([]);
+    t.context.childProcess = child_process; // eslint-disable-line camelcase
+
+    proxyquire('../../../../src/lib/microservices/backup-service/backup-service', {
+        '../../common/database/database': db,
+        '../../common/storage/storage': storage,
+        child_process, // eslint-disable-line camelcase
+        tar
+    });
+
+    const service = require('../../../../src/lib/microservices/backup-service/backup-service');
+
+    const promise = service.backup();
+
+    await delay(500);
+
+    emitter.emit('exit', 0);
+
+    await promise;
+
+    const command = t.context.childProcess.spawn.args[0][0];
+
+    t.true(command.includes('mongodump --host localhost --authenticationDatabase authDatabase --gzip'));
+    t.false(command.includes('--oplog'));
+    t.true(command.includes('--ssl'));
+    t.true(command.includes(`--username ${process.env.adminUser}`));
+    t.true(command.includes(`--password ${process.env.adminPassword}`));
+});
+
 test.serial('"backup" a replica set should run the right command', async (t) => {
     const sandbox = t.context.sandbox;
     const emitter = getEmitter();
@@ -187,6 +228,7 @@ test.serial('"backup" a replica set should run the right command', async (t) => 
     process.env.database = 'mongodb://user:password@192.168.1.1:27017,192.168.1.2:27017,192.168.1.3:27017/mydatabase?replicaSet=myreplica';
     process.env.adminUser = 'adminUserName';
     process.env.adminPassword = 'adminPassword';
+    process.env.authDatabase = '';
     sandbox.spy(db, 'host');
     sandbox.stub(db, 'replicaSetStatus').returns({
         members: [
