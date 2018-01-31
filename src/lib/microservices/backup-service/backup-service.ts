@@ -60,6 +60,11 @@ const createBackup = async (outPath: string) => {
     const replicaStatus = await db.replicaSetStatus();
     const hosts = await getHosts(replicaStatus);
     const isSSL = database.match(/ssl=true/g);
+
+    /*
+     * For more information related to this command, please visit:
+     * https://docs.mongodb.com/manual/reference/program/mongodump/
+     */
     const command = `mongodump --host ${hosts}${authDatabase ? ` --authenticationDatabase ${authDatabase}` : ''} --gzip ${replicaStatus ? '--oplog' : ''} ${isSSL ? '--ssl' : ''} --out ${outPath} --username ${adminUser} --password ${adminPassword}`;
 
     return new Promise((resolve, reject) => {
