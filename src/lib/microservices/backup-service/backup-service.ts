@@ -105,7 +105,7 @@ const createBackup = async (outPath: string) => {
  */
 const uploadBackup = async (container: storage.StorageContainer, backupPath: string): Promise<string> => {
     const date: string = backupPath.replace(path.join(backupPath, '..'), '').substring(1);
-    const files: Array<string> = await globby('**/*.gz', { cwd: backupPath });
+    const files: Array<string> = await globby('**/*', { cwd: backupPath });
     const name: string = `${date}.tar`;
     const file: string = path.join(backupPath, name);
 
