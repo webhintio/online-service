@@ -47,6 +47,7 @@
     "typescript-eslint-parser": "^12.0.0"
   },
   "dependencies": {
+    "@sonarwhal/rule-optimize-image": "^0.3.0",
     "applicationinsights": "^1.0.1",
     "azure-sb": "^0.10.4",
     "azure-storage": "^2.7.0",
