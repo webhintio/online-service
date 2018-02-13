@@ -56,7 +56,7 @@
     "express": "^4.15.3",
     "express-handlebars": "^3.0.0",
     "express-session": "^1.15.6",
-    "globby": "^7.1.1",
+    "globby": "^8.0.0",
     "handlebars": "^4.0.10",
     "lodash": "^4.17.5",
     "method-override": "^2.3.10",
