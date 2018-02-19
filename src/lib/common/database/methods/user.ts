@@ -5,8 +5,8 @@ import { IUser } from '../../../types';
 import { IUserModel, User } from '../models/user';
 import { validateConnection } from './common';
 
-
 const debug: debug.IDebugger = d(__filename);
+
 /**
  * Add a new user to the database.
  * @param {string} name - User name.
