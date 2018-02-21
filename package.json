@@ -44,7 +44,7 @@
     "rimraf": "^2.6.1",
     "ts-node": "^4.0.0",
     "typescript": "^2.7.1",
-    "typescript-eslint-parser": "^13.0.0"
+    "typescript-eslint-parser": "^14.0.0"
   },
   "dependencies": {
     "@sonarwhal/rule-optimize-image": "^0.3.0",
