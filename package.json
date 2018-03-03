@@ -68,7 +68,7 @@
     "ntp-time-sync": "^0.1.0",
     "passport": "^0.4.0",
     "passport-github2": "^0.1.11",
-    "proxyquire": "^1.8.0",
+    "proxyquire": "^2.0.0",
     "request": "^2.83.0",
     "sinon": "^4.3.0",
     "sonarwhal": "^0.25.0",
