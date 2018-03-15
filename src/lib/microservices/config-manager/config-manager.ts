@@ -1,6 +1,6 @@
 import * as path from 'path';
 
-import { IConfig } from 'sonarwhal/dist/src/lib/types';
+import { UserConfig } from 'sonarwhal/dist/src/lib/types';
 
 import * as database from '../../common/database/database';
 import { IServiceConfig, ConfigData } from '../../types';
@@ -10,9 +10,9 @@ import { loadJSONFile, validateServiceConfig } from '../../utils/misc';
  * Get the configuration from a path.
  * @param {string} filePath - Configuration file path.
  */
-const getConfigsFromFile = (filePath: string): Array<IConfig> => {
+const getConfigsFromFile = (filePath: string): Array<UserConfig> => {
     const resolvedPath = path.resolve(process.cwd(), filePath);
-    const configs: Array<IConfig> = loadJSONFile(resolvedPath);
+    const configs: Array<UserConfig> = loadJSONFile(resolvedPath);
 
     if (!Array.isArray(configs)) {
         throw new Error('Configuration file has to contain an array of sonar configurations');
@@ -55,7 +55,7 @@ const validateConfigData = (configData: ConfigData, options?) => {
  */
 export const add = (configData: ConfigData): Promise<IServiceConfig> => {
     validateConfigData(configData);
-    const newConfigs: Array<IConfig> = getConfigsFromFile(configData.filePath);
+    const newConfigs: Array<UserConfig> = getConfigsFromFile(configData.filePath);
 
     return database.serviceConfig.add(configData.name, configData.jobCacheTime, configData.jobRunTime, newConfigs);
 };
@@ -138,7 +138,7 @@ export const edit = async (oldName: string, configData: ConfigData): Promise<ISe
 
     validateConfigData(configData, { ignoreFilePath: true });
 
-    const newConfigs: Array<IConfig> = configData.filePath ? getConfigsFromFile(configData.filePath) : null;
+    const newConfigs: Array<UserConfig> = configData.filePath ? getConfigsFromFile(configData.filePath) : null;
 
     return await database.serviceConfig.edit(oldName, configData.name, configData.jobCacheTime, configData.jobRunTime, newConfigs);
 };

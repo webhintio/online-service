@@ -1,8 +1,10 @@
 /* eslint no-process-exit:off */
 
-import * as url from 'url';
+import { URL } from 'url';
 
 import { Sonarwhal } from 'sonarwhal/dist/src/lib/sonarwhal';
+import * as resourceLoader from 'sonarwhal/dist/src/lib/utils/resource-loader';
+import { SonarwhalConfig } from 'sonarwhal/dist/src/lib/config';
 
 import { IJob, JobResult } from '../../types';
 import * as logger from '../../utils/logging';
@@ -57,9 +59,11 @@ const run = async (job: IJob) => {
     };
 
     try {
-        const sonar = new Sonarwhal(job.config[0]);
+        const config = SonarwhalConfig.fromConfig(job.config[0]);
+        const resources = resourceLoader.loadResources(config);
+        const sonar = new Sonarwhal(config, resources);
 
-        result.messages = await sonar.executeOn(url.parse(job.url));
+        result.messages = await sonar.executeOn(new URL(job.url));
 
         result.ok = true;
     } catch (err) {
