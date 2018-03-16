@@ -1,4 +1,4 @@
-import { IConfig, IProblem } from 'sonarwhal/dist/src/lib/types';
+import { UserConfig, Problem } from 'sonarwhal/dist/src/lib/types';
 
 import { ConfigSource } from '../enums/configsource';
 import { JobStatus, RuleStatus } from '../enums/status';
@@ -7,13 +7,13 @@ export type Rule = {
     category: string;
     name: string;
     status: RuleStatus;
-    messages: Array<IProblem>;
+    messages: Array<Problem>;
 };
 
 export type JobResult = {
     error: string;
     ok: boolean;
-    messages: Array<IProblem>;
+    messages: Array<Problem>;
 };
 
 export type JobData = {
@@ -38,7 +38,7 @@ export interface IJob {
     /** Job Status. */
     status: JobStatus;
     /** Configuration to run sonar. */
-    config: Array<IConfig>;
+    config: Array<UserConfig>;
     /** Time in seconds the job has to complete the execution in sonar. */
     maxRunTime: number;
     /** List of rules to run. */

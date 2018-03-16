@@ -1,7 +1,7 @@
 import * as _ from 'lodash';
 import * as moment from 'moment';
-import { IConfig } from 'sonarwhal/dist/src/lib/types';
-import normalizeRules from 'sonarwhal/dist/src/lib/utils/normalize-rules';
+import { UserConfig } from 'sonarwhal/dist/src/lib/types';
+import normalizeRules from 'sonarwhal/dist/src/lib/config/normalize-rules';
 import { loadRule } from 'sonarwhal/dist/src/lib/utils/resource-loader';
 
 import * as database from '../../common/database/database';
@@ -29,16 +29,16 @@ if (queueConnectionString) {
 /**
  * Create a new Job in the database.
  * @param {string} url - The url that the job will be use.
- * @param {IConfig} config - The configuration for the job.
+ * @param {UserConfig} config - The configuration for the job.
  */
-const createNewJob = async (url: string, configs: Array<IConfig>, jobRunTime: number): Promise<IJob> => {
+const createNewJob = async (url: string, configs: Array<UserConfig>, jobRunTime: number): Promise<IJob> => {
     let rules: Array<Rule> = [];
 
     for (const config of configs) {
         const normalizedRules = normalizeRules(config.rules);
         const partialRules = _.map(normalizedRules, (rule: string, key: string) => {
             return {
-                category: loadRule(key).meta.docs.category,
+                category: loadRule(key, []).meta.docs.category,
                 messages: [],
                 name: key,
                 status: RuleStatus.pending
@@ -67,9 +67,9 @@ const createNewJob = async (url: string, configs: Array<IConfig>, jobRunTime: nu
 
 /**
  * Validate if a sonar configuration or an array of them is valid.
- * @param {IConfig | Array<IConfig>} config - Sonar configuration.
+ * @param {UserConfig | Array<UserConfig>} config - Sonar configuration.
  */
-const validateConfigs = (config: IConfig | Array<IConfig>) => {
+const validateConfigs = (config: UserConfig | Array<UserConfig>) => {
     const configs = Array.isArray(config) ? config : [config];
 
     validateServiceConfig(configs);
@@ -79,9 +79,9 @@ const validateConfigs = (config: IConfig | Array<IConfig>) => {
  * Get the right configuration for the job.
  * @param {RequestData} data - The data the user sent in the request.
  */
-const getConfig = (data: JobData, serviceConfig: IServiceConfig): Array<IConfig> => {
+const getConfig = (data: JobData, serviceConfig: IServiceConfig): Array<UserConfig> => {
     const source: ConfigSource = data.source;
-    let config: Array<IConfig>;
+    let config: Array<UserConfig>;
 
     debug(`Configuration source: ${source}`);
     switch (source) {
@@ -104,7 +104,7 @@ const getConfig = (data: JobData, serviceConfig: IServiceConfig): Array<IConfig>
  * @param {Array<IJob>} jobs - All the jobs for that url in the database.
  * @param config - Job configuration.
  */
-const getActiveJob = (jobs: Array<IJob>, config: Array<IConfig>, cacheTime: number) => {
+const getActiveJob = (jobs: Array<IJob>, config: Array<UserConfig>, cacheTime: number) => {
     return jobs.find((job) => {
         // job.config in cosmosdb is undefined if the config saved was an empty object.
         return _.isEqual(job.config || [{}], config) && job.status !== JobStatus.error && (job.status !== JobStatus.finished || moment(job.finished).isAfter(moment().subtract(cacheTime, 'seconds')));
@@ -181,7 +181,7 @@ export const startJob = async (data: RequestData): Promise<IJob> => {
     const serviceConfig: IServiceConfig = await configManager.active();
     const lock = await database.lock(jobData.url);
 
-    const config: Array<IConfig> = getConfig(jobData, serviceConfig);
+    const config: Array<UserConfig> = getConfig(jobData, serviceConfig);
     const jobs: Array<IJob> = await database.job.getByUrl(jobData.url);
     let job = getActiveJob(jobs, config, serviceConfig.jobCacheTime);
 

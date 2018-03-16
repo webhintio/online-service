@@ -1,6 +1,6 @@
 import * as uuid from 'uuid/v4';
 
-import { IConfig } from 'sonarwhal/dist/src/lib/types';
+import { UserConfig } from 'sonarwhal/dist/src/lib/types';
 import { DocumentQuery } from 'mongoose';
 import * as moment from 'moment';
 
@@ -70,7 +70,7 @@ export const getUnfinished = async (): Promise<Array<IJobModel>> => {
  * @param {Array<rules>} rules - Rules the job will check.
  * @param config - Configuration for the job.
  */
-export const add = async (url: string, status: JobStatus, rules: Array<Rule>, config: Array<IConfig>, jobRunTime: number): Promise<IJob> => {
+export const add = async (url: string, status: JobStatus, rules: Array<Rule>, config: Array<UserConfig>, jobRunTime: number): Promise<IJob> => {
     validateConnection();
 
     debug(`Creating new job for url: ${url}`);

@@ -6,8 +6,8 @@ import * as multiparty from 'multiparty';
 import stripBom = require('strip-bom');
 import * as stripComments from 'strip-json-comments';
 import { validateConfig } from 'sonarwhal/dist/src/lib/config/config-validator';
-import normalizeRules from 'sonarwhal/dist/src/lib/utils/normalize-rules';
-import { IConfig } from 'sonarwhal/dist/src/lib/types';
+import normalizeRules from 'sonarwhal/dist/src/lib/config/normalize-rules';
+import { UserConfig } from 'sonarwhal/dist/src/lib/types';
 
 import { debug as d } from './debug';
 import { JobStatus } from '../enums/status';
@@ -68,9 +68,9 @@ export const delay = (millisecs: number): Promise<object> => {
 
 /**
  * Check if an array of sonar configurations is valid.
- * @param {Array<IConfig>} configs - Array of sonar configurations.
+ * @param {Array<UserConfig>} configs - Array of sonar configurations.
  */
-export const validateServiceConfig = (configs: Array<IConfig>) => {
+export const validateServiceConfig = (configs: Array<UserConfig>) => {
     const rules: Set<string> = new Set();
 
     for (const config of configs) {

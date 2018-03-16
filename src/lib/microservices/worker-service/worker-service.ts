@@ -1,7 +1,7 @@
 import * as _ from 'lodash';
 import { fork, ChildProcess } from 'child_process';
-import { IProblem, Severity } from 'sonarwhal/dist/src/lib/types';
-import normalizeRules from 'sonarwhal/dist/src/lib/utils/normalize-rules';
+import { Problem, Severity } from 'sonarwhal/dist/src/lib/types';
+import normalizeRules from 'sonarwhal/dist/src/lib/config/normalize-rules';
 import * as path from 'path';
 
 import * as appInsight from '../../utils/appinsights';
@@ -24,16 +24,16 @@ const MAX_MESSAGE_SIZE = 220 * 1024; // size in kB
  * @param {IJob} job - Job to write the result.
  * @param normalizedRules - Normalized job rules.
  */
-const parseResult = (job: IJob, result: Array<IProblem>, normalizedRules) => {
+const parseResult = (job: IJob, result: Array<Problem>, normalizedRules) => {
     const rules: Array<Rule> = job.rules;
-    const groupedData: _.Dictionary<Array<IProblem>> = _.groupBy(result, 'ruleId');
+    const groupedData: _.Dictionary<Array<Problem>> = _.groupBy(result, 'ruleId');
 
     rules.forEach((rule: Rule) => {
         // Skip rule if it is not in the configuration file.
         if (!normalizedRules[rule.name]) {
             return;
         }
-        const messages: Array<IProblem> = groupedData[rule.name];
+        const messages: Array<Problem> = groupedData[rule.name];
 
         if (!messages || messages.length === 0) {
             rule.status = RuleStatus.pass;
@@ -121,12 +121,12 @@ const killProcess = (runner: ChildProcess) => {
  * Create a child process to run sonar.
  * @param {IJob} job - Job to run in sonar.
  */
-const runSonar = (job: IJob): Promise<Array<IProblem>> => {
+const runSonar = (job: IJob): Promise<Array<Problem>> => {
     return new Promise((resolve, reject) => {
         // if we don't set execArgv to [], when the process is created, the execArgv
         // has the same parameters as his father so if we are debugging, the child
         // process try to debug in the same port, and that throws an error.
-        const runner: ChildProcess = fork(path.join(__dirname, 'sonar-runner'), [], { execArgv: [] });
+        const runner: ChildProcess = fork(path.join(__dirname, 'sonar-runner'), [], { execArgv: [], stdio: [0, 1, 2, 'ipc'] });
         let timeoutId: NodeJS.Timer;
 
         runner.on('message', (result: JobResult) => {
@@ -333,7 +333,7 @@ export const run = async () => {
             await sendStartedMessage(queueResults, job);
 
             const sonarStart = Date.now();
-            const result: Array<IProblem> = await runSonar(job);
+            const result: Array<Problem> = await runSonar(job);
 
             appInsightClient.trackMetric({
                 name: 'run-sonar',

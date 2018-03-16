@@ -1,4 +1,4 @@
-import { IConnectorConfig, IRuleConfigList, RuleConfig, IConfig } from 'sonarwhal/dist/src/lib/types';
+import { ConnectorConfig, RulesConfigObject, RuleConfig, UserConfig } from 'sonarwhal/dist/src/lib/types';
 
 import { options } from '../../cli/options';
 import * as database from '../../common/database/database';
@@ -9,10 +9,10 @@ import * as logger from '../../utils/logging';
 const moduleName: string = 'Configuration Manager';
 /**
  * Print the connector options.
- * @param {IConfig} config Sonar configuration.
+ * @param {UserConfig} config Sonar configuration.
  */
-const printConnectorOptions = (config: IConfig) => {
-    const connectorOptions = (config.connector as IConnectorConfig).options;
+const printConnectorOptions = (config: UserConfig) => {
+    const connectorOptions = (config.connector as ConnectorConfig).options;
 
     if (connectorOptions) {
         logger.log('Options: ');
@@ -24,17 +24,17 @@ const printConnectorOptions = (config: IConfig) => {
 
 /**
  * Print rules in the configuration.
- * @param {IRuleConfigList | Array<RuleConfig>} rules Rules to print.
+ * @param {RulesConfigObject | Array<RuleConfig>} rules Rules to print.
  */
-const printRules = (rules: IRuleConfigList | Array<RuleConfig>) => {
+const printRules = (rules: RulesConfigObject | Array<RuleConfig>) => {
     logger.log(JSON.stringify(rules, null, 4));
 };
 
 /**
  * Print the configuration options.
- * @param {IConfig} config Sonar configuration.
+ * @param {UserConfig} config Sonar configuration.
  */
-const printOptions = (config: IConfig) => {
+const printOptions = (config: UserConfig) => {
     if (config.browserslist) {
         logger.log(`browserslist: ${config.browserslist}`);
     }

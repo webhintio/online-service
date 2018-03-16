@@ -1,7 +1,7 @@
 import test from 'ava';
 import * as sinon from 'sinon';
 import * as proxyquire from 'proxyquire';
-import { IConfig } from 'sonarwhal/dist/src/lib/types';
+import { UserConfig } from 'sonarwhal/dist/src/lib/types';
 
 const common = { validateConnection() { } };
 
@@ -55,7 +55,7 @@ test.serial('serviceConfig.add should fail if database is not connected', async 
     sinon.stub(common, 'validateConnection').throws(error);
     t.plan(1);
     try {
-        await serviceConfig.add('configName', 120, 180, [{}] as Array<IConfig>);
+        await serviceConfig.add('configName', 120, 180, [{}] as Array<UserConfig>);
     } catch (err) {
         t.is(err.message, 'Database not connected');
     }
@@ -126,7 +126,7 @@ test.serial('serviceConfig.add should save a new configuration in database', asy
 
     t.context.modelObject = modelObject;
 
-    await serviceConfig.add('configName', 120, 180, [{}] as Array<IConfig>);
+    await serviceConfig.add('configName', 120, 180, [{}] as Array<UserConfig>);
 
     t.true(t.context.modelObject.save.calledOnce);
 
@@ -288,7 +288,7 @@ test.serial(`serviceConfig.edit should modify the sonarConfigs property if confi
         sonarConfigs: {}
     };
 
-    const sonarConfigs: Array<IConfig> = [{
+    const sonarConfigs: Array<UserConfig> = [{
         connector: {
             name: 'jsdom',
             options: {}

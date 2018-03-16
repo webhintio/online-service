@@ -1,4 +1,4 @@
-import { IConfig } from 'sonarwhal/dist/src/lib/types';
+import { UserConfig } from 'sonarwhal/dist/src/lib/types';
 import { DocumentQuery } from 'mongoose';
 
 import { debug as d } from '../../../utils/debug';
@@ -13,9 +13,9 @@ const debug: debug.IDebugger = d(__filename);
  * @param {string} name - New configuration name.
  * @param {number} jobCacheTime - Cache time in seconds for jobs.
  * @param {number} jobRunTime - Time before throw a timeout for jobs.
- * @param {IConfig} options - Configuration data.
+ * @param {UserConfig} options - Configuration data.
  */
-export const add = async (name: string, jobCacheTime: number, jobRunTime: number, options: Array<IConfig>): Promise<IServiceConfig> => {
+export const add = async (name: string, jobCacheTime: number, jobRunTime: number, options: Array<UserConfig>): Promise<IServiceConfig> => {
     validateConnection();
 
     debug(`Creating config with name: ${name}`);
@@ -129,9 +129,9 @@ export const getActive = async (): Promise<IServiceConfig> => {
  * @param {string} newName - New configuration name.
  * @param {number} jobCacheTime - Cache time in seconds for jobs.
  * @param {number} jobRunTime - Time before throw a timeout for jobs.
- * @param {IConfig} options - Configuration data.
+ * @param {UserConfig} options - Configuration data.
  */
-export const edit = async (oldName: string, newName: string, jobCacheTime: number, jobRunTime: number, configs?: Array<IConfig>): Promise<IServiceConfig> => {
+export const edit = async (oldName: string, newName: string, jobCacheTime: number, jobRunTime: number, configs?: Array<UserConfig>): Promise<IServiceConfig> => {
     validateConnection();
 
     const query: DocumentQuery<IServiceConfigModel, IServiceConfigModel> = ServiceConfig.findOne({ name: oldName });

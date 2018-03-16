@@ -1,7 +1,7 @@
 import test from 'ava';
 import * as sinon from 'sinon';
 import * as proxyquire from 'proxyquire';
-import { IConfig } from 'sonarwhal/dist/src/lib/types';
+import { UserConfig } from 'sonarwhal/dist/src/lib/types';
 import * as moment from 'moment';
 
 const common = { validateConnection() { } };
@@ -112,7 +112,7 @@ test.serial('job.add should fail if database is not connected', async (t) => {
     sinon.stub(common, 'validateConnection').throws(error);
     t.plan(1);
     try {
-        await job.add('url', JobStatus.pending, [], [{}] as Array<IConfig>, 180);
+        await job.add('url', JobStatus.pending, [], [{}] as Array<UserConfig>, 180);
     } catch (err) {
         t.is(err.message, 'Database not connected');
     }
