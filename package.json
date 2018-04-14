@@ -50,7 +50,7 @@
   },
   "dependencies": {
     "@sonarwhal/configuration-web-recommended": "^5.0.0",
-    "@sonarwhal/configuration-progressive-web-apps": "^1.0.0",
+    "@sonarwhal/configuration-progressive-web-apps": "^2.0.0",
     "@sonarwhal/rule-image-optimization-cloudinary": "^3.0.1",
     "@sonarwhal/rule-optimize-image": "^1.0.1",
     "applicationinsights": "^1.0.2",
