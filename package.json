@@ -46,7 +46,7 @@
     "sinon": "^4.5.0",
     "ts-node": "^5.0.1",
     "typescript": "^2.8.1",
-    "typescript-eslint-parser": "^14.0.0"
+    "typescript-eslint-parser": "^15.0.0"
   },
   "dependencies": {
     "@sonarwhal/configuration-web-recommended": "^5.0.0",
