@@ -53,6 +53,7 @@
     "@sonarwhal/configuration-web-recommended": "^6.0.0",
     "@sonarwhal/rule-image-optimization-cloudinary": "^3.0.2",
     "@sonarwhal/rule-optimize-image": "^1.0.1",
+    "@sonarwhal/rule-performance-budget": "^3.0.2",
     "applicationinsights": "^1.0.2",
     "azure-sb": "^0.10.6",
     "azure-storage": "^2.8.2",
