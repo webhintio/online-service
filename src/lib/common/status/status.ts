@@ -14,6 +14,20 @@ const { database: dbConnectionString, queue: queueConnectionString } = process.e
 let queueJobs: Queue;
 let queueResults: Queue;
 
+class StatusRules implements IStatusRules {
+    public errors: number;
+    public passes: number;
+    public warnings: number;
+    public rules: StatusRuleDetailList;
+
+    public constructor() {
+        this.errors = 0;
+        this.passes = 0;
+        this.warnings = 0;
+        this.rules = {};
+    }
+}
+
 class Status implements IStatus {
     public average: StatusAverage;
     public date: Date;
@@ -58,27 +72,13 @@ class StatusRuleDetail implements IStatusRuleDetail {
     }
 }
 
-class StatusRules implements IStatusRules {
-    public errors: number;
-    public passes: number;
-    public warnings: number;
-    public rules: StatusRuleDetailList;
-
-    public constructor() {
-        this.errors = 0;
-        this.passes = 0;
-        this.warnings = 0;
-        this.rules = {};
-    }
-}
-
 /**
  * Calculate the average time in an array of jobs.
  * @param {Array<IJob>} jobs - Jobs to calculate the average.
  * @param {string} fieldEnd - First field to calculate the average.
  * @param {string} fieldStart - Second field to calculate the average.
  */
-const average = (jobs: Array<IJob>, fieldEnd: string, fieldStart: string): number => {
+const avg = (jobs: Array<IJob>, fieldEnd: string, fieldStart: string): number => {
     if (jobs.length === 0) {
         return null;
     }
@@ -199,8 +199,8 @@ const updateStatusesSince = async (since: Date) => {
 
         const result: IStatus = {
             average: {
-                finish: average(jobsFinished, 'finished', 'started'),
-                start: average(jobsStarted, 'started', 'queued')
+                finish: avg(jobsFinished, 'finished', 'started'),
+                start: avg(jobsStarted, 'started', 'queued')
             },
             date: to.toDate(),
             queues: null,
