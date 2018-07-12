@@ -66,7 +66,7 @@
     "globby": "^8.0.1",
     "handlebars": "^4.0.11",
     "lodash": "^4.17.10",
-    "method-override": "^2.3.10",
+    "method-override": "^3.0.0",
     "moment": "^2.22.2",
     "mongodb-lock": "^0.4.0",
     "mongoose": "^5.1.7",
