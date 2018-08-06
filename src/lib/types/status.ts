@@ -29,38 +29,38 @@ export type StatusScans = {
 };
 
 export interface IStatusUrl {
-    /** # of errors in this url for a rule. */
+    /** # of errors in this url for a hint. */
     errors: number;
-    /** Indicates if the url pass the rule. */
+    /** Indicates if the url pass the hint. */
     passes: number;
-    /** # of warnings in this url for a rule. */
+    /** # of warnings in this url for a hint. */
     warnings: number;
     url: string;
 }
 
-export interface IStatusRuleDetail {
-    /** # of urls with at least one error in the rule. */
+export interface IStatusHintDetail {
+    /** # of urls with at least one error in the hint. */
     errors: number;
-    /** # of urls passing the rule. */
+    /** # of urls passing the hint. */
     passes: number;
-    /** # of urls with at least one warning in the rule. */
+    /** # of urls with at least one warning in the hint. */
     warnings: number;
     /** list of urls. */
     urls: Array<IStatusUrl>;
 }
 
-export type StatusRuleDetailList = {
-    [key: string]: IStatusRuleDetail;
+export type StatusHintDetailList = {
+    [key: string]: IStatusHintDetail;
 };
 
-export interface IStatusRules {
-    /** Total of urls with error in some rule. */
+export interface IStatusHints {
+    /** Total of urls with error in some hint. */
     errors: number;
-    /** Total of urls that pass a rule. */
+    /** Total of urls that pass a hint. */
     passes: number;
-    /** Total of urls with warning in some rule. */
+    /** Total of urls with warning in some hint. */
     warnings: number;
-    rules: StatusRuleDetailList;
+    hints: StatusHintDetailList;
 }
 
 export interface IStatus {
@@ -70,8 +70,8 @@ export interface IStatus {
     date: Date;
     /** Queue status. */
     queues: StatusQueue;
-    /** Rules status. */
-    rules: IStatusRules;
+    /** Hints status. */
+    hints: IStatusHints;
     /** Scans status. */
     scans: StatusScans;
 }

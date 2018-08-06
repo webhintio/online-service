@@ -3,8 +3,8 @@ import * as _ from 'lodash';
 import { Queue } from '../../common/queue/queue';
 import * as database from '../../common/database/database';
 import { IJobModel } from '../../common/database/models/job';
-import { IJob, Rule } from '../../types';
-import { JobStatus, RuleStatus } from '../../enums/status';
+import { IJob, Hint } from '../../types';
+import { JobStatus, HintStatus } from '../../enums/status';
 import * as logger from '../../utils/logging';
 import { generateLog } from '../../utils/misc';
 import * as appInsight from '../../utils/appinsights';
@@ -14,28 +14,28 @@ const {database: dbConnectionString, queue: queueConnectionString} = process.env
 const appInsightClient = appInsight.getClient();
 
 /**
- * Get a rule from rules given a rule name.
- * @param {string} name Name of the rule to get.
- * @param {Array<Rule>} rules Rules where to find the rule name.
+ * Get a hint from hints given a hint name.
+ * @param {string} name Name of the hint to get.
+ * @param {Array<Hint>} hints Hints where to find the hint name.
  */
-const getRule = (name: string, rules: Array<Rule>) => {
-    return rules.find((rule) => {
-        return rule.name === name;
+const getHint = (name: string, hints: Array<Hint>) => {
+    return hints.find((hint) => {
+        return hint.name === name;
     });
 };
 
 /**
- * Update the rules statuses and messages in dbJob.
+ * Update the hints statuses and messages in dbJob.
  * @param {IJob} dbJob Job from database.
  * @param {IJob} job Job from service bus.
  */
-const setRules = (dbJob: IJob, job: IJob) => {
-    for (const rule of job.rules) {
-        const dbJobRule = getRule(rule.name, dbJob.rules);
+const setHints = (dbJob: IJob, job: IJob) => {
+    for (const hint of job.hints) {
+        const dbJobHint = getHint(hint.name, dbJob.hints);
 
-        if (dbJobRule.status === RuleStatus.pending) {
-            dbJobRule.messages = rule.messages;
-            dbJobRule.status = rule.status;
+        if (dbJobHint.status === HintStatus.pending) {
+            dbJobHint.messages = hint.messages;
+            dbJobHint.status = hint.status;
         }
     }
 };
@@ -45,8 +45,8 @@ const setRules = (dbJob: IJob, job: IJob) => {
  * @param {IJob} job Job to check if it is finished or not.
  */
 const isJobFinished = (job: IJob) => {
-    return job.rules.every((rule) => {
-        return rule.status !== RuleStatus.pending;
+    return job.hints.every((hint) => {
+        return hint.status !== HintStatus.pending;
     });
 };
 
@@ -79,13 +79,13 @@ export const run = async () => {
                 }
 
                 for (const job of jobs) {
-                    logger.log(generateLog(`Synchronizing Job`, job, { showRule: true }), moduleName);
+                    logger.log(generateLog(`Synchronizing Job`, job, { showHint: true }), moduleName);
 
                     if (job.status === JobStatus.started) {
                         // When a job is split we receive more than one messages for the status `started`
                         // but we only want to store in the database the first one.
                         if (dbJob.status !== JobStatus.started) {
-                            dbJob.sonarVersion = job.sonarVersion;
+                            dbJob.webhintVersion = job.webhintVersion;
                         }
 
                         if (!dbJob.started || dbJob.started > new Date(job.started)) {
@@ -97,7 +97,7 @@ export const run = async () => {
                             dbJob.status = job.status;
                         }
                     } else {
-                        setRules(dbJob, job);
+                        setHints(dbJob, job);
 
                         if (job.status === JobStatus.error) {
                             if (!dbJob.error) {
@@ -115,7 +115,7 @@ export const run = async () => {
                         }
                     }
 
-                    logger.log(generateLog(`Synchronized Job`, job, { showRule: true }), moduleName);
+                    logger.log(generateLog(`Synchronized Job`, job, { showHint: true }), moduleName);
                 }
 
                 await database.job.update(dbJob);
@@ -126,7 +126,7 @@ export const run = async () => {
             }
 
             appInsightClient.trackMetric({
-                name: 'run-sonar',
+                name: 'run-webhint',
                 value: Date.now() - start
             });
         } catch (err) {

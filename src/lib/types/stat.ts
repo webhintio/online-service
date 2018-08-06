@@ -1,4 +1,4 @@
-import { JobStatus, RuleStatus } from '../enums/status';
+import { JobStatus, HintStatus } from '../enums/status';
 
 export type DateParameter = {
     $gte?: Date;
@@ -8,7 +8,7 @@ export type StatQueryParameter = {
     $or?: Array<any>;
     status?: JobStatus;
     finished?: DateParameter;
-    'rules.status'?: RuleStatus;
+    'hints.status'?: HintStatus;
 };
 
 export type StatOptions = {

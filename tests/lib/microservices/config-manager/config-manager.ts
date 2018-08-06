@@ -75,7 +75,7 @@ test.serial('add should throw an error if the configuration file is invalid', as
     }
 });
 
-test.serial('add should throw an error if the configuration has duplicate rules', async (t) => {
+test.serial('add should throw an error if the configuration has duplicate hints', async (t) => {
     t.plan(1);
 
     const configData: ConfigData = {
@@ -88,7 +88,7 @@ test.serial('add should throw an error if the configuration has duplicate rules'
     try {
         await configManager.add(configData);
     } catch (err) {
-        t.is(err.message, 'Rule manifest-is-valid repeated');
+        t.is(err.message, 'Hint manifest-is-valid repeated');
     }
 });
 
@@ -105,7 +105,7 @@ test.serial('add should throw an error if the configuration is not an array', as
     try {
         await configManager.add(configData);
     } catch (err) {
-        t.is(err.message, 'Configuration file has to contain an array of sonar configurations');
+        t.is(err.message, 'Configuration file has to contain an array of webhint configurations');
     }
 });
 
@@ -213,10 +213,10 @@ test.serial('active should return a IServiceConfig object', async (t) => {
         jobCacheTime: 1,
         jobRunTime: 1,
         name: 'configName',
-        sonarConfigs: {}
+        webhintConfigs: [{}]
     });
 
-    const fields = ['active', 'jobCacheTime', 'jobRunTime', 'name', 'sonarConfigs'];
+    const fields = ['active', 'jobCacheTime', 'jobRunTime', 'name', 'webhintConfigs'];
 
     const config = await configManager.active();
 

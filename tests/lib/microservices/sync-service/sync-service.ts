@@ -4,7 +4,7 @@ import * as proxyquire from 'proxyquire';
 import * as path from 'path';
 
 import { readFile, readFileAsync } from '../../../../src/lib/utils/misc';
-import { JobStatus, RuleStatus } from '../../../../src/lib/enums/status';
+import { JobStatus, HintStatus } from '../../../../src/lib/enums/status';
 import { IJob } from '../../../../src/lib/types';
 
 const logger = { error() { } };
@@ -18,6 +18,7 @@ const database = {
         get() { },
         update() { }
     },
+    lock() { },
     unlock() { }
 };
 
@@ -162,7 +163,7 @@ test.serial(`if the job status is 'error', it should update the job in database 
     t.deepEqual(dbJob.error[0], data.error.error);
 });
 
-test.serial(`if the job status is 'finished' and all rules are processed, it should update rules and send the status finished if there is no errors`, async (t) => {
+test.serial(`if the job status is 'finished' and all hints are processed, it should update hints and send the status finished if there is no errors`, async (t) => {
     sinon.stub(database.job, 'get').resolves(t.context.job);
 
     await sync.run();
@@ -178,12 +179,12 @@ test.serial(`if the job status is 'finished' and all rules are processed, it sho
     t.is(dbJob.status, JobStatus.finished);
     t.is(dbJob.finished, data.finished.finished);
 
-    for (const rule of dbJob.rules) {
-        t.not(rule.status, RuleStatus.pending);
+    for (const hint of dbJob.hints) {
+        t.not(hint.status, HintStatus.pending);
     }
 });
 
-test.serial(`if the job status is 'finished' and all rules are processed, it should update rules and send the status error if there is a previous error in database`, async (t) => {
+test.serial(`if the job status is 'finished' and all hints are processed, it should update hints and send the status error if there is a previous error in database`, async (t) => {
     t.context.job.error = [data.error.error];
     sinon.stub(database.job, 'get').resolves(t.context.job);
 
@@ -200,12 +201,12 @@ test.serial(`if the job status is 'finished' and all rules are processed, it sho
     t.is(dbJob.status, JobStatus.error);
     t.is(dbJob.finished, data.finished.finished);
 
-    for (const rule of dbJob.rules) {
-        t.not(rule.status, RuleStatus.pending);
+    for (const hint of dbJob.hints) {
+        t.not(hint.status, HintStatus.pending);
     }
 });
 
-test.serial(`if the job status is 'finished' and all rules are processed, it should update rules and send the status error if there is any error`, async (t) => {
+test.serial(`if the job status is 'finished' and all hints are processed, it should update hints and send the status error if there is any error`, async (t) => {
     sinon.stub(database.job, 'get').resolves(t.context.job);
 
     await sync.run();
@@ -221,12 +222,12 @@ test.serial(`if the job status is 'finished' and all rules are processed, it sho
     t.is(dbJob.status, JobStatus.error);
     t.is(dbJob.finished, data.finished.finished);
 
-    for (const rule of dbJob.rules) {
-        t.not(rule.status, RuleStatus.pending);
+    for (const hint of dbJob.hints) {
+        t.not(hint.status, HintStatus.pending);
     }
 });
 
-test.serial(`if the job status is 'finished' but they are partial results, it should update rules and just send the status finished when all the rules are processed`, async (t) => {
+test.serial(`if the job status is 'finished' but they are partial results, it should update hints and just send the status finished when all the hints are processed`, async (t) => {
     sinon.stub(database.job, 'get').resolves(t.context.job);
 
     await sync.run();

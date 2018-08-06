@@ -1,6 +1,6 @@
 import * as uuid from 'uuid/v4';
 
-import { UserConfig } from 'sonarwhal/dist/src/lib/types';
+import { UserConfig } from 'hint/dist/src/lib/types';
 import { DocumentQuery } from 'mongoose';
 import * as moment from 'moment';
 
@@ -8,7 +8,7 @@ import { debug as d } from '../../../utils/debug';
 import { IJob } from '../../../types';
 import { IJobModel, Job } from '../models/job';
 import { JobStatus } from '../../../enums/status';
-import { Rule, StatOptions, StatQueryParameter } from '../../../types';
+import { Hint, StatOptions, StatQueryParameter } from '../../../types';
 import { validateConnection } from './common';
 import { getTime } from '../../ntp/ntp';
 
@@ -67,20 +67,20 @@ export const getUnfinished = async (): Promise<Array<IJobModel>> => {
  * Create a new Job into the database.
  * @param {string} url - Url for the job.
  * @param {JobStatus} status - Current status for the job.
- * @param {Array<rules>} rules - Rules the job will check.
+ * @param {Array<Hint>} hints - Hints the job will check.
  * @param config - Configuration for the job.
  */
-export const add = async (url: string, status: JobStatus, rules: Array<Rule>, config: Array<UserConfig>, jobRunTime: number): Promise<IJob> => {
+export const add = async (url: string, status: JobStatus, hints: Array<Hint>, config: Array<UserConfig>, jobRunTime: number): Promise<IJob> => {
     validateConnection();
 
     debug(`Creating new job for url: ${url}`);
 
     const job = new Job({
         config,
+        hints,
         id: uuid(),
         maxRunTime: jobRunTime,
         queued: await getTime(),
-        rules,
         status,
         url
     });
@@ -99,7 +99,7 @@ export const add = async (url: string, status: JobStatus, rules: Array<Rule>, co
 export const update = async (job: IJobModel) => {
     validateConnection();
 
-    job.markModified('rules');
+    job.markModified('hints');
 
     await job.save();
 };

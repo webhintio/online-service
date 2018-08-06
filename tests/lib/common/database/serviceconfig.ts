@@ -1,7 +1,7 @@
 import test from 'ava';
 import * as sinon from 'sinon';
 import * as proxyquire from 'proxyquire';
-import { UserConfig } from 'sonarwhal/dist/src/lib/types';
+import { UserConfig } from 'hint/dist/src/lib/types';
 
 const common = { validateConnection() { } };
 
@@ -251,14 +251,14 @@ test.serial('serviceConfig.getActive should return the active configuration', as
     t.context.query.exec.restore();
 });
 
-test.serial(`serviceConfig.edit shouldn't modify the sonarConfigs property if config is null`, async (t) => {
+test.serial(`serviceConfig.edit shouldn't modify the webhintConfigs property if config is null`, async (t) => {
     const config = {
         jobCacheTime: 1,
         jobRunTime: 1,
         markModified() { },
         name: 'oldName',
         save() { },
-        sonarConfigs: {}
+        webhintConfigs: {}
     };
 
     t.context.config = config;
@@ -271,24 +271,24 @@ test.serial(`serviceConfig.edit shouldn't modify the sonarConfigs property if co
     t.is(result.name, 'newName');
     t.is(result.jobCacheTime, 100);
     t.is(result.jobRunTime, 200);
-    t.is(result.sonarConfigs, config.sonarConfigs);
+    t.is(result.webhintConfigs, config.webhintConfigs);
     t.false(t.context.config.markModified.called);
 
     t.context.config.markModified.restore();
     t.context.query.exec.restore();
 });
 
-test.serial(`serviceConfig.edit should modify the sonarConfigs property if config isn't null`, async (t) => {
+test.serial(`serviceConfig.edit should modify the webhintConfigs property if config isn't null`, async (t) => {
     const config = {
         jobCacheTime: 1,
         jobRunTime: 1,
         markModified() { },
         name: 'oldName',
         save() { },
-        sonarConfigs: {}
+        webhintConfigs: {}
     };
 
-    const sonarConfigs: Array<UserConfig> = [{
+    const webhintConfigs: Array<UserConfig> = [{
         connector: {
             name: 'jsdom',
             options: {}
@@ -300,14 +300,14 @@ test.serial(`serviceConfig.edit should modify the sonarConfigs property if confi
     sinon.spy(config, 'markModified');
     sinon.stub(query, 'exec').resolves(config);
 
-    const result = await serviceConfig.edit('oldName', 'newName', 100, 200, sonarConfigs);
+    const result = await serviceConfig.edit('oldName', 'newName', 100, 200, webhintConfigs);
 
     t.is(result.name, 'newName');
     t.is(result.jobCacheTime, 100);
     t.is(result.jobRunTime, 200);
-    t.is(result.sonarConfigs, sonarConfigs);
+    t.is(result.webhintConfigs, webhintConfigs);
     t.true(t.context.config.markModified.calledOnce);
-    t.is(t.context.config.markModified.args[0][0], 'sonarConfigs');
+    t.is(t.context.config.markModified.args[0][0], 'webhintConfigs');
 
     t.context.config.markModified.restore();
     t.context.query.exec.restore();

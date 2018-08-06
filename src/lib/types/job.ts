@@ -1,12 +1,12 @@
-import { UserConfig, Problem } from 'sonarwhal/dist/src/lib/types';
+import { UserConfig, Problem } from 'hint/dist/src/lib/types';
 
 import { ConfigSource } from '../enums/configsource';
-import { JobStatus, RuleStatus } from '../enums/status';
+import { JobStatus, HintStatus } from '../enums/status';
 
-export type Rule = {
+export type Hint = {
     category: string;
     name: string;
-    status: RuleStatus;
+    status: HintStatus;
     messages: Array<Problem>;
 };
 
@@ -18,7 +18,7 @@ export type JobResult = {
 
 export type JobData = {
     config;
-    rules: Array<string>;
+    hints: Array<string>;
     source: ConfigSource;
     url: string;
 };
@@ -37,14 +37,16 @@ export interface IJob {
     url: string;
     /** Job Status. */
     status: JobStatus;
-    /** Configuration to run sonar. */
+    /** Configuration to run webhint. */
     config: Array<UserConfig>;
-    /** Time in seconds the job has to complete the execution in sonar. */
+    /** Time in seconds the job has to complete the execution in webhint. */
     maxRunTime: number;
-    /** List of rules to run. */
-    rules: Array<Rule>;
-    /** Sonar version. */
-    sonarVersion: string;
+    /** DEPRECATED */
+    rules: Array<Hint>;
+    /** List of hints to run. */
+    hints: Array<Hint>;
+    /** Webhint version. */
+    webhintVersion: string;
     /** Timestamp when it was queued. */
     queued: Date;
     /** Timestamp when it was queued. */

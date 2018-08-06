@@ -29,9 +29,9 @@ const Queue = function () {
 
 const queueObject = { Queue };
 
-const rule = { meta: { docs: { category: 'category' } } };
+const hint = { meta: { docs: { category: 'category' } } };
 
-const resourceLoader = { loadRule() { } };
+const resourceLoader = { loadHint() { } };
 
 const ntp = {
     getTime() {
@@ -46,27 +46,27 @@ proxyquire('../../../../src/lib/microservices/job-manager/job-manager', {
     '../../common/ntp/ntp': ntp,
     '../../common/queue/queue': queueObject,
     '../config-manager/config-manager': configManager,
-    'sonarwhal/dist/src/lib/utils/resource-loader': resourceLoader
+    'hint/dist/src/lib/utils/resource-loader': resourceLoader
 });
 
 import * as jobManager from '../../../../src/lib/microservices/job-manager/job-manager';
 import { ConfigSource } from '../../../../src/lib/enums/configsource';
-import { JobStatus, RuleStatus } from '../../../../src/lib/enums/status';
+import { JobStatus, HintStatus } from '../../../../src/lib/enums/status';
 import { readFileAsync } from '../../../../src/lib/utils/misc';
 import { IJob } from '../../../../src/lib/types';
 
 const activeConfig = {
     jobCacheTime: 120,
-    sonarConfigs: [{
-        rules: {
-            rule1: 'error',
-            rule2: 'error'
+    webhintConfigs: [{
+        hints: {
+            hint1: 'error',
+            hint2: 'error'
         }
     },
     {
-        rules: {
-            rule3: 'error',
-            rule4: 'error'
+        hints: {
+            hint3: 'error',
+            hint4: 'error'
         }
     }]
 };
@@ -84,34 +84,34 @@ const validatedJobCreatedInDatabase = (t, jobInput) => {
     t.deepEqual(args[2], [{
         category: 'category',
         messages: [],
-        name: 'rule1',
-        status: RuleStatus.pending
+        name: 'hint1',
+        status: HintStatus.pending
     }, {
         category: 'category',
         messages: [],
-        name: 'rule2',
-        status: RuleStatus.pending
+        name: 'hint2',
+        status: HintStatus.pending
     }, {
         category: 'category',
         messages: [],
-        name: 'rule3',
-        status: RuleStatus.pending
+        name: 'hint3',
+        status: HintStatus.pending
     }, {
         category: 'category',
         messages: [],
-        name: 'rule4',
-        status: RuleStatus.pending
+        name: 'hint4',
+        status: HintStatus.pending
     }]);
     t.deepEqual(args[3], [{
-        rules: {
-            rule1: 'error',
-            rule2: 'error'
+        hints: {
+            hint1: 'error',
+            hint2: 'error'
         }
     },
     {
-        rules: {
-            rule3: 'error',
-            rule4: 'error'
+        hints: {
+            hint3: 'error',
+            hint4: 'error'
         }
     }]);
 };
@@ -123,7 +123,7 @@ test.beforeEach(async (t) => {
     sinon.spy(database.job, 'update');
     sinon.stub(configManager, 'active').resolves(activeConfig);
     sinon.spy(queueMethods, 'getMessagesCount');
-    sinon.stub(resourceLoader, 'loadRule').returns(rule);
+    sinon.stub(resourceLoader, 'loadHint').returns(hint);
 
     t.context.jobs = JSON.parse(await readFileAsync(path.join(__dirname, 'fixtures', 'jobs.json')));
     t.context.database = database;
@@ -148,14 +148,14 @@ test.afterEach.always((t) => {
     }
     t.context.queueMethods.getMessagesCount.restore();
     t.context.configManager.active.restore();
-    t.context.resourceLoader.loadRule.restore();
+    t.context.resourceLoader.loadHint.restore();
 });
 
 test.serial(`if there is no url, it should return an error`, async (t) => {
     const jobInput = {
         fields: {
-            config: activeConfig.sonarConfigs,
-            rules: [],
+            config: activeConfig.webhintConfigs,
+            hints: [],
             source: ConfigSource.default,
             url: null
         },
@@ -177,17 +177,17 @@ test.serial(`if the job doesn't exist, it should create a new job and add it to 
     const jobInput = {
         fields: {
             config: null,
-            rules: [],
+            hints: [],
             source: [ConfigSource.default],
-            url: ['http://sonarwhal.com']
+            url: ['http://webhint.io']
         },
         files: {}
     };
 
     const jobResult = {
-        config: activeConfig.sonarConfigs,
-        rules: [],
-        url: 'http://sonarwhal.com'
+        config: activeConfig.webhintConfigs,
+        hints: [],
+        url: 'http://webhint.io'
     };
 
     sinon.stub(database.job, 'add').resolves(jobResult);
@@ -203,17 +203,17 @@ test.serial(`if the job doesn't exist, but there is an error in Service Bus, it 
     const jobInput = {
         fields: {
             config: null,
-            rules: [],
+            hints: [],
             source: [ConfigSource.default],
-            url: ['http://sonarwhal.com']
+            url: ['http://webhint.io']
         },
         files: {}
     };
 
     const jobResult = {
-        config: activeConfig.sonarConfigs,
-        rules: [],
-        url: 'http://sonarwhal.com'
+        config: activeConfig.webhintConfigs,
+        hints: [],
+        url: 'http://webhint.io'
     };
 
     sinon.stub(database.job, 'add').resolves(jobResult);
@@ -229,17 +229,17 @@ test.serial(`if the job doesn't exist, it should use the defaul configuration if
     const jobInput = {
         fields: {
             config: null,
-            rules: [],
+            hints: [],
             source: null,
-            url: ['http://sonarwhal.com']
+            url: ['http://webhint.io']
         },
         files: {}
     };
 
     const jobResult = {
-        config: activeConfig.sonarConfigs,
-        rules: [],
-        url: 'http://sonarwhal.com'
+        config: activeConfig.webhintConfigs,
+        hints: [],
+        url: 'http://webhint.io'
     };
 
     sinon.stub(database.job, 'add').resolves(jobResult);
@@ -270,17 +270,17 @@ test.serial(`if the job exists, but it is expired, it should create a new job an
     const jobInput = {
         fields: {
             config: null,
-            rules: [],
+            hints: [],
             source: null,
-            url: ['http://sonarwhal.com']
+            url: ['http://webhint.io']
         },
         files: {}
     };
 
     const jobResult = {
-        config: activeConfig.sonarConfigs,
-        rules: [],
-        url: 'http://sonarwhal.com'
+        config: activeConfig.webhintConfigs,
+        hints: [],
+        url: 'http://webhint.io'
     };
 
     sinon.stub(database.job, 'add').resolves(jobResult);
@@ -294,9 +294,9 @@ test.serial(`if the job exists, but config is different, it should create a new 
     const jobs = t.context.jobs;
 
     jobs[0].config = [{
-        rules: {
-            rule1: RuleStatus.error,
-            rule3: RuleStatus.error
+        hints: {
+            hint1: HintStatus.error,
+            hint3: HintStatus.error
         }
     }];
 
@@ -305,17 +305,17 @@ test.serial(`if the job exists, but config is different, it should create a new 
     const jobInput = {
         fields: {
             config: null,
-            rules: [],
+            hints: [],
             source: ConfigSource.default,
-            url: ['http://sonarwhal.com']
+            url: ['http://webhint.io']
         },
         files: {}
     };
 
     const jobResult = {
-        config: activeConfig.sonarConfigs,
-        rules: [],
-        url: 'http://sonarwhal.com'
+        config: activeConfig.webhintConfigs,
+        hints: [],
+        url: 'http://webhint.io'
     };
 
     sinon.stub(database.job, 'add').resolves(jobResult);
@@ -330,9 +330,9 @@ test.serial(`if the source is a file and the config is not valid, it should retu
     sinon.stub(database.job, 'getByUrl').resolves([]);
     const jobInput = {
         fields: {
-            rules: null,
+            hints: null,
             source: [ConfigSource.file],
-            url: ['http://sonarwhal.com']
+            url: ['http://webhint.io']
         },
         files: {
             'config-file': [{
@@ -352,14 +352,14 @@ test.serial(`if the source is a file and the config is not valid, it should retu
     }
 });
 
-test.serial(`if the source is a file and the config has duplicated rules, it should return an error`, async (t) => {
+test.serial(`if the source is a file and the config has duplicated hints, it should return an error`, async (t) => {
     sinon.spy(queueMethods, 'sendMessage');
     sinon.stub(database.job, 'getByUrl').resolves([]);
     const jobInput = {
         fields: {
-            rules: null,
+            hints: null,
             source: [ConfigSource.file],
-            url: ['http://sonarwhal.com']
+            url: ['http://webhint.io']
         },
         files: {
             'config-file': [{
@@ -375,7 +375,7 @@ test.serial(`if the source is a file and the config has duplicated rules, it sho
         await jobManager.startJob(jobInput);
     } catch (err) {
         t.false(t.context.database.job.add.called);
-        t.is(err.message, 'Rule manifest-is-valid repeated');
+        t.is(err.message, 'Hint manifest-is-valid repeated');
     }
 });
 
@@ -384,9 +384,9 @@ test.serial(`if the source is a file and the config is valid, it should create a
     sinon.stub(database.job, 'getByUrl').resolves([]);
     const jobInput = {
         fields: {
-            rules: null,
+            hints: null,
             source: [ConfigSource.file],
-            url: ['http://sonarwhal.com']
+            url: ['http://webhint.io']
         },
         files: {
             'config-file': [{
@@ -398,9 +398,9 @@ test.serial(`if the source is a file and the config is valid, it should create a
 
     const jobResult = {
         config: JSON.parse(await readFileAsync(path.join(__dirname, '../fixtures/config.json'))),
-        rules: null,
+        hints: null,
         source: ConfigSource.file,
-        url: 'http://sonarwhal.com'
+        url: 'http://webhint.io'
     };
 
     sinon.stub(database.job, 'add').resolves(jobResult);
@@ -430,9 +430,9 @@ test.serial(`if the job exists and it isn't expired, it shouldn't create a new j
     const jobInput = {
         fields: {
             config: null,
-            rules: [],
+            hints: [],
             source: ConfigSource.default,
-            url: 'http://sonarwhal.com'
+            url: 'http://webhint.io'
         },
         files: {}
     };
@@ -458,9 +458,9 @@ test.serial(`if the job exists, the status is neither finish or error, but finis
     const jobInput = {
         fields: {
             config: null,
-            rules: [],
+            hints: [],
             source: ConfigSource.default,
-            url: 'http://sonarwhal.com'
+            url: 'http://webhint.io'
         },
         files: {}
     };
@@ -484,9 +484,9 @@ test.serial(`if the job is still running, it shouldn't create a new job`, async 
     const jobInput = {
         fields: {
             config: null,
-            rules: [],
+            hints: [],
             source: ConfigSource.default,
-            url: 'http://sonarwhal.com'
+            url: 'http://webhint.io'
         },
         files: {}
     };

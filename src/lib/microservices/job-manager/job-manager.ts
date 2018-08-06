@@ -1,13 +1,13 @@
 import * as _ from 'lodash';
 import * as moment from 'moment';
-import { UserConfig } from 'sonarwhal/dist/src/lib/types';
-import normalizeRules from 'sonarwhal/dist/src/lib/config/normalize-rules';
-import { loadRule } from 'sonarwhal/dist/src/lib/utils/resource-loader';
+import { UserConfig } from 'hint/dist/src/lib/types';
+import normalizeHints from 'hint/dist/src/lib/config/normalize-hints';
+import { loadHint } from 'hint/dist/src/lib/utils/resource-loader';
 
 import * as database from '../../common/database/database';
 import * as configManager from '../config-manager/config-manager';
-import { IJob, IServiceConfig, RequestData, Rule, JobData } from '../../types';
-import { JobStatus, RuleStatus } from '../../enums/status';
+import { IJob, IServiceConfig, RequestData, Hint, JobData } from '../../types';
+import { JobStatus, HintStatus } from '../../enums/status';
 import { ConfigSource } from '../../enums/configsource';
 import { Queue } from '../../common/queue/queue';
 import { debug as d } from '../../utils/debug';
@@ -32,42 +32,43 @@ if (queueConnectionString) {
  * @param {UserConfig} config - The configuration for the job.
  */
 const createNewJob = async (url: string, configs: Array<UserConfig>, jobRunTime: number): Promise<IJob> => {
-    let rules: Array<Rule> = [];
+    let hints: Array<Hint> = [];
 
     for (const config of configs) {
-        const normalizedRules = normalizeRules(config.rules);
-        const partialRules = _.map(normalizedRules, (rule: string, key: string) => {
+        const normalizedHints = normalizeHints(config.hints);
+        const partialHints = _.map(normalizedHints, (hint: string, key: string) => {
             return {
-                category: loadRule(key, []).meta.docs.category,
+                category: loadHint(key, []).meta.docs.category,
                 messages: [],
                 name: key,
-                status: RuleStatus.pending
+                status: HintStatus.pending
             };
         });
 
-        rules = rules.concat(partialRules);
+        hints = hints.concat(partialHints);
     }
 
-    const databaseJob = await database.job.add(url, JobStatus.pending, rules, configs, jobRunTime);
+    const databaseJob = await database.job.add(url, JobStatus.pending, hints, configs, jobRunTime);
 
     return {
         config: databaseJob.config,
         error: databaseJob.error,
         finished: databaseJob.finished,
+        hints: databaseJob.hints,
         id: databaseJob.id,
         maxRunTime: databaseJob.maxRunTime,
         queued: databaseJob.queued,
         rules: databaseJob.rules,
-        sonarVersion: null,
         started: databaseJob.started,
         status: databaseJob.status,
-        url: databaseJob.url
+        url: databaseJob.url,
+        webhintVersion: null
     };
 };
 
 /**
- * Validate if a sonar configuration or an array of them is valid.
- * @param {UserConfig | Array<UserConfig>} config - Sonar configuration.
+ * Validate if a webhint configuration or an array of them is valid.
+ * @param {UserConfig | Array<UserConfig>} config - Webhint configuration.
  */
 const validateConfigs = (config: UserConfig | Array<UserConfig>) => {
     const configs = Array.isArray(config) ? config : [config];
@@ -92,7 +93,7 @@ const getConfig = (data: JobData, serviceConfig: IServiceConfig): Array<UserConf
         // TODO: TBD.
         // case ConfigSource.manual:
         default:
-            config = serviceConfig.sonarConfigs;
+            config = serviceConfig.webhintConfigs;
             break;
     }
 
@@ -147,7 +148,7 @@ const parseRequestData = async (data: RequestData): Promise<JobData> => {
     try {
         return {
             config: file && file.size > 0 ? JSON.parse(await readFileAsync(file.path)) : null,
-            rules: data.fields.rules,
+            hints: data.fields.hints,
             source: data.fields.source ? data.fields.source[0] : ConfigSource.default,
             url: data.fields.url ? data.fields.url[0] : null
         };

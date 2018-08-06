@@ -5,7 +5,7 @@ export enum JobStatus {
     started = 'started'
 }
 
-export enum RuleStatus {
+export enum HintStatus {
     error = 'error',
     pass = 'pass',
     pending = 'pending',

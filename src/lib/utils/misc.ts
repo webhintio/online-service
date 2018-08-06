@@ -5,9 +5,9 @@ import { Request } from 'express';
 import * as multiparty from 'multiparty';
 import stripBom = require('strip-bom');
 import * as stripComments from 'strip-json-comments';
-import { validateConfig } from 'sonarwhal/dist/src/lib/config/config-validator';
-import normalizeRules from 'sonarwhal/dist/src/lib/config/normalize-rules';
-import { UserConfig } from 'sonarwhal/dist/src/lib/types';
+import { validateConfig } from 'hint/dist/src/lib/config/config-validator';
+import normalizeHints from 'hint/dist/src/lib/config/normalize-hints';
+import { UserConfig } from 'hint/dist/src/lib/types';
 
 import { debug as d } from './debug';
 import { JobStatus } from '../enums/status';
@@ -19,7 +19,7 @@ const _readFileAsync = promisify(fs.readFile);
 /** Max size for uploaded files. */
 const maxFilesSize = 1024 * 100; // 100KB.
 // This limit avoid people to upload very big files from the scanner. It is expected
-// that users just upload a sonar configuration files so 100KB is more than
+// that users just upload a webhint configuration files so 100KB is more than
 // enough.
 
 /** Convenience wrapper for asynchronously reading file contents. */
@@ -67,11 +67,11 @@ export const delay = (millisecs: number): Promise<object> => {
 };
 
 /**
- * Check if an array of sonar configurations is valid.
- * @param {Array<UserConfig>} configs - Array of sonar configurations.
+ * Check if an array of webhint configurations is valid.
+ * @param {Array<UserConfig>} configs - Array of webhint configurations.
  */
 export const validateServiceConfig = (configs: Array<UserConfig>) => {
-    const rules: Set<string> = new Set();
+    const hints: Set<string> = new Set();
 
     for (const config of configs) {
         if (!validateConfig(config)) {
@@ -79,14 +79,14 @@ export const validateServiceConfig = (configs: Array<UserConfig>) => {
 ${JSON.stringify(config)}`);
         }
 
-        const normalizedRules = normalizeRules(config.rules);
+        const normalizedHints = normalizeHints(config.hints);
 
-        for (const [key] of Object.entries(normalizedRules)) {
-            if (rules.has(key)) {
-                throw new Error(`Rule ${key} repeated`);
+        for (const [key] of Object.entries(normalizedHints)) {
+            if (hints.has(key)) {
+                throw new Error(`Hint ${key} repeated`);
             }
 
-            rules.add(key);
+            hints.add(key);
         }
     }
 };
@@ -96,18 +96,18 @@ ${JSON.stringify(config)}`);
  * @param {string} header - Log header.
  * @param {IJob} job - Job to get the log info
  */
-export const generateLog = (header: string, job: IJob, options: { showRule: boolean } = { showRule: false }) => {
-    const showRule = options.showRule && job.status !== JobStatus.started;
+export const generateLog = (header: string, job: IJob, options: { showHint: boolean } = { showHint: false }) => {
+    const showHint = options.showHint && job.status !== JobStatus.started;
 
     let log = `${header}:
     - Id: ${job.id}
     - Part: ${job.partInfo.part} of ${job.partInfo.totalParts}
     - Status: ${job.status}`;
 
-    if (showRule) {
-        job.rules.forEach((rule) => {
+    if (showHint) {
+        job.hints.forEach((hint) => {
             log += `
-    - Rule: ${rule.name}`;
+    - Hint: ${hint.name}`;
         });
     }
 

@@ -4,13 +4,14 @@ export const JobSchema: Schema = new Schema({
     config: {},
     error: [{}],
     finished: Date,
+    hints: [{}],
     id: String,
     investigated: Boolean,
     maxRunTime: Number,
     queued: Date,
     rules: [{}],
-    sonarVersion: String,
     started: Date,
     status: {},
-    url: String
+    url: String,
+    webhintVersion: String
 }, { usePushEach: true }); // usePushEach for compatibility with mongodb 3.6

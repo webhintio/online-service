@@ -16,8 +16,8 @@ export const debug = (filePath: string): d.IDebugger => {
 
     // The debug message is generated from the file path, e.g.:
     //
-    //  * src/lib/microservices/job-manager/job-manager-server.ts => sonar:microservices:job-manager:job-manager-server
-    //  * src/lib/microservices/job-manager/job-manager.ts => sonar:microservices:job-manager
+    //  * src/lib/microservices/job-manager/job-manager-server.ts => online-service:microservices:job-manager:job-manager-server
+    //  * src/lib/microservices/job-manager/job-manager.ts => online-service:microservices:job-manager
 
     while (currentDir && currentDir !== 'lib') {
 

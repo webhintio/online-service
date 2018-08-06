@@ -5,7 +5,7 @@ services:
         build:
             context: ../
             dockerfile: Dockerfile.nginx
-        image: sonarwhal/nginx:latest
+        image: webhint/nginx:latest
         volumes:
             - certs:/etc/letsencrypt
             - certs-data:/data/letsencrypt

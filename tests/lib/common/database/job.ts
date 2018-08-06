@@ -1,7 +1,7 @@
 import test from 'ava';
 import * as sinon from 'sinon';
 import * as proxyquire from 'proxyquire';
-import { UserConfig } from 'sonarwhal/dist/src/lib/types';
+import { UserConfig } from 'hint/dist/src/lib/types';
 import * as moment from 'moment';
 
 const common = { validateConnection() { } };
@@ -44,13 +44,14 @@ const jobResult: Array<IJob> = [{
     config: null,
     error: null,
     finished: new Date(),
+    hints: null,
     maxRunTime: 180,
     queued: new Date(),
     rules: null,
-    sonarVersion: null,
     started: new Date(),
     status: JobStatus.pending,
-    url: 'url'
+    url: 'url',
+    webhintVersion: null
 }];
 const error = new Error('Database not connected');
 
