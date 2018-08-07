@@ -1,6 +1,6 @@
 import * as path from 'path';
 
-import { UserConfig } from 'sonarwhal/dist/src/lib/types';
+import { UserConfig } from 'hint/dist/src/lib/types';
 
 import * as database from '../../common/database/database';
 import { IServiceConfig, ConfigData } from '../../types';
@@ -15,7 +15,7 @@ const getConfigsFromFile = (filePath: string): Array<UserConfig> => {
     const configs: Array<UserConfig> = loadJSONFile(resolvedPath);
 
     if (!Array.isArray(configs)) {
-        throw new Error('Configuration file has to contain an array of sonar configurations');
+        throw new Error('Configuration file has to contain an array of webhint configurations');
     }
 
     validateServiceConfig(configs);
@@ -104,7 +104,7 @@ export const active = async (): Promise<IServiceConfig> => {
         jobCacheTime: currentConfig.jobCacheTime,
         jobRunTime: currentConfig.jobRunTime,
         name: currentConfig.name,
-        sonarConfigs: currentConfig.sonarConfigs
+        webhintConfigs: currentConfig.webhintConfigs.length > 0 ? currentConfig.webhintConfigs : currentConfig.sonarConfigs
     };
 
     return result;

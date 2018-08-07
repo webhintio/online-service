@@ -30,7 +30,7 @@ const container = {
 const storage = { getContainer() { } };
 
 test.beforeEach((t) => {
-    const sandbox = sinon.sandbox.create();
+    const sandbox = sinon.createSandbox();
 
     /*
      * We need to use different values for process.env.database
@@ -39,7 +39,7 @@ test.beforeEach((t) => {
     delete require.cache[path.resolve(__dirname, '../../../../src/lib/microservices/backup-service/backup-service.js')];
 
     t.context.sandbox = sandbox;
-    sandbox.stub(db, 'connect').returns();
+    sandbox.stub(db, 'connect').returns(null);
     sandbox.stub(rimrafContainer, 'rimraf').callsFake((param, callback) => {
         callback(null, 'ok');
     });

@@ -1,7 +1,7 @@
 {
     "_id": "59b07df764233a42b8f6e57d",
     "config": {
-        "rules": {
+        "hints": {
             "validate-set-cookie-header": "warning",
             "x-content-type-options": "warning",
             "strict-transport-security": "warning",
@@ -20,7 +20,7 @@
             "content-type": "warning",
             "axe": "warning"
         },
-        "rulesTimeout": 120000,
+        "hintsTimeout": 120000,
         "formatters": ["stylish"],
         "connector": {
             "options": {
@@ -34,9 +34,9 @@
     "id": "2772e178-5dfb-47ce-883d-ee6e6ee11003",
     "queued": "2017-09-01T23:00:49.102Z",
     "status": "pending",
-    "url": "https://sonarwhal.com/",
+    "url": "https://webhint.io/",
     "__v": 6,
-    "rules": [
+    "hints": [
         {
             "messages": [],
             "name": "validate-set-cookie-header",

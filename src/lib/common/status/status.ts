@@ -1,11 +1,11 @@
 import * as moment from 'moment';
 import * as _ from 'lodash';
-import { Severity } from 'sonarwhal/dist/src/lib/types';
+import { Severity } from 'hint/dist/src/lib/types';
 
 import * as db from '../database/database';
 import { IStatusModel } from '../database/models/status';
-import { IJob, IStatus, IStatusRuleDetail, IStatusRules, IStatusUrl, Rule, StatusAverage, StatusFinished, StatusRuleDetailList, StatusScans, StatusQueue } from '../../types';
-import { JobStatus, RuleStatus } from '../../enums/status';
+import { IJob, IStatus, IStatusHintDetail, IStatusHints, IStatusUrl, Hint, StatusAverage, StatusFinished, StatusHintDetailList, StatusScans, StatusQueue } from '../../types';
+import { JobStatus, HintStatus } from '../../enums/status';
 import { Queue } from '../queue/queue';
 import * as logger from '../../utils/logging';
 
@@ -14,17 +14,17 @@ const { database: dbConnectionString, queue: queueConnectionString } = process.e
 let queueJobs: Queue;
 let queueResults: Queue;
 
-class StatusRules implements IStatusRules {
+class StatusHints implements IStatusHints {
     public errors: number;
     public passes: number;
     public warnings: number;
-    public rules: StatusRuleDetailList;
+    public hints: StatusHintDetailList;
 
     public constructor() {
         this.errors = 0;
         this.passes = 0;
         this.warnings = 0;
-        this.rules = {};
+        this.hints = {};
     }
 }
 
@@ -33,13 +33,13 @@ class Status implements IStatus {
     public date: Date;
     public queues: StatusQueue;
     public scans: StatusScans;
-    public rules: StatusRules;
+    public hints: StatusHints;
 
     public constructor(status: IStatus) {
         this.average = status.average;
         this.date = status.date;
         this.queues = status.queues;
-        this.rules = status.rules;
+        this.hints = status.hints;
         this.scans = status.scans;
     }
 }
@@ -58,7 +58,7 @@ class StatusUrl implements IStatusUrl {
     }
 }
 
-class StatusRuleDetail implements IStatusRuleDetail {
+class StatusHintDetail implements IStatusHintDetail {
     public errors: number;
     public passes: number;
     public warnings: number;
@@ -111,12 +111,12 @@ const getFinishedByStatus = (jobs: Array<IJob>): StatusFinished => {
 };
 
 /**
- * Set the number of errors and warnings in a rule.
+ * Set the number of errors and warnings in a hint.
  * @param {StatusUrl} url - Url status where we want to set the number of errors and warnings.
- * @param {Rule} rule - Rule with the error messages.
+ * @param {Hint} hint - Hint with the error messages.
  */
-const setUrlCounts = (url: StatusUrl, rule: Rule) => {
-    const messagesGrouped = _.groupBy(rule.messages, 'severity');
+const setUrlCounts = (url: StatusUrl, hint: Hint) => {
+    const messagesGrouped = _.groupBy(hint.messages, 'severity');
     const errors = messagesGrouped[Severity.error.toString()];
     const warnings = messagesGrouped[Severity.warning.toString()];
 
@@ -125,41 +125,43 @@ const setUrlCounts = (url: StatusUrl, rule: Rule) => {
 };
 
 /**
- * Get the status of the rules in a collection of IJobs.
- * @param {Array<IJob>} jobs -Jobs to get the Status of the rules.
+ * Get the status of the hints in a collection of IJobs.
+ * @param {Array<IJob>} jobs -Jobs to get the Status of the hints.
  */
-const getRulesStatus = (jobs: Array<IJob>) => {
-    const result: IStatusRules = new StatusRules();
+const getHintsStatus = (jobs: Array<IJob>) => {
+    const result: IStatusHints = new StatusHints();
 
     jobs.reduce((total, job) => {
-        job.rules.forEach((rule) => {
-            let detail: IStatusRuleDetail = total.rules[rule.name];
+        const hints: Array<Hint> = job.hints.length > 0 ? job.hints : job.rules;
+
+        hints.forEach((hint) => {
+            let detail: IStatusHintDetail = total.hints[hint.name];
 
             if (!detail) {
-                detail = new StatusRuleDetail();
+                detail = new StatusHintDetail();
 
-                total.rules[rule.name] = detail;
+                total.hints[hint.name] = detail;
             }
 
             const url = new StatusUrl(job.url);
 
             detail.urls.push(url);
 
-            switch (rule.status) {
-                case RuleStatus.pass:
+            switch (hint.status) {
+                case HintStatus.pass:
                     url.passes++;
                     detail.passes++;
                     total.passes++;
                     break;
-                case RuleStatus.error: {
-                    setUrlCounts(url, rule);
+                case HintStatus.error: {
+                    setUrlCounts(url, hint);
 
                     detail.errors++;
                     total.errors++;
                     break;
                 }
-                case RuleStatus.warning:
-                    setUrlCounts(url, rule);
+                case HintStatus.warning:
+                    setUrlCounts(url, hint);
                     detail.warnings++;
                     total.warnings++;
                     break;
@@ -203,8 +205,8 @@ const updateStatusesSince = async (since: Date) => {
                 start: avg(jobsStarted, 'started', 'queued')
             },
             date: to.toDate(),
+            hints: getHintsStatus(jobsFinished),
             queues: null,
-            rules: getRulesStatus(jobsFinished),
             scans: {
                 created: jobsCreated.length,
                 finished: getFinishedByStatus(jobsFinished),

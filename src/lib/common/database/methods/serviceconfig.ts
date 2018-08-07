@@ -1,4 +1,4 @@
-import { UserConfig } from 'sonarwhal/dist/src/lib/types';
+import { UserConfig } from 'hint/dist/src/lib/types';
 import { DocumentQuery } from 'mongoose';
 
 import { debug as d } from '../../../utils/debug';
@@ -25,7 +25,7 @@ export const add = async (name: string, jobCacheTime: number, jobRunTime: number
         jobCacheTime,
         jobRunTime,
         name,
-        sonarConfigs: options
+        webhintConfigs: options
     });
 
     await config.save();
@@ -142,8 +142,8 @@ export const edit = async (oldName: string, newName: string, jobCacheTime: numbe
     config.jobRunTime = jobRunTime;
 
     if (configs) {
-        config.sonarConfigs = configs;
-        config.markModified('sonarConfigs');
+        config.webhintConfigs = configs;
+        config.markModified('webhintConfigs');
     }
 
     await config.save();

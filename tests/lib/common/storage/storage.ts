@@ -24,7 +24,7 @@ import * as service from '../../../../src/lib/common/storage/storage';
 
 
 test.beforeEach((t) => {
-    const sandbox = sinon.sandbox.create();
+    const sandbox = sinon.createSandbox();
 
     sandbox.stub(azureStorage, 'createBlobService').returns(blobService);
     sandbox.stub(blobService, 'withFilter').returns(blobService);

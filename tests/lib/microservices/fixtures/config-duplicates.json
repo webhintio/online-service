@@ -9,12 +9,12 @@
         },
         "formatters": ["summary"],
         "ignoredUrls": [],
-        "rules": {
+        "hints": {
             "apple-touch-icons": "error",
             "axe": "error",
             "content-type": "error"
         },
-        "rulesTimeout": 120000
+        "hintsTimeout": 120000
     },
     {
         "browserslist": [],
@@ -26,12 +26,12 @@
         },
         "formatters": ["summary"],
         "ignoredUrls": [],
-        "rules": {
+        "hints": {
             "disown-opener": "error",
             "highest-available-document-mode": "error",
             "html-checker": "error"
         },
-        "rulesTimeout": 120000
+        "hintsTimeout": 120000
     },
     {
         "browserslist": [],
@@ -43,13 +43,13 @@
         },
         "formatters": ["summary"],
         "ignoredUrls": [],
-        "rules": {
+        "hints": {
             "manifest-app-name": "error",
             "manifest-exists": "error",
             "manifest-file-extension": "error",
             "manifest-is-valid": "error"
         },
-        "rulesTimeout": 120000
+        "hintsTimeout": 120000
     },
     {
         "browserslist": [],
@@ -61,12 +61,12 @@
         },
         "formatters": ["summary"],
         "ignoredUrls": [],
-        "rules": {
+        "hints": {
             "manifest-is-valid": "error",
             "meta-charset-utf-8": "error",
             "meta-viewport": "error"
         },
-        "rulesTimeout": 120000
+        "hintsTimeout": 120000
     },
     {
         "browserslist": [],
@@ -78,12 +78,12 @@
         },
         "formatters": ["summary"],
         "ignoredUrls": [],
-        "rules": {
+        "hints": {
             "no-disallowed-headers": "error",
             "no-friendly-error-pages": "error",
             "no-html-only-headers": "error"
         },
-        "rulesTimeout": 120000
+        "hintsTimeout": 120000
     },
     {
         "browserslist": [],
@@ -95,12 +95,12 @@
         },
         "formatters": ["summary"],
         "ignoredUrls": [],
-        "rules": {
+        "hints": {
             "no-protocol-relative-urls": "error",
             "no-vulnerable-javascript-libraries": "error",
             "ssllabs": "off"
         },
-        "rulesTimeout": 120000
+        "hintsTimeout": 120000
     },
     {
         "browserslist": [],
@@ -112,11 +112,11 @@
         },
         "formatters": ["summary"],
         "ignoredUrls": [],
-        "rules": {
+        "hints": {
             "strict-transport-security": "error",
             "validate-set-cookie-header": "error",
             "x-content-type-options": "error"
         },
-        "rulesTimeout": 120000
+        "hintsTimeout": 120000
     }
 ]

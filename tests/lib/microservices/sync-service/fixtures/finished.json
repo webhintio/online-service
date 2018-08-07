@@ -10,8 +10,8 @@
             }
         },
         "formatters": ["stylish"],
-        "rulesTimeout": 120000,
-        "rules": {
+        "hintsTimeout": 120000,
+        "hints": {
             "axe": "warning",
             "content-type": "warning",
             "disown-opener": "warning",
@@ -38,9 +38,9 @@
     },
     "queued": "2017-08-31T22:28:39.517Z",
     "status": "finished",
-    "url": "https://sonarwhal.com/",
+    "url": "https://webhint.io/",
     "_id": "59a88d970210bd0a70d5e8c5",
-    "rules": [
+    "hints": [
         {
             "status": "pass",
             "name": "meta-charset-utf-8",
@@ -73,8 +73,8 @@
                         "line": 1
                     },
                     "message": "“role=\"none\"” is not yet supported in all browsers. Consider instead either using “role=\"presentation\"” or “role=\"none presentation\"”.",
-                    "resource": "https://sonarwhal.com/",
-                    "ruleId": "html-checker",
+                    "resource": "https://webhint.io/",
+                    "hintId": "html-checker",
                     "severity": 1,
                     "sourceCode": "ntation\"> <img src=\"/images/narwhal.svg\" id=\"narwhal\" alt=\"\" role=\"none\"></div>"
                 },
@@ -86,8 +86,8 @@
                         "line": 1
                     },
                     "message": "“role=\"none\"” is not yet supported in all browsers. Consider instead either using “role=\"presentation\"” or “role=\"none presentation\"”.",
-                    "resource": "https://sonarwhal.com/",
-                    "ruleId": "html-checker",
+                    "resource": "https://webhint.io/",
+                    "hintId": "html-checker",
                     "severity": 1,
                     "sourceCode": "r-guide/\"><img src=\"images/user-guide-icon.svg\" class=\"icons--home\" alt=\"\" role=\"none\"><p>Use"
                 },
@@ -99,10 +99,10 @@
                         "line": 1
                     },
                     "message": "“role=\"none\"” is not yet supported in all browsers. Consider instead either using “role=\"presentation\"” or “role=\"none presentation\"”.",
-                    "resource": "https://sonarwhal.com/",
-                    "ruleId": "html-checker",
+                    "resource": "https://webhint.io/",
+                    "hintId": "html-checker",
                     "severity": 1,
-                    "sourceCode": "e/rules/\"><img src=\"images/rules-icon.svg\" class=\"icons--home\" alt=\"\" role=\"none\"><p>Rul"
+                    "sourceCode": "e/hints/\"><img src=\"images/hints-icon.svg\" class=\"icons--home\" alt=\"\" role=\"none\"><p>Rul"
                 },
                 {
                     "location": {
@@ -112,8 +112,8 @@
                         "line": 1
                     },
                     "message": "“role=\"none\"” is not yet supported in all browsers. Consider instead either using “role=\"presentation\"” or “role=\"none presentation\"”.",
-                    "resource": "https://sonarwhal.com/",
-                    "ruleId": "html-checker",
+                    "resource": "https://webhint.io/",
+                    "hintId": "html-checker",
                     "severity": 1,
                     "sourceCode": "r-guide/\"><img src=\"images/dev-guide-icon.svg\" class=\"icons--home\" alt=\"\" role=\"none\"><p>Dev"
                 },
@@ -125,8 +125,8 @@
                         "line": 1
                     },
                     "message": "Element “script” must not have attribute “async” unless attribute “src” is also specified.",
-                    "resource": "https://sonarwhal.com/",
-                    "ruleId": "html-checker",
+                    "resource": "https://webhint.io/",
+                    "hintId": "html-checker",
                     "severity": 1,
                     "sourceCode": ")</script><script async>'use s"
                 }
@@ -155,7 +155,7 @@
                     },
                     "message": "'content-type' header should have media type 'application/javascript' (not 'text/javascript')",
                     "resource": "https://www.google-analytics.com/analytics.js",
-                    "ruleId": "content-type",
+                    "hintId": "content-type",
                     "severity": 1,
                     "sourceCode": "<script src=\"https://www.google-analytics.com/analytics.js\"></script>"
                 },
@@ -168,7 +168,7 @@
                     },
                     "message": "'content-type' header should have 'charset=utf-8'",
                     "resource": "https://www.google-analytics.com/analytics.js",
-                    "ruleId": "content-type",
+                    "hintId": "content-type",
                     "severity": 1,
                     "sourceCode": "<script src=\"https://www.google-analytics.com/analytics.js\"></script>"
                 }
@@ -186,8 +186,8 @@
                         "line": 1
                     },
                     "message": "Certain ARIA roles must contain particular children",
-                    "resource": "https://sonarwhal.com/",
-                    "ruleId": "axe",
+                    "resource": "https://webhint.io/",
+                    "hintId": "axe",
                     "severity": 1,
                     "sourceCode": "<input type=\"search\" id=\"search-input\" placeholder=\"Search…\" name=\"q\" aria-label=\"Search\" class=\"ds-input\" autocomplete=\"off\" spellcheck=\"false\" role=\"combobox\" aria-autocomplete=\"list\" aria-expanded=\"false\" aria-labelledby=\"search-input\" aria-owns=\"algolia-autocomplete-listbox-0\" style=\"vertical-align: top;\" dir=\"auto\">"
                 }
@@ -211,7 +211,7 @@
                     },
                     "message": "'x-content-type-options' header was not specified",
                     "resource": "https://cdn.jsdelivr.net/docsearch.js/2/docsearch.min.js",
-                    "ruleId": "x-content-type-options",
+                    "hintId": "x-content-type-options",
                     "severity": 1,
                     "sourceCode": "<script src=\"https://cdn.jsdelivr.net/docsearch.js/2/docsearch.min.js\"></script>"
                 },
@@ -224,7 +224,7 @@
                     },
                     "message": "'x-content-type-options' header was not specified",
                     "resource": "https://cdn.jsdelivr.net/docsearch.js/2/docsearch.min.css",
-                    "ruleId": "x-content-type-options",
+                    "hintId": "x-content-type-options",
                     "severity": 1,
                     "sourceCode": "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/docsearch.js/2/docsearch.min.css\">"
                 },
@@ -237,7 +237,7 @@
                     },
                     "message": "'x-content-type-options' header was not specified",
                     "resource": "https://fonts.googleapis.com/css?family=Montserrat:200,300,400,500,600",
-                    "ruleId": "x-content-type-options",
+                    "hintId": "x-content-type-options",
                     "severity": 1,
                     "sourceCode": "<link href=\"https://fonts.googleapis.com/css?family=Montserrat:200,300,400,500,600\" rel=\"stylesheet\">"
                 }
@@ -253,8 +253,8 @@
                         "line": -1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": null
                 },
@@ -267,7 +267,7 @@
                     },
                     "message": "'strict-transport-security' header was not specified",
                     "resource": "https://cdn.jsdelivr.net/docsearch.js/2/docsearch.min.js",
-                    "ruleId": "strict-transport-security",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<script src=\"https://cdn.jsdelivr.net/docsearch.js/2/docsearch.min.js\"></script>"
                 },
@@ -280,7 +280,7 @@
                     },
                     "message": "'strict-transport-security' header was not specified",
                     "resource": "https://cdn.jsdelivr.net/docsearch.js/2/docsearch.min.css",
-                    "ruleId": "strict-transport-security",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/docsearch.js/2/docsearch.min.css\">"
                 },
@@ -293,7 +293,7 @@
                     },
                     "message": "'strict-transport-security' header was not specified",
                     "resource": "https://fonts.googleapis.com/css?family=Montserrat:200,300,400,500,600",
-                    "ruleId": "strict-transport-security",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<link href=\"https://fonts.googleapis.com/css?family=Montserrat:200,300,400,500,600\" rel=\"stylesheet\">"
                 },
@@ -305,8 +305,8 @@
                         "line": 1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/images/iceberg-middle.svg",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/images/iceberg-middle.svg",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<img src=\"/images/iceberg-middle.svg\" id=\"iceberg2\" alt=\"\" role=\"presentation\">"
                 },
@@ -318,8 +318,8 @@
                         "line": 1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/core/css/layouts.css",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/core/css/layouts.css",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<link rel=\"stylesheet\" href=\"/core/css/layouts.css\">"
                 },
@@ -331,8 +331,8 @@
                         "line": 1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/core/css/color.css",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/core/css/color.css",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<link rel=\"stylesheet\" href=\"/core/css/color.css\">"
                 },
@@ -344,8 +344,8 @@
                         "line": 1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/core/css/helpers.css",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/core/css/helpers.css",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<link rel=\"stylesheet\" href=\"/core/css/helpers.css\">"
                 },
@@ -357,10 +357,10 @@
                         "line": 1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/images/rules-icon.svg",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/images/hints-icon.svg",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
-                    "sourceCode": "<img src=\"images/rules-icon.svg\" class=\"icons--home\" alt=\"\" role=\"none\">"
+                    "sourceCode": "<img src=\"images/hints-icon.svg\" class=\"icons--home\" alt=\"\" role=\"none\">"
                 },
                 {
                     "location": {
@@ -370,8 +370,8 @@
                         "line": 1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/images/user-guide-icon.svg",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/images/user-guide-icon.svg",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<img src=\"images/user-guide-icon.svg\" class=\"icons--home\" alt=\"\" role=\"none\">"
                 },
@@ -383,10 +383,10 @@
                         "line": 1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/images/sonar-logo.svg",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/images/webhint-logo.svg",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
-                    "sourceCode": "<img src=\"/images/sonar-logo.svg\" alt=\"sonar\" class=\"header__logo navbar__navitem\">"
+                    "sourceCode": "<img src=\"/images/webhint-logo.svg\" alt=\"webhint\" class=\"header__logo navbar__navitem\">"
                 },
                 {
                     "location": {
@@ -396,8 +396,8 @@
                         "line": 1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/core/scripts/form-validation.js",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/core/scripts/form-validation.js",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<script src=\"/core/scripts/form-validation.js\"></script>"
                 },
@@ -409,8 +409,8 @@
                         "line": 1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/core/css/controls.css",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/core/css/controls.css",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<link rel=\"stylesheet\" href=\"/core/css/controls.css\">"
                 },
@@ -422,8 +422,8 @@
                         "line": 1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/images/iceberg-right.svg",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/images/iceberg-right.svg",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<img src=\"/images/iceberg-right.svg\" id=\"iceberg3\" alt=\"\" role=\"presentation\">"
                 },
@@ -435,8 +435,8 @@
                         "line": 1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/images/iceberg-left.svg",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/images/iceberg-left.svg",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<img src=\"/images/iceberg-left.svg\" id=\"iceberg1\" alt=\"\" role=\"presentation\">"
                 },
@@ -448,8 +448,8 @@
                         "line": 1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/core/css/footer.css",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/core/css/footer.css",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<link rel=\"stylesheet\" href=\"/core/css/footer.css\">"
                 },
@@ -461,8 +461,8 @@
                         "line": 1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/core/css/media.css",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/core/css/media.css",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<link rel=\"stylesheet\" href=\"/core/css/media.css\">"
                 },
@@ -474,8 +474,8 @@
                         "line": 1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/js/nav.js",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/js/nav.js",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<script src=\"/js/nav.js\"></script>"
                 },
@@ -487,8 +487,8 @@
                         "line": 1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/images/narwhal.svg",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/images/narwhal.svg",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<img src=\"/images/narwhal.svg\" id=\"narwhal\" alt=\"\" role=\"none\">"
                 },
@@ -500,8 +500,8 @@
                         "line": 1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/images/dev-guide-icon.svg",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/images/dev-guide-icon.svg",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<img src=\"images/dev-guide-icon.svg\" class=\"icons--home\" alt=\"\" role=\"none\">"
                 },
@@ -513,8 +513,8 @@
                         "line": 1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/core/css/home.css",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/core/css/home.css",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<link rel=\"stylesheet\" href=\"/core/css/home.css\">"
                 },
@@ -526,8 +526,8 @@
                         "line": 1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/core/css/type.css",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/core/css/type.css",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<link rel=\"stylesheet\" href=\"/core/css/type.css\">"
                 },
@@ -539,8 +539,8 @@
                         "line": 1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/images/home-nellie.svg",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/images/home-nellie.svg",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<img src=\"images/home-nellie.svg\" class=\"sub-illustration\" alt=\"\" role=\"presentation\">"
                 },
@@ -552,8 +552,8 @@
                         "line": 1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/core/css/base.css",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/core/css/base.css",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<link rel=\"stylesheet\" href=\"/core/css/base.css\">"
                 },
@@ -565,8 +565,8 @@
                         "line": 1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/components/accordion/accordion.js",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/components/accordion/accordion.js",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<script src=\"/components/accordion/accordion.js\"></script>"
                 },
@@ -578,8 +578,8 @@
                         "line": 1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/core/css/structure.css",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/core/css/structure.css",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<link rel=\"stylesheet\" href=\"/core/css/structure.css\">"
                 },
@@ -591,8 +591,8 @@
                         "line": 1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/components/pagination/pagination.css",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/components/pagination/pagination.css",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<link rel=\"stylesheet\" href=\"/components/pagination/pagination.css\">"
                 },
@@ -604,8 +604,8 @@
                         "line": 1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/components/breadcrumb/breadcrumb.css",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/components/breadcrumb/breadcrumb.css",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<link rel=\"stylesheet\" href=\"/components/breadcrumb/breadcrumb.css\">"
                 },
@@ -617,8 +617,8 @@
                         "line": 1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/core/css/highlight.css",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/core/css/highlight.css",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<link rel=\"stylesheet\" href=\"/core/css/highlight.css\">"
                 },
@@ -630,8 +630,8 @@
                         "line": 1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/core/css/navigation.css",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/core/css/navigation.css",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<link rel=\"stylesheet\" href=\"/core/css/navigation.css\">"
                 },
@@ -643,8 +643,8 @@
                         "line": 1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/core/css/search-results.css",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/core/css/search-results.css",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<link rel=\"stylesheet\" href=\"/core/css/search-results.css\">"
                 },
@@ -656,8 +656,8 @@
                         "line": 1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/site.webmanifest",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/site.webmanifest",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<link rel=\"manifest\" href=\"/site.webmanifest\">"
                 },
@@ -669,8 +669,8 @@
                         "line": 1
                     },
                     "message": "'strict-transport-security' header was not specified",
-                    "resource": "https://sonarwhal.com/images/favicon-32x32.png",
-                    "ruleId": "strict-transport-security",
+                    "resource": "https://webhint.io/images/favicon-32x32.png",
+                    "hintId": "strict-transport-security",
                     "severity": 1,
                     "sourceCode": "<link rel=\"icon\" type=\"image/png\" href=\"/images/favicon-32x32.png\" sizes=\"32x32\">"
                 }
@@ -699,7 +699,7 @@
                     },
                     "message": "'x-frame-options', 'x-xss-protection' headers are not needed",
                     "resource": "https://fonts.googleapis.com/css?family=Montserrat:200,300,400,500,600",
-                    "ruleId": "no-html-only-headers",
+                    "hintId": "no-html-only-headers",
                     "severity": 1,
                     "sourceCode": "<link href=\"https://fonts.googleapis.com/css?family=Montserrat:200,300,400,500,600\" rel=\"stylesheet\">"
                 }
@@ -715,8 +715,8 @@
                         "line": -1
                     },
                     "message": "Response with status code 500 had less than 512 bytes",
-                    "resource": "https://sonarwhal.com/",
-                    "ruleId": "no-friendly-error-pages",
+                    "resource": "https://webhint.io/",
+                    "hintId": "no-friendly-error-pages",
                     "severity": 1,
                     "sourceCode": null
                 }
@@ -735,7 +735,7 @@
                     },
                     "message": "'server' header is disallowed",
                     "resource": "https://fonts.googleapis.com/css?family=Montserrat:200,300,400,500,600",
-                    "ruleId": "no-disallowed-headers",
+                    "hintId": "no-disallowed-headers",
                     "severity": 1,
                     "sourceCode": "<link href=\"https://fonts.googleapis.com/css?family=Montserrat:200,300,400,500,600\" rel=\"stylesheet\">"
                 },
@@ -748,7 +748,7 @@
                     },
                     "message": "'server' header is disallowed",
                     "resource": "https://www.google-analytics.com/analytics.js",
-                    "ruleId": "no-disallowed-headers",
+                    "hintId": "no-disallowed-headers",
                     "severity": 1,
                     "sourceCode": "<script src=\"https://www.google-analytics.com/analytics.js\"></script>"
                 }

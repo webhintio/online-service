@@ -30,7 +30,7 @@ proxyquire('../../../../src/lib/microservices/worker-service/worker-service', {
 });
 
 import * as worker from '../../../../src/lib/microservices/worker-service/worker-service';
-import { JobStatus, RuleStatus } from '../../../../src/lib/enums/status';
+import { JobStatus, HintStatus } from '../../../../src/lib/enums/status';
 import { delay } from '../../../../src/lib/utils/misc';
 
 test.beforeEach((t) => {
@@ -83,25 +83,25 @@ const commonStub = (emitter) => {
     sinon.stub(jobsQueue, 'listen');
 };
 
-const getRule = (name: string, rules) => {
-    return rules.find((rule) => {
-        return rule.name === name;
+const getHint = (name: string, hints) => {
+    return hints.find((hint) => {
+        return hint.name === name;
     });
 };
 
-test.serial(`If there is no problem running sonar, it should send a couple of messages with the current status`, async (t) => {
+test.serial(`If there is no problem running webhint, it should send a couple of messages with the current status`, async (t) => {
     const job = {
-        config: [{ rules: { 'content-type': 'error' } }],
+        config: [{ hints: { 'content-type': 'error' } }],
+        hints: [{
+            category: 'interoperability',
+            name: 'content-type',
+            status: 'pending'
+        }],
         id: 0,
         partInfo: {
             part: 1,
             totalParts: 5
-        },
-        rules: [{
-            category: 'interoperability',
-            name: 'content-type',
-            status: 'pending'
-        }]
+        }
     };
     const emitter = getEmitter();
 
@@ -113,7 +113,7 @@ test.serial(`If there is no problem running sonar, it should send a couple of me
 
     const promise = t.context.jobsQueue.listen.args[0][0]([job]);
 
-    // Wait a little bit to ensure that 'runSonar' was launched
+    // Wait a little bit to ensure that 'runWebhint' was launched
     await delay(500);
     await emitter.emitAsync('message', {
         messages: [],
@@ -126,15 +126,15 @@ test.serial(`If there is no problem running sonar, it should send a couple of me
     t.is(t.context.resultsQueue.sendMessage.args[1][0].status, JobStatus.finished);
 });
 
-test.serial(`If there is a problem running sonar, it should send a couple of messages with the current status`, async (t) => {
+test.serial(`If there is a problem running webhint, it should send a couple of messages with the current status`, async (t) => {
     const job = {
         config: [{}],
+        hints: [],
         id: 0,
         partInfo: {
             part: 1,
             totalParts: 5
-        },
-        rules: []
+        }
     };
     const emitter = getEmitter();
 
@@ -146,10 +146,10 @@ test.serial(`If there is a problem running sonar, it should send a couple of mes
 
     const promise = t.context.jobsQueue.listen.args[0][0]([job]);
 
-    // Wait a little bit to ensure that 'runSonar' was launched
+    // Wait a little bit to ensure that 'runWebhint' was launched
     await delay(500);
     await emitter.emitAsync('message', {
-        error: '"Error running sonar"',
+        error: '"Error running webhint"',
         ok: false
     });
 
@@ -159,38 +159,38 @@ test.serial(`If there is a problem running sonar, it should send a couple of mes
     t.is(t.context.resultsQueue.sendMessage.args[1][0].status, JobStatus.error);
 });
 
-test.serial(`If there is a problem running sonar, the job sent to the queue has all rules in the configuration set as error`, async (t) => {
+test.serial(`If there is a problem running webhint, the job sent to the queue has all hints in the configuration set as error`, async (t) => {
     const job = {
         config: [{
-            rules: {
+            hints: {
                 axe: 'warning',
                 'content-type': 'error',
                 'disown-opener': ['off', {}]
             }
         }],
+        hints: [
+            {
+                name: 'axe',
+                status: HintStatus.pending
+            },
+            {
+                name: 'content-type',
+                status: HintStatus.pending
+            },
+            {
+                name: 'disown-opener',
+                status: HintStatus.pending
+            },
+            {
+                name: 'manifest-exists',
+                status: HintStatus.pending
+            }
+        ],
         id: 0,
         partInfo: {
             part: 1,
             totalParts: 5
-        },
-        rules: [
-            {
-                name: 'axe',
-                status: RuleStatus.pending
-            },
-            {
-                name: 'content-type',
-                status: RuleStatus.pending
-            },
-            {
-                name: 'disown-opener',
-                status: RuleStatus.pending
-            },
-            {
-                name: 'manifest-exists',
-                status: RuleStatus.pending
-            }
-        ]
+        }
     };
     const emitter = getEmitter();
 
@@ -202,52 +202,52 @@ test.serial(`If there is a problem running sonar, the job sent to the queue has 
 
     const promise = t.context.jobsQueue.listen.args[0][0]([job]);
 
-    // Wait a little bit to ensure that 'runSonar' was launched
+    // Wait a little bit to ensure that 'runWebhint' was launched
     await delay(500);
     await emitter.emitAsync('message', {
-        error: '"Error running sonar"',
+        error: '"Error running webhint"',
         ok: false
     });
 
     await promise;
 
     const jobSent = t.context.resultsQueue.sendMessage.args[1][0];
-    const rules = jobSent.rules;
-    const axe = getRule('axe', rules);
-    const contentType = getRule('content-type', rules);
-    const disown = getRule('disown-opener', rules);
-    const manifest = getRule('manifest-exists', rules);
+    const hints = jobSent.hints;
+    const axe = getHint('axe', hints);
+    const contentType = getHint('content-type', hints);
+    const disown = getHint('disown-opener', hints);
+    const manifest = getHint('manifest-exists', hints);
 
     t.true(t.context.resultsQueue.sendMessage.calledTwice);
     t.is(jobSent.status, JobStatus.error);
-    t.is(axe.status, RuleStatus.error);
-    t.is(contentType.status, RuleStatus.error);
-    t.is(disown.status, RuleStatus.pass);
-    t.is(manifest.status, RuleStatus.pending);
+    t.is(axe.status, HintStatus.error);
+    t.is(contentType.status, HintStatus.error);
+    t.is(disown.status, HintStatus.pass);
+    t.is(manifest.status, HintStatus.pending);
 });
 
-test.serial(`If a message is too big for Service Bus, we should send the rule with just one common error message`, async (t) => {
+test.serial(`If a message is too big for Service Bus, we should send the hint with just one common error message`, async (t) => {
     const job = {
         config: [{
-            rules: [
+            hints: [
                 'axe'
             ]
         }],
+        hints: [
+            {
+                name: 'axe',
+                status: HintStatus.pending
+            },
+            {
+                name: 'content-type',
+                status: HintStatus.pending
+            }
+        ],
         id: 0,
         partInfo: {
             part: 1,
             totalParts: 5
-        },
-        rules: [
-            {
-                name: 'axe',
-                status: RuleStatus.pending
-            },
-            {
-                name: 'content-type',
-                status: RuleStatus.pending
-            }
-        ]
+        }
     };
     const emitter = getEmitter();
 
@@ -258,8 +258,8 @@ test.serial(`If a message is too big for Service Bus, we should send the rule wi
         .resolves()
         .onSecondCall()
         .callsFake((j) => {
-            // j.rules change in each call, so we need to test the value here for the second call.
-            t.is(j.rules[0].messages.length, 2);
+            // j.hints change in each call, so we need to test the value here for the second call.
+            t.is(j.hints[0].messages.length, 2);
 
             const err = { statusCode: 413 };
 
@@ -274,15 +274,15 @@ test.serial(`If a message is too big for Service Bus, we should send the rule wi
 
     const promise = t.context.jobsQueue.listen.args[0][0]([job]);
 
-    // Wait a little bit to ensure that 'runSonar' was launched
+    // Wait a little bit to ensure that 'runWebhint' was launched
     await delay(500);
     await emitter.emitAsync('message', {
         messages: [{
-            message: 'First of a tons of messages',
-            ruleId: 'axe'
+            hintId: 'axe',
+            message: 'First of a tons of messages'
         }, {
-            message: 'Second of a tons of messages',
-            ruleId: 'axe'
+            hintId: 'axe',
+            message: 'Second of a tons of messages'
         }],
         ok: true
     });
@@ -292,36 +292,36 @@ test.serial(`If a message is too big for Service Bus, we should send the rule wi
     const jobSent = t.context.resultsQueue.sendMessage.args[2][0];
 
     t.is(t.context.resultsQueue.sendMessage.callCount, 3);
-    t.is(jobSent.rules[0].messages.length, 1);
+    t.is(jobSent.hints[0].messages.length, 1);
 });
 
-test.serial(`If there is no problem running sonar, it should send to the queue one message if the size is smaller than MAX_MESSAGE_SIZE`, async (t) => {
+test.serial(`If there is no problem running webhint, it should send to the queue one message if the size is smaller than MAX_MESSAGE_SIZE`, async (t) => {
     const job = {
         config: [{
-            rules: [
+            hints: [
                 'axe:warning',
                 'content-type'
             ]
         }],
+        hints: [
+            {
+                name: 'axe',
+                status: HintStatus.pending
+            },
+            {
+                name: 'content-type',
+                status: HintStatus.pending
+            },
+            {
+                name: 'disown-opener',
+                status: HintStatus.pending
+            }
+        ],
         id: 0,
         partInfo: {
             part: 1,
             totalParts: 5
-        },
-        rules: [
-            {
-                name: 'axe',
-                status: RuleStatus.pending
-            },
-            {
-                name: 'content-type',
-                status: RuleStatus.pending
-            },
-            {
-                name: 'disown-opener',
-                status: RuleStatus.pending
-            }
-        ]
+        }
     };
     const emitter = getEmitter();
 
@@ -337,55 +337,55 @@ test.serial(`If there is no problem running sonar, it should send to the queue o
 
     const promise = t.context.jobsQueue.listen.args[0][0]([job]);
 
-    // Wait a little bit to ensure that 'runSonar' was launched
+    // Wait a little bit to ensure that 'runWebhint' was launched
     await delay(500);
     await emitter.emitAsync('message', {
         messages: [{
-            message: 'Warning 1 axe',
-            ruleId: 'axe'
+            hintId: 'axe',
+            message: 'Warning 1 axe'
         },
         {
-            message: 'Warning 2 axe',
-            ruleId: 'axe'
+            hintId: 'axe',
+            message: 'Warning 2 axe'
         }],
         ok: true
     });
 
     await promise;
 
-    const axe = getRule('axe', t.context.resultsQueue.sendMessage.args[1][0].rules);
-    const contentType = getRule('content-type', t.context.resultsQueue.sendMessage.args[1][0].rules);
+    const axe = getHint('axe', t.context.resultsQueue.sendMessage.args[1][0].hints);
+    const contentType = getHint('content-type', t.context.resultsQueue.sendMessage.args[1][0].hints);
 
     t.is(t.context.resultsQueue.sendMessage.callCount, 2);
-    t.is(axe.status, RuleStatus.warning);
-    t.is(contentType.status, RuleStatus.pass);
+    t.is(axe.status, HintStatus.warning);
+    t.is(contentType.status, HintStatus.pass);
 });
 
-test.serial(`If there is no problem running sonar, it should send to the queue 2 messages if the total size is bigger than MAX_MESSAGE_SIZE`, async (t) => {
+test.serial(`If there is no problem running webhint, it should send to the queue 2 messages if the total size is bigger than MAX_MESSAGE_SIZE`, async (t) => {
     const lipsum = fs.readFileSync(`${__dirname}/../fixtures/lipsum.txt`, 'utf-8'); // eslint-disable-line no-sync
 
     const job = {
         config: [{
-            rules: [
+            hints: [
                 'axe:warning',
                 'content-type'
             ]
         }],
+        hints: [
+            {
+                name: 'axe',
+                status: HintStatus.pending
+            },
+            {
+                name: 'content-type',
+                status: HintStatus.pending
+            }
+        ],
         id: 0,
         partInfo: {
             part: 1,
             totalParts: 5
-        },
-        rules: [
-            {
-                name: 'axe',
-                status: RuleStatus.pending
-            },
-            {
-                name: 'content-type',
-                status: RuleStatus.pending
-            }
-        ]
+        }
     };
     const emitter = getEmitter();
 
@@ -401,16 +401,16 @@ test.serial(`If there is no problem running sonar, it should send to the queue 2
 
     const promise = t.context.jobsQueue.listen.args[0][0]([job]);
 
-    // Wait a little bit to ensure that 'runSonar' was launched
+    // Wait a little bit to ensure that 'runWebhint' was launched
     await delay(500);
     await emitter.emitAsync('message', {
         messages: [{
-            message: lipsum,
-            ruleId: 'axe'
+            hintId: 'axe',
+            message: lipsum
         },
         {
-            message: lipsum,
-            ruleId: 'content-type'
+            hintId: 'content-type',
+            message: lipsum
         }],
         ok: true
     });
@@ -421,31 +421,31 @@ test.serial(`If there is no problem running sonar, it should send to the queue 2
 });
 
 
-test.serial(`If there is no problem running sonar, it should send a "Too many errors" message if the messages are bigger than MAX_MESSAGE_SIZE`, async (t) => {
+test.serial(`If there is no problem running webhint, it should send a "Too many errors" message if the messages are bigger than MAX_MESSAGE_SIZE`, async (t) => {
     const lipsum = fs.readFileSync(`${__dirname}/../fixtures/lipsum.txt`, 'utf-8'); // eslint-disable-line no-sync
 
     const job = {
         config: [{
-            rules: [
+            hints: [
                 'axe:warning',
                 'content-type'
             ]
         }],
+        hints: [
+            {
+                name: 'axe',
+                status: HintStatus.pending
+            },
+            {
+                name: 'content-type',
+                status: HintStatus.pending
+            }
+        ],
         id: 0,
         partInfo: {
             part: 1,
             totalParts: 5
-        },
-        rules: [
-            {
-                name: 'axe',
-                status: RuleStatus.pending
-            },
-            {
-                name: 'content-type',
-                status: RuleStatus.pending
-            }
-        ]
+        }
     };
     const emitter = getEmitter();
 
@@ -459,37 +459,37 @@ test.serial(`If there is no problem running sonar, it should send a "Too many er
 
     const promise = t.context.jobsQueue.listen.args[0][0]([job]);
 
-    // Wait a little bit to ensure that 'runSonar' was launched
+    // Wait a little bit to ensure that 'runWebhint' was launched
     await delay(500);
     await emitter.emitAsync('message', {
         messages: [{
-            message: lipsum + lipsum,
-            ruleId: 'axe'
+            hintId: 'axe',
+            message: lipsum + lipsum
         }],
         ok: true
     });
 
     await promise;
 
-    const axe = getRule('axe', t.context.resultsQueue.sendMessage.args[1][0].rules);
+    const axe = getHint('axe', t.context.resultsQueue.sendMessage.args[1][0].hints);
 
     t.is(t.context.resultsQueue.sendMessage.callCount, 2);
-    t.is(axe.status, RuleStatus.warning);
+    t.is(axe.status, HintStatus.warning);
     t.is(axe.messages.length, 1);
-    t.is(axe.messages[0].message, 'This rule has too many errors, please use sonar locally for more details');
+    t.is(axe.messages[0].message, 'This hint has too many errors, please use webhint locally for more details');
 });
 
 
-test.serial(`If sonar doesn't finish before the job.maxRunTime, it should report an error message to the queue, but the job status is finished`, async (t) => {
+test.serial(`If webhint doesn't finish before the job.maxRunTime, it should report an error message to the queue, but the job status is finished`, async (t) => {
     const job = {
         config: [{}],
+        hints: [],
         id: 0,
         maxRunTime: 1,
         partInfo: {
             part: 1,
             totalParts: 5
-        },
-        rules: []
+        }
     };
     const emitter = getEmitter();
 

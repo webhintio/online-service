@@ -7,9 +7,9 @@
         {{> new-config isEdit=true buttonText="Edit"}}
 
         <div class="error">{{error}}</div>
-        {{#each config.sonarConfigs}}
-            <div class="rule-set">
-                <h4>Rule set {{@index}}</h4>
+        {{#each config.webhintConfigs}}
+            <div class="hint-set">
+                <h4>Hint set {{@index}}</h4>
 
                 <div>
                     <pre>

@@ -26,6 +26,7 @@ const parseJob = (job: IJob) => {
         config: job.config,
         error: job.error,
         finished: job.finished,
+        hints: job.hints,
         id: job.id,
         investigated: job.investigated,
         maxRunTime: job.maxRunTime,
@@ -33,10 +34,10 @@ const parseJob = (job: IJob) => {
         partInfo: job.partInfo,
         queued: job.queued,
         rules: job.rules,
-        sonarVersion: job.sonarVersion,
         started: job.started,
         status: job.status,
-        url: job.url
+        url: job.url,
+        webhintVersion: job.webhintVersion
     };
 
     return result;

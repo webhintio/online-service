@@ -13,8 +13,8 @@ const validStatus: IStatus = {
         start: null
     },
     date: new Date('2017-10-15T08:15:00.000Z'),
+    hints: null,
     queues: null,
-    rules: null,
     scans: {
         created: 0,
         finished: {
@@ -190,7 +190,7 @@ const getValidTestData = () => {
     validJob3.finished = moment(validJob3.started)
         .add(2, 'm')
         .toDate();
-    validJob3.rules[1].status = 'warning';
+    validJob3.hints[1].status = 'warning';
 
     return [validJob, validJob2, validJob3];
 };
@@ -215,7 +215,7 @@ test.serial('updateStatuses should calculate the averages', async (t) => {
     t.is(args.average.finish, 90000);
 });
 
-test.serial('updateStatuses should calculate rules status', async (t) => {
+test.serial('updateStatuses should calculate hints status', async (t) => {
     const recentDate = moment()
         .subtract(16, 'm')
         .startOf('minute');
@@ -231,12 +231,12 @@ test.serial('updateStatuses should calculate rules status', async (t) => {
 
     const args = t.context.database.status.add.args[0][0];
 
-    t.is(args.rules.errors, 2);
-    t.is(args.rules.warnings, 1);
-    t.is(args.rules.passes, 3);
+    t.is(args.hints.errors, 2);
+    t.is(args.hints.warnings, 1);
+    t.is(args.hints.passes, 3);
 
-    const noDisallowedHeaders = args.rules.rules['no-disallowed-headers'];
-    const noFriendlyErrorPages = args.rules.rules['no-friendly-error-pages'];
+    const noDisallowedHeaders = args.hints.hints['no-disallowed-headers'];
+    const noFriendlyErrorPages = args.hints.hints['no-friendly-error-pages'];
 
     t.is(noDisallowedHeaders.errors, 2);
     t.is(noDisallowedHeaders.warnings, 1);

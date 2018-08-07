@@ -10,10 +10,10 @@
         "summary"
     ],
     "ignoredUrls": [],
-    "rules": {
+    "hints": {
         "apple-touch-icons": "error",
         "axe": "error",
         "content-type": "error"
     },
-    "rulesTimeout": 120000
+    "hintsTimeout": 120000
 }

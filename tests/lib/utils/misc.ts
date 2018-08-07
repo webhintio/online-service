@@ -39,7 +39,7 @@ test.serial('getDataFromRequest should fail if there is an error parsing', async
 
 test.serial('getDataFromRequest should return and object with the properties fields and files', async (t) => {
     const fields = {
-        rules: [],
+        hints: [],
         source: ['manual'],
         url: ['http://url.com']
     };

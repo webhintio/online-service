@@ -1,11 +1,13 @@
-import { UserConfig } from 'sonarwhal/dist/src/lib/types';
+import { UserConfig } from 'hint/dist/src/lib/types';
 
 export interface IServiceConfig {
-    /** List of sonar configurations to split the job in messages. */
-    sonarConfigs: Array<UserConfig>;
+    /** List of webhint configurations to split the job in messages. */
+    webhintConfigs: Array<UserConfig>;
+    /** DEPRECATED */
+    sonarConfigs?: Array<UserConfig>;
     /** Time in seconds to keep a job in the cache. */
     jobCacheTime: number;
-    /** Time in seconds a job has to complete the execution in sonar. */
+    /** Time in seconds a job has to complete the execution in webhint. */
     jobRunTime: number;
     /** Configuration name. */
     name: string;

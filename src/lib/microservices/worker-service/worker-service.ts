@@ -1,14 +1,14 @@
 import * as _ from 'lodash';
 import { fork, ChildProcess } from 'child_process';
-import { Problem, Severity } from 'sonarwhal/dist/src/lib/types';
-import normalizeRules from 'sonarwhal/dist/src/lib/config/normalize-rules';
+import { Problem, Severity } from 'hint/dist/src/lib/types';
+import normalizeHints from 'hint/dist/src/lib/config/normalize-hints';
 import * as path from 'path';
 
 import * as appInsight from '../../utils/appinsights';
 import { debug as d } from '../../utils/debug';
 import { Queue } from '../../common/queue/queue';
-import { IJob, JobResult, Rule } from '../../types';
-import { JobStatus, RuleStatus } from '../../enums/status';
+import { IJob, JobResult, Hint } from '../../types';
+import { JobStatus, HintStatus } from '../../enums/status';
 import * as logger from '../../utils/logging';
 import { generateLog } from '../../utils/misc';
 import { getTime } from '../../common/ntp/ntp';
@@ -20,76 +20,77 @@ const moduleName: string = 'Worker Service';
 const MAX_MESSAGE_SIZE = 220 * 1024; // size in kB
 
 /**
- * Parse the result returned for sonar.
+ * Parse the result returned for webhint.
  * @param {IJob} job - Job to write the result.
- * @param normalizedRules - Normalized job rules.
+ * @param normalizedHints - Normalized job hints.
  */
-const parseResult = (job: IJob, result: Array<Problem>, normalizedRules) => {
-    const rules: Array<Rule> = job.rules;
-    const groupedData: _.Dictionary<Array<Problem>> = _.groupBy(result, 'ruleId');
+const parseResult = (job: IJob, result: Array<Problem>, normalizedHints) => {
+    const hints: Array<Hint> = job.hints;
+    const groupedData: _.Dictionary<Array<Problem>> = _.groupBy(result, 'hintId');
 
-    rules.forEach((rule: Rule) => {
-        // Skip rule if it is not in the configuration file.
-        if (!normalizedRules[rule.name]) {
+    hints.forEach((hint: Hint) => {
+        // Skip hint if it is not in the configuration file.
+        if (!normalizedHints[hint.name]) {
             return;
         }
-        const messages: Array<Problem> = groupedData[rule.name];
+        const messages: Array<Problem> = groupedData[hint.name];
 
         if (!messages || messages.length === 0) {
-            rule.status = RuleStatus.pass;
+            hint.status = HintStatus.pass;
 
             return;
         }
 
-        rule.status = Severity.error === messages[0].severity ? RuleStatus.error : RuleStatus.warning;
-        rule.messages = messages;
+        hint.status = Severity.error === messages[0].severity ? HintStatus.error : HintStatus.warning;
+        hint.messages = messages;
     });
 };
 
 /**
- * Determine if a rule is off or not.
- * @param ruleConfiguration Rule configuration.
+ * Determine if a hint is off or not.
+ * @param hintConfiguration Hint configuration.
  */
-const ruleOff = (ruleConfiguration) => {
-    if (Array.isArray(ruleConfiguration)) {
-        return ruleConfiguration[0] === 'off';
+const hintOff = (hintConfiguration) => {
+    if (Array.isArray(hintConfiguration)) {
+        return hintConfiguration[0] === 'off';
     }
 
-    return ruleConfiguration === 'off';
+    return hintConfiguration === 'off';
 };
 
 /**
- * Set each rule in the configuration to error.
+ * Set each hint in the configuration to error.
  * @param {IJob} job - Job to write the errors.
- * @param normalizedRules - Normalized job rules.
+ * @param normalizedHints - Normalized job hints.
  */
-const setRulesToError = (job: IJob, normalizedRules, error) => {
-    const rules: Array<Rule> = job.rules;
+const setHintsToError = (job: IJob, normalizedHints, error) => {
+    const hints: Array<Hint> = job.hints;
     const isTimeOutError: boolean = error.message === 'TIMEOUT';
     const messageOptions = {
-        general: 'Error in sonar analyzing this rule',
-        timeout: `sonarwhal didn't return the result fast enough. Please try later and if the problem continues, contact us.`
+        general: 'Error in webhint analyzing this hint',
+        timeout: `webhint didn't return the result fast enough. Please try later and if the problem continues, contact us.`
     };
 
-    rules.forEach((rule: Rule) => {
-        const ruleConfiguration = normalizedRules[rule.name];
+    hints.forEach((hint: Hint) => {
+        const hintConfiguration = normalizedHints[hint.name];
 
-        // Skip rule if it is not in the configuration file.
-        if (!ruleConfiguration) {
+        // Skip hint if it is not in the configuration file.
+        if (!hintConfiguration) {
             return;
         }
 
-        if (ruleOff(ruleConfiguration)) {
-            rule.status = RuleStatus.pass;
+        if (hintOff(hintConfiguration)) {
+            hint.status = HintStatus.pass;
 
             return;
         }
 
-        rule.status = isTimeOutError ? RuleStatus.warning : RuleStatus.error;
+        hint.status = isTimeOutError ? HintStatus.warning : HintStatus.error;
         const message = isTimeOutError ? messageOptions.timeout : messageOptions.general;
         const severity = isTimeOutError ? Severity.error : Severity.warning;
 
-        rule.messages = [{
+        hint.messages = [{
+            hintId: hint.name,
             location: {
                 column: -1,
                 elementColumn: -1,
@@ -98,7 +99,6 @@ const setRulesToError = (job: IJob, normalizedRules, error) => {
             },
             message,
             resource: null,
-            ruleId: rule.name,
             severity,
             sourceCode: null
         }];
@@ -113,24 +113,24 @@ const killProcess = (runner: ChildProcess) => {
     try {
         runner.kill('SIGKILL');
     } catch (err) {
-        logger.error('Error closing sonar process', moduleName);
+        logger.error('Error closing webhint process', moduleName);
     }
 };
 
 /**
- * Create a child process to run sonar.
- * @param {IJob} job - Job to run in sonar.
+ * Create a child process to run webhint.
+ * @param {IJob} job - Job to run in webhint.
  */
-const runSonar = (job: IJob): Promise<Array<Problem>> => {
+const runWebhint = (job: IJob): Promise<Array<Problem>> => {
     return new Promise((resolve, reject) => {
         // if we don't set execArgv to [], when the process is created, the execArgv
         // has the same parameters as his father so if we are debugging, the child
         // process try to debug in the same port, and that throws an error.
-        const runner: ChildProcess = fork(path.join(__dirname, 'sonar-runner'), [], { execArgv: [], stdio: [0, 1, 2, 'ipc'] });
+        const runner: ChildProcess = fork(path.join(__dirname, 'webhint-runner'), [], { execArgv: [], stdio: [0, 1, 2, 'ipc'] });
         let timeoutId: NodeJS.Timer;
 
         runner.on('message', (result: JobResult) => {
-            logger.log(generateLog('Message from sonar process received for job', job), moduleName);
+            logger.log(generateLog('Message from webhint process received for job', job), moduleName);
             if (timeoutId) {
                 clearTimeout(timeoutId);
                 timeoutId = null;
@@ -156,47 +156,47 @@ const runSonar = (job: IJob): Promise<Array<Problem>> => {
 };
 
 /**
- * Return the sonar version the worker is using.
+ * Return the webhint version the worker is using.
  */
-const getSonarVersion = (): string => {
-    const pkg = require('sonarwhal/package.json');
+const getWebhintVersion = (): string => {
+    const pkg = require('hint/package.json');
 
     return pkg.version;
 };
 
-/** Directly removes the messages for a rule with a "Too many errors" message.
- * @param {Rule} rule The rule to clean.
+/** Directly removes the messages for a hint with a "Too many errors" message.
+ * @param {Hint} hint The hint to clean.
  */
-const tooManyErrorsMessage = (rule: Rule): Rule => {
-    rule.messages = [{
+const tooManyErrorsMessage = (hint: Hint): Hint => {
+    hint.messages = [{
+        hintId: hint.messages[0].hintId,
         location: {
             column: -1,
             elementColumn: -1,
             elementLine: -1,
             line: -1
         },
-        message: 'This rule has too many errors, please use sonar locally for more details',
+        message: 'This hint has too many errors, please use webhint locally for more details',
         resource: null,
-        ruleId: rule.messages[0].ruleId,
-        severity: rule.messages[0].severity,
+        severity: hint.messages[0].severity,
         sourceCode: null
     }];
 
-    return rule;
+    return hint;
 };
 
 /**
- * Clean all messages in rules and set a default one.
+ * Clean all messages in hints and set a default one.
  * @param {IJob} job Job to clean.
- * @param normalizedRules - Normalized job rules.
+ * @param normalizedHints - Normalized job hints.
  */
-const cleanMessagesInRules = (job: IJob, normalizedRules) => {
-    job.rules.forEach((rule) => {
-        if (rule.status === RuleStatus.pending || rule.status === RuleStatus.pass || !normalizedRules[rule.name]) {
+const cleanMessagesInHints = (job: IJob, normalizedHints) => {
+    job.hints.forEach((hint) => {
+        if (hint.status === HintStatus.pending || hint.status === HintStatus.pass || !normalizedHints[hint.name]) {
             return;
         }
 
-        tooManyErrorsMessage(rule);
+        tooManyErrorsMessage(hint);
     });
 };
 
@@ -204,16 +204,16 @@ const cleanMessagesInRules = (job: IJob, normalizedRules) => {
  * Sends a message with the results of a job.
  * @param {Queue} queue - Queue where to send the message.
  * @param job - Job processed that needs update.
- * @param normalizedRules - Normalized job rules.
+ * @param normalizedHints - Normalized job hints.
  */
-const sendMessage = async (queue: Queue, job: IJob, normalizedRules) => {
+const sendMessage = async (queue: Queue, job: IJob, normalizedHints) => {
     try {
-        logger.log(generateLog('Sending message for Job', job, { showRule: true }), moduleName);
+        logger.log(generateLog('Sending message for Job', job, { showHint: true }), moduleName);
         await queue.sendMessage(job);
     } catch (err) {
         // The status code can be 413 or 400.
         if (err.statusCode === 413 || (err.statusCode === 400 && err.message.includes('The body of the message is too large.'))) {
-            cleanMessagesInRules(job, normalizedRules);
+            cleanMessagesInHints(job, normalizedHints);
             await queue.sendMessage(job);
         } else {
             throw err;
@@ -225,52 +225,52 @@ const sendMessage = async (queue: Queue, job: IJob, normalizedRules) => {
  * Sends the results to the results queue.
  * @param {Queue} queue - Queue where to send the messages.
  * @param {IJob} job - Job to get the messages.
- * @param normalizedRules - Normalized job rules.
+ * @param normalizedHints - Normalized job hints.
  */
-const sendResults = async (queue: Queue, job: IJob, normalizedRules) => {
+const sendResults = async (queue: Queue, job: IJob, normalizedHints) => {
     let messageSize = JSON.stringify(job).length;
 
     if (messageSize <= MAX_MESSAGE_SIZE) {
-        await sendMessage(queue, job, normalizedRules);
+        await sendMessage(queue, job, normalizedHints);
 
         return;
     }
 
-    const cloneRules = job.rules.slice(0);
+    const cloneHints = job.hints.slice(0);
     const cloneJob = _.cloneDeep(job);
 
-    cloneJob.rules = [];
+    cloneJob.hints = [];
 
-    while (cloneRules.length > 0) {
-        let rule = cloneRules.pop();
-        let ruleSize = JSON.stringify(rule).length;
+    while (cloneHints.length > 0) {
+        let hint = cloneHints.pop();
+        let hintSize = JSON.stringify(hint).length;
 
-        if (!normalizedRules[rule.name]) {
+        if (!normalizedHints[hint.name]) {
             continue; // eslint-disable-line no-continue
         }
 
-        if (ruleSize > MAX_MESSAGE_SIZE) {
-            rule = tooManyErrorsMessage(rule);
-            ruleSize = JSON.stringify(rule).length;
+        if (hintSize > MAX_MESSAGE_SIZE) {
+            hint = tooManyErrorsMessage(hint);
+            hintSize = JSON.stringify(hint).length;
         }
 
         messageSize = JSON.stringify(cloneJob).length;
 
-        // Size is too big with the latest rule, we have to send all the previous ones
-        if (messageSize + ruleSize > MAX_MESSAGE_SIZE) {
+        // Size is too big with the latest hint, we have to send all the previous ones
+        if (messageSize + hintSize > MAX_MESSAGE_SIZE) {
             // We send the previous version of `cloneJob`
-            await sendMessage(queue, cloneJob, normalizedRules);
-            // We clean `cloneJob`'s rules to not repeat results and add the new one
-            cloneJob.rules = [rule];
+            await sendMessage(queue, cloneJob, normalizedHints);
+            // We clean `cloneJob`'s hints to not repeat results and add the new one
+            cloneJob.hints = [hint];
         } else {
-            // Add rule to job
-            cloneJob.rules.push(rule);
+            // Add hint to job
+            cloneJob.hints.push(hint);
         }
     }
 
-    // We might not have reached MAX_MESSAGE_SIZE with the last rule, send any remaining ones
-    if (cloneJob.rules.length > 0) {
-        await sendMessage(queue, cloneJob, normalizedRules);
+    // We might not have reached MAX_MESSAGE_SIZE with the last hint, send any remaining ones
+    if (cloneJob.hints.length > 0) {
+        await sendMessage(queue, cloneJob, normalizedHints);
     }
 };
 
@@ -318,36 +318,36 @@ const sendErrorMessage = async (error, queue: Queue, job: IJob) => {
 export const run = async () => {
     const queue: Queue = new Queue('sonar-jobs', queueConnectionString);
     const queueResults: Queue = new Queue('sonar-results', queueConnectionString);
-    const sonarVersion: string = getSonarVersion();
+    const webhintVersion: string = getWebhintVersion();
 
     const listener = async (jobs: Array<IJob>) => {
         const start = Date.now();
         const job = jobs[0];
 
         logger.log(generateLog('Processing Job', job), moduleName);
-        const normalizedRules = normalizeRules(job.config[0].rules);
+        const normalizedHints = normalizeHints(job.config[0].hints);
 
         try {
-            job.sonarVersion = sonarVersion;
+            job.webhintVersion = webhintVersion;
 
             await sendStartedMessage(queueResults, job);
 
-            const sonarStart = Date.now();
-            const result: Array<Problem> = await runSonar(job);
+            const webhintStart = Date.now();
+            const result: Array<Problem> = await runWebhint(job);
 
             appInsightClient.trackMetric({
-                name: 'run-sonar',
-                value: Date.now() - sonarStart
+                name: 'run-webhint',
+                value: Date.now() - webhintStart
             });
 
-            parseResult(job, result, normalizedRules);
+            parseResult(job, result, normalizedHints);
 
             job.finished = await getTime();
             job.status = JobStatus.finished;
 
             debug(`Sending job result with status: ${job.status}`);
 
-            await sendResults(queueResults, job, normalizedRules);
+            await sendResults(queueResults, job, normalizedHints);
 
             logger.log(generateLog('Processed Job', job), moduleName);
 
@@ -360,7 +360,7 @@ export const run = async () => {
             appInsightClient.trackException({ exception: err });
             debug(err);
 
-            setRulesToError(job, normalizedRules, err);
+            setHintsToError(job, normalizedHints, err);
 
             await sendErrorMessage(err, queueResults, job);
 

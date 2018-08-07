@@ -8,5 +8,6 @@ export const ServiceConfigSchema: Schema = new Schema({
         index: { unique: true },
         type: String
     },
-    sonarConfigs: [{}]
+    sonarConfigs: [{}],
+    webhintConfigs: [{}]
 }, { usePushEach: true }); // usePushEach for compatibility with mongodb 3.6

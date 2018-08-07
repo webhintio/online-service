@@ -13,7 +13,7 @@ test.beforeEach((t) => {
      */
     delete require.cache[path.resolve(__dirname, '../../../../src/lib/common/email/email.js')];
 
-    const sandbox = sinon.sandbox.create();
+    const sandbox = sinon.createSandbox();
 
     t.context.sandbox = sandbox;
 });

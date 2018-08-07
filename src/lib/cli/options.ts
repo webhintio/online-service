@@ -52,13 +52,13 @@ export const options = optionator({
             type: 'Int'
         }, {
             alias: 'r',
-            description: 'Time in seconds a job has to complete the execution in sonar',
+            description: 'Time in seconds a job has to complete the execution in webhint',
             option: 'run',
             type: 'Int'
         }, {
             alias: 'f',
             dependsOn: ['and', 'name', 'cache', 'run'],
-            description: 'Path to a file with an array of sonar configurations to store in database',
+            description: 'Path to a file with an array of webhint configurations to store in database',
             example: 'online-service --microservice config-manager --name new-config-name --file config-file.json --cache 120 --run 120',
             option: 'file',
             type: 'path::String'

@@ -2,14 +2,14 @@
 
 import { URL } from 'url';
 
-import { Sonarwhal } from 'sonarwhal/dist/src/lib/sonarwhal';
-import * as resourceLoader from 'sonarwhal/dist/src/lib/utils/resource-loader';
-import { SonarwhalConfig } from 'sonarwhal/dist/src/lib/config';
+import { Engine } from 'hint/dist/src/lib/engine';
+import * as resourceLoader from 'hint/dist/src/lib/utils/resource-loader';
+import { Configuration } from 'hint/dist/src/lib/config';
 
 import { IJob, JobResult } from '../../types';
 import * as logger from '../../utils/logging';
 
-const moduleName: string = 'Sonar Runner';
+const moduleName: string = 'Webhint Runner';
 
 const createErrorResult = (err): JobResult => {
     const jobResult: JobResult = {
@@ -47,8 +47,8 @@ process.once('unhandledRejection', (reason) => {
 });
 
 /**
- * Run a Job in sonar.
- * @param {IJob} job - Job to run in sonar.
+ * Run a Job in webhint.
+ * @param {IJob} job - Job to run in webhint.
  */
 const run = async (job: IJob) => {
     logger.log(`Running job: ${job.id} - Part ${job.partInfo.part} of ${job.partInfo.totalParts}`, moduleName);
@@ -59,11 +59,11 @@ const run = async (job: IJob) => {
     };
 
     try {
-        const config = SonarwhalConfig.fromConfig(job.config[0]);
+        const config = Configuration.fromConfig(job.config[0]);
         const resources = resourceLoader.loadResources(config);
-        const sonar = new Sonarwhal(config, resources);
+        const engine = new Engine(config, resources);
 
-        result.messages = await sonar.executeOn(new URL(job.url));
+        result.messages = await engine.executeOn(new URL(job.url));
 
         result.ok = true;
     } catch (err) {

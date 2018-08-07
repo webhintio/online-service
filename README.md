@@ -1,4 +1,4 @@
-# online-service [![Build Status](https://travis-ci.org/sonarwhal/online-service.svg?branch=master)](https://travis-ci.org/sonarwhal/online-service) [![Greenkeeper badge](https://badges.greenkeeper.io/sonarwhal/online-service.svg)](https://greenkeeper.io/)
+# online-service [![Build Status](https://travis-ci.org/webhintio/online-service.svg?branch=master)](https://travis-ci.org/webhintio/online-service) [![Greenkeeper badge](https://badges.greenkeeper.io/webhintio/online-service.svg)](https://greenkeeper.io/)
 
 ## Requirements
 
@@ -8,7 +8,7 @@
 ## Installation
 
 ```bash
-git clone https://github.com/sonarwhal/online-service.git
+git clone https://github.com/webhintio/online-service.git
 cd online-service
 npm install
 npm run build
@@ -129,7 +129,7 @@ Run `build-images.sh` with the name of your repository as a
 parameter.
 
 ```bash
-./build-images.sh sonarwhal
+./build-images.sh webhint
 ```
 
 #### Upload the images to your docker repository
@@ -153,7 +153,7 @@ Run `upload-images.sh` with the name of you repository as a
 parameter.
 
 ```bash
-./upload-images.sh sonarwhal
+./upload-images.sh webhint
 ```
 
 #### Build and upload
@@ -174,7 +174,7 @@ Run `build-and-upload-images.sh` with the name of your
 repository as a parameter.
 
 ```bash
-./build-and-upload-images.sh sonarwhal
+./build-and-upload-images.sh webhint
 ```
 
 #### Deploy Online Service

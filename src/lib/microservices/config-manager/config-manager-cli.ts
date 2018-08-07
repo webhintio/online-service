@@ -1,4 +1,4 @@
-import { ConnectorConfig, RulesConfigObject, RuleConfig, UserConfig } from 'sonarwhal/dist/src/lib/types';
+import { ConnectorConfig, HintsConfigObject, HintConfig, UserConfig } from 'hint/dist/src/lib/types';
 
 import { options } from '../../cli/options';
 import * as database from '../../common/database/database';
@@ -9,7 +9,7 @@ import * as logger from '../../utils/logging';
 const moduleName: string = 'Configuration Manager';
 /**
  * Print the connector options.
- * @param {UserConfig} config Sonar configuration.
+ * @param {UserConfig} config Webhint configuration.
  */
 const printConnectorOptions = (config: UserConfig) => {
     const connectorOptions = (config.connector as ConnectorConfig).options;
@@ -23,23 +23,23 @@ const printConnectorOptions = (config: UserConfig) => {
 };
 
 /**
- * Print rules in the configuration.
- * @param {RulesConfigObject | Array<RuleConfig>} rules Rules to print.
+ * Print hints in the configuration.
+ * @param {HintsConfigObject | Array<HintConfig>} hints Hints to print.
  */
-const printRules = (rules: RulesConfigObject | Array<RuleConfig>) => {
-    logger.log(JSON.stringify(rules, null, 4));
+const printHints = (hints: HintsConfigObject | Array<HintConfig>) => {
+    logger.log(JSON.stringify(hints, null, 4));
 };
 
 /**
  * Print the configuration options.
- * @param {UserConfig} config Sonar configuration.
+ * @param {UserConfig} config Webhint configuration.
  */
 const printOptions = (config: UserConfig) => {
     if (config.browserslist) {
         logger.log(`browserslist: ${config.browserslist}`);
     }
-    if (typeof config.rulesTimeout !== 'undefined') {
-        logger.log(`rulesTimeout: ${config.rulesTimeout}`);
+    if (typeof config.hintsTimeout !== 'undefined') {
+        logger.log(`hintsTimeout: ${config.hintsTimeout}`);
     }
     if (config.ignoredUrls) {
         logger.log(`ignoredUrls:`);
@@ -103,22 +103,18 @@ export const run = async (cliOptions: CLIOptions) => {
         for (const serviceConfig of configurations) {
             logger.log(`Configuration name: ${serviceConfig.name}${serviceConfig.active ? ' (Active)' : ''}`);
             logger.log(`Cache for jobs: ${serviceConfig.jobCacheTime} seconds`);
-            logger.log(`Time to run sonar: ${serviceConfig.jobRunTime} seconds`);
-            logger.log('===================================');
-            logger.log('======= Sonar configuration =======');
-            logger.log('===================================');
-            const configs = serviceConfig.sonarConfigs;
+            logger.log(`Time to run webhint: ${serviceConfig.jobRunTime} seconds`);
+            logger.log('=====================================');
+            logger.log('======= Webhint configuration =======');
+            logger.log('=====================================');
+            const configs = serviceConfig.webhintConfigs;
 
             for (const config of configs) {
                 logger.log('============ Connector ============');
                 logger.log(`Name: ${typeof config.connector === 'string' ? config.connector : config.connector.name}`);
                 printConnectorOptions(config);
-                logger.log('============== Rules ==============');
-                printRules(config.rules);
-                if (config.plugins) {
-                    logger.log('============= Plugins =============');
-                    printRules(config.plugins);
-                }
+                logger.log('============== Hints ==============');
+                printHints(config.hints);
                 logger.log('============= Options =============');
                 printOptions(config);
                 logger.log('');
