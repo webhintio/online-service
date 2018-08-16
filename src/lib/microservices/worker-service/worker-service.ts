@@ -90,6 +90,7 @@ const setHintsToError = (job: IJob, normalizedHints, error) => {
         const severity = isTimeOutError ? Severity.error : Severity.warning;
 
         hint.messages = [{
+            category: hint.category,
             hintId: hint.name,
             location: {
                 column: -1,
@@ -169,6 +170,7 @@ const getWebhintVersion = (): string => {
  */
 const tooManyErrorsMessage = (hint: Hint): Hint => {
     hint.messages = [{
+        category: hint.category,
         hintId: hint.messages[0].hintId,
         location: {
             column: -1,
