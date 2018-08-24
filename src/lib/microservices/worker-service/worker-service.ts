@@ -87,7 +87,7 @@ const setHintsToError = (job: IJob, normalizedHints, error) => {
 
         hint.status = isTimeOutError ? HintStatus.warning : HintStatus.error;
         const message = isTimeOutError ? messageOptions.timeout : messageOptions.general;
-        const severity = isTimeOutError ? Severity.error : Severity.warning;
+        const severity = isTimeOutError ? Severity.warning : Severity.error;
 
         hint.messages = [{
             category: hint.category,
