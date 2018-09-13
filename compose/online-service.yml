@@ -15,7 +15,7 @@ services:
             update_config:
                 parallelism: 2
                 delay: 10s
-        environtment:
+        environment:
             - port=80
             - sessionSecret=<YourSessionSecret>
             - callbackURL=<YourCallbackUrl>
