@@ -70,7 +70,7 @@
     "sinon": "^6.1.5",
     "ts-node": "^7.0.1",
     "typescript": "^3.0.1",
-    "typescript-eslint-parser": "^18.0.0"
+    "typescript-eslint-parser": "^19.0.1"
   },
   "main": "./dist/src/index.js",
   "nyc": {
