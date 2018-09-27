@@ -283,11 +283,11 @@ const updateStatusesSince = async (since: Date) => {
 export const updateStatuses = async () => {
     await db.connect(dbConnectionString);
     if (!queueJobs) {
-        queueJobs = new Queue('sonar-jobs', queueConnectionString);
+        queueJobs = new Queue('webhint-jobs', queueConnectionString);
     }
 
     if (!queueResults) {
-        queueResults = new Queue('sonar-results', queueConnectionString);
+        queueResults = new Queue('webhint-results', queueConnectionString);
     }
 
     const lastStatus: IStatus = await db.status.getMostRecent();

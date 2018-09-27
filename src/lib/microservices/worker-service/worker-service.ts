@@ -379,8 +379,8 @@ const sendErrorMessage = async (error, queue: Queue, job: IJob) => {
 };
 
 export const run = async () => {
-    const queue: Queue = new Queue('sonar-jobs', queueConnectionString);
-    const queueResults: Queue = new Queue('sonar-results', queueConnectionString);
+    const queue: Queue = new Queue('webhint-jobs', queueConnectionString);
+    const queueResults: Queue = new Queue('webhint-results', queueConnectionString);
     const webhintVersion: string = getWebhintVersion();
 
     const listener = async (messages: Array<ServiceBusMessage>) => {

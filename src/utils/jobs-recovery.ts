@@ -66,7 +66,7 @@ const sendMessagesToQueue = async (job: IJob) => {
 
 const run = async () => {
     try {
-        queue = new Queue('sonar-jobs', queueConnectionString);
+        queue = new Queue('webhint-jobs', queueConnectionString);
         await connectDatabase();
     } catch (err) {
         logger.error(err, moduleName);
