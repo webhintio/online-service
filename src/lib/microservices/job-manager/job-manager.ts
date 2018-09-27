@@ -21,7 +21,7 @@ let queue: Queue = null;
 const moduleName: string = 'Job Manager';
 
 if (queueConnectionString) {
-    queue = new Queue('sonar-jobs', queueConnectionString);
+    queue = new Queue('webhint-jobs', queueConnectionString);
 } else {
     logger.log('Queue connection string not found', moduleName);
 }
