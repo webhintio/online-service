@@ -1,36 +1,40 @@
 {
     "_id": "59b07df764233a42b8f6e57d",
-    "config": {
-        "hints": {
-            "validate-set-cookie-header": "warning",
-            "x-content-type-options": "warning",
-            "strict-transport-security": "warning",
-            "ssllabs": "off",
-            "no-protocol-relative-urls": "warning",
-            "no-html-only-headers": "warning",
-            "no-friendly-error-pages": "warning",
-            "no-disallowed-headers": "warning",
-            "meta-charset-utf-8": "warning",
-            "manifest-is-valid": "warning",
-            "manifest-file-extension": "warning",
-            "manifest-exists": "warning",
-            "html-checker": "warning",
-            "highest-available-document-mode": "warning",
-            "disown-opener": "warning",
-            "content-type": "warning",
-            "axe": "warning"
-        },
-        "hintsTimeout": 120000,
-        "formatters": ["stylish"],
-        "connector": {
-            "options": {
-                "maxLoadWaitTime": 30000,
-                "loadCompleteRetryInterval": 500,
-                "waitFor": 1000
+    "config": [
+        {
+            "hints": {
+                "validate-set-cookie-header": "warning",
+                "x-content-type-options": "warning",
+                "strict-transport-security": "warning",
+                "ssllabs": "off",
+                "no-protocol-relative-urls": "warning",
+                "no-html-only-headers": "warning",
+                "no-friendly-error-pages": "warning",
+                "no-disallowed-headers": "warning",
+                "meta-charset-utf-8": "warning",
+                "manifest-is-valid": "warning",
+                "manifest-file-extension": "warning",
+                "manifest-exists": "warning",
+                "html-checker": "warning",
+                "highest-available-document-mode": "warning",
+                "disown-opener": "warning",
+                "content-type": "warning",
+                "axe": "warning"
             },
-            "name": "jsdom"
+            "hintsTimeout": 120000,
+            "formatters": [
+                "stylish"
+            ],
+            "connector": {
+                "options": {
+                    "maxLoadWaitTime": 30000,
+                    "loadCompleteRetryInterval": 500,
+                    "waitFor": 1000
+                },
+                "name": "jsdom"
+            }
         }
-    },
+    ],
     "id": "2772e178-5dfb-47ce-883d-ee6e6ee11003",
     "queued": "2017-09-01T23:00:49.102Z",
     "status": "pending",
