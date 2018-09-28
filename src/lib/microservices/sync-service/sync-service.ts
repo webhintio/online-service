@@ -1,16 +1,19 @@
 import * as _ from 'lodash';
+import * as moment from 'moment';
 
 import { Queue } from '../../common/queue/queue';
 import * as database from '../../common/database/database';
 import { IJobModel } from '../../common/database/models/job';
+import { IssueReporter } from '../../common/github/issuereporter';
 import { IJob, Hint } from '../../types';
 import { JobStatus, HintStatus } from '../../enums/status';
 import * as logger from '../../utils/logging';
 import { generateLog } from '../../utils/misc';
 import * as appInsight from '../../utils/appinsights';
+import { IssueData } from '../../types/issuedata';
 
 const moduleName: string = 'Sync Service';
-const {database: dbConnectionString, queue: queueConnectionString} = process.env; // eslint-disable-line no-process-env
+const { database: dbConnectionString, queue: queueConnectionString } = process.env; // eslint-disable-line no-process-env
 const appInsightClient = appInsight.getClient();
 
 /**
@@ -48,6 +51,82 @@ const isJobFinished = (job: IJob) => {
     return job.hints.every((hint) => {
         return hint.status !== HintStatus.pending;
     });
+};
+
+const reportGithubIssues = async (job: IJob) => {
+    try {
+        const issueReporter = new IssueReporter();
+        const errors = Array.isArray(job.error) ? job.error : [job.error];
+
+        for (const error of errors) {
+            const errorMessage = JSON.stringify(error.message || error);
+            const issueData: IssueData = {
+                configs: job.config,
+                errorMessage,
+                errorType: 'crash',
+                scan: moment().format('YYYY-MM-DD'),
+                url: job.url
+            };
+
+            await issueReporter.report(issueData);
+        }
+    } catch (err) {
+        console.error(err);
+    }
+};
+
+const reportGithubTimeoutIssues = async (job: IJob) => {
+    try {
+        const config = job.config[0];
+        const hints = Object.keys(config.hints);
+        const hint = job.hints.find((h) => {
+            return h.name === hints[0];
+        });
+
+        const expectedMessage = `webhint didn't return the result fast enough`;
+
+        const message = hint.messages && hint.messages[0] && hint.messages[0].message;
+
+        if (message && message.includes(expectedMessage)) {
+            const issueReporter: IssueReporter = new IssueReporter();
+            const issueData: IssueData = {
+                configs: job.config,
+                errorMessage: message,
+                errorType: 'timeout',
+                scan: moment().format('YYYY-MM-DD'),
+                url: job.url
+            };
+
+            await issueReporter.report(issueData);
+        }
+    } catch (err) {
+        console.error(err);
+    }
+};
+
+const closeGithubIssues = async (dbJob: IJobModel) => {
+    try {
+        const expectedMessage = `webhint didn't return the result fast enough`;
+
+        // Check first if there was any timeout.
+        const someTimeout = dbJob.hints.some((hint) => {
+            const message = hint.messages && hint.messages[0] && hint.messages[0].message;
+
+            return message && message.includes(expectedMessage);
+        });
+
+        if (!someTimeout) {
+            const issueReporter: IssueReporter = new IssueReporter();
+            const issueData: IssueData = {
+                scan: moment().format('YYYY-MM-DD'),
+                url: dbJob.url
+            };
+
+            await issueReporter.report(issueData);
+        }
+    } catch (err) {
+        console.error(err);
+    }
 };
 
 /**
@@ -104,10 +183,17 @@ export const run = async () => {
                                 dbJob.error = [];
                             }
                             dbJob.error.push(job.error);
+                            await reportGithubIssues(job);
+                        } else {
+                            await reportGithubTimeoutIssues(job);
                         }
 
                         if (isJobFinished(dbJob)) {
                             dbJob.status = dbJob.error && dbJob.error.length > 0 ? JobStatus.error : job.status;
+
+                            if (dbJob.status === JobStatus.finished) {
+                                await closeGithubIssues(dbJob);
+                            }
                         }
 
                         if (!dbJob.finished || dbJob.finished < new Date(job.finished)) {

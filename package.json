@@ -19,6 +19,7 @@
     "@hint/hint-no-p3p": "^1.0.4",
     "@hint/hint-performance-budget": "^1.0.3",
     "applicationinsights": "^1.0.6",
+    "@octokit/rest": "^15.12.1",
     "azure-sb": "^0.10.6",
     "azure-storage": "^2.10.2",
     "body-parser": "^1.18.3",
@@ -84,7 +85,7 @@
   },
   "main": "./dist/src/index.js",
   "nyc": {
-    "branches": 83,
+    "branches": 80,
     "cache": true,
     "check-coverage": true,
     "functions": 80,
