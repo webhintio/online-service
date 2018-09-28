@@ -1,36 +1,40 @@
 {
     "__v": 0,
-    "config": {
-        "connector": {
-            "name": "jsdom",
-            "options": {
-                "waitFor": 1000,
-                "loadCompleteRetryInterval": 500,
-                "maxLoadWaitTime": 30000
+    "config": [
+        {
+            "connector": {
+                "name": "jsdom",
+                "options": {
+                    "waitFor": 1000,
+                    "loadCompleteRetryInterval": 500,
+                    "maxLoadWaitTime": 30000
+                }
+            },
+            "formatters": [
+                "stylish"
+            ],
+            "hintsTimeout": 120000,
+            "hints": {
+                "axe": "warning",
+                "content-type": "warning",
+                "disown-opener": "warning",
+                "highest-available-document-mode": "warning",
+                "html-checker": "warning",
+                "manifest-exists": "warning",
+                "manifest-file-extension": "warning",
+                "manifest-is-valid": "warning",
+                "meta-charset-utf-8": "warning",
+                "no-disallowed-headers": "warning",
+                "no-friendly-error-pages": "warning",
+                "no-html-only-headers": "warning",
+                "no-protocol-relative-urls": "warning",
+                "ssllabs": "off",
+                "strict-transport-security": "warning",
+                "x-content-type-options": "warning",
+                "validate-set-cookie-header": "warning"
             }
-        },
-        "formatters": ["stylish"],
-        "hintsTimeout": 120000,
-        "hints": {
-            "axe": "warning",
-            "content-type": "warning",
-            "disown-opener": "warning",
-            "highest-available-document-mode": "warning",
-            "html-checker": "warning",
-            "manifest-exists": "warning",
-            "manifest-file-extension": "warning",
-            "manifest-is-valid": "warning",
-            "meta-charset-utf-8": "warning",
-            "no-disallowed-headers": "warning",
-            "no-friendly-error-pages": "warning",
-            "no-html-only-headers": "warning",
-            "no-protocol-relative-urls": "warning",
-            "ssllabs": "off",
-            "strict-transport-security": "warning",
-            "x-content-type-options": "warning",
-            "validate-set-cookie-header": "warning"
         }
-    },
+    ],
     "id": "2772e178-5dfb-47ce-883d-ee6e6ee11004",
     "partInfo": {
         "part": 1,
@@ -128,10 +132,10 @@
         }
     ],
     "started": "2017-09-01T17:40:19.842Z",
-    "error": {
+    "error": [{
         "code": "EPIPE",
         "errno": "EPIPE",
         "syscall": "write"
-    },
+    }],
     "finished": "2017-08-31T23:52:25.666Z"
 }

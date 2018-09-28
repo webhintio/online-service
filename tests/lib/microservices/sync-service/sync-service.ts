@@ -7,6 +7,12 @@ import { readFile, readFileAsync } from '../../../../src/lib/utils/misc';
 import { JobStatus, HintStatus } from '../../../../src/lib/enums/status';
 import { IJob } from '../../../../src/lib/types';
 
+const IssueReporter = function () { };
+
+IssueReporter.prototype.report = () => { };
+
+const github = { IssueReporter };
+
 const logger = { error() { } };
 const resultsQueue = { listen() { } };
 const Queue = function () {
@@ -34,6 +40,7 @@ const data = {
 
 proxyquire('../../../../src/lib/microservices/sync-service/sync-service', {
     '../../common/database/database': database,
+    '../../common/github/issuereporter': github,
     '../../common/queue/queue': queueObject,
     '../../utils/logging': logger
 });
@@ -47,6 +54,7 @@ test.beforeEach(async (t) => {
     sinon.stub(database, 'lock').resolves();
     sinon.stub(database, 'unlock').resolves();
     sinon.stub(database.job, 'update').resolves();
+    sinon.spy(IssueReporter.prototype, 'report');
 
     t.context.job = JSON.parse(await readFileAsync(path.join(__dirname, 'fixtures', 'dbdata.json')));
 
@@ -54,6 +62,7 @@ test.beforeEach(async (t) => {
     t.context.database = database;
     t.context.logger = logger;
     t.context.queueObject = queueObject;
+    t.context.report = IssueReporter.prototype.report;
 });
 
 test.afterEach.always((t) => {
@@ -64,6 +73,7 @@ test.afterEach.always((t) => {
     t.context.database.unlock.restore();
     t.context.database.job.update.restore();
     t.context.database.job.get.restore();
+    t.context.report.restore();
 });
 
 test.serial(`if a job doesn't exists in database, it should report an error and unlock the key`, async (t) => {
@@ -156,6 +166,8 @@ test.serial(`if the job status is 'error', it should update the job in database 
     t.true(t.context.database.lock.calledOnce);
     t.true(t.context.database.unlock.calledOnce);
     t.true(t.context.database.job.update.called);
+    t.true(t.context.report.called);
+    t.is(t.context.report.args[0][0].errorType, 'crash');
     const dbJob: IJob = t.context.database.job.update.args[0][0];
 
     t.not(dbJob.status, JobStatus.error);
@@ -173,6 +185,8 @@ test.serial(`if the job status is 'finished' and all hints are processed, it sho
     t.true(t.context.database.lock.calledOnce);
     t.true(t.context.database.unlock.calledOnce);
     t.true(t.context.database.job.update.called);
+    t.true(t.context.report.called);
+    t.falsy(t.context.report.args[0][0].errorType);
 
     const dbJob: IJob = t.context.database.job.update.args[0][0];
 
@@ -185,7 +199,7 @@ test.serial(`if the job status is 'finished' and all hints are processed, it sho
 });
 
 test.serial(`if the job status is 'finished' and all hints are processed, it should update hints and send the status error if there is a previous error in database`, async (t) => {
-    t.context.job.error = [data.error.error];
+    t.context.job.error = data.error.error;
     sinon.stub(database.job, 'get').resolves(t.context.job);
 
     await sync.run();
