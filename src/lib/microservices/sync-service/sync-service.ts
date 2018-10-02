@@ -56,10 +56,10 @@ const isJobFinished = (job: IJob) => {
 const reportGithubIssues = async (job: IJob) => {
     try {
         const issueReporter = new IssueReporter();
-        const errors = job.error;
+        const errors = Array.isArray(job.error) ? job.error : [job.error];
 
         for (const error of errors) {
-            const errorMessage = error.message || error;
+            const errorMessage = JSON.stringify(error.message || error);
             const issueData: IssueData = {
                 configs: job.config,
                 errorMessage,

@@ -97,6 +97,24 @@ ${JSON.stringify(issueData.configs, null, 4)}
         return `scan:${scanNumber}`;
     }
 
+    private getEmoji(errorType: "crash" | "stderr" | "timeout") {
+        let result;
+
+        switch (errorType) {
+            case 'crash':
+                result = '💥';
+                break;
+            case 'timeout':
+                result = '⏰';
+                break;
+            default:
+                result = 'stderr';
+                break;
+        }
+
+        return result;
+    }
+
     private async openIssue(issueData: IssueData) {
         await this.octokit.issues.create(Object.assign(
             {},
@@ -107,7 +125,7 @@ ${JSON.stringify(issueData.configs, null, 4)}
                     this.getScanLabel(issueData.scan),
                     this.getErrorTypeLabel(issueData.errorType)
                 ],
-                title: `[${issueData.errorType}] ${issueData.url}`
+                title: `[${this.getEmoji(issueData.errorType)}] ${issueData.url}`
             }
         ));
     }

@@ -1,8 +1,11 @@
-import * as _ from 'lodash';
+import * as path from 'path';
 import { fork, ChildProcess } from 'child_process';
+
+import * as _ from 'lodash';
+import * as pkill from 'pkill';
 import { Problem, Severity } from 'hint/dist/src/lib/types';
 import normalizeHints from 'hint/dist/src/lib/config/normalize-hints';
-import * as path from 'path';
+
 
 import * as appInsight from '../../utils/appinsights';
 import { debug as d } from '../../utils/debug';
@@ -317,12 +320,28 @@ const sendErrorMessage = async (error, queue: Queue, job: IJob) => {
     await queue.sendMessage(job);
 };
 
+/**
+ * Close chrome in case of a "No inspectable targets" error
+ * is received.
+ */
+const closeChrome = () => {
+    return new Promise((resolve, reject) => {
+        pkill('chrome', (err) => {
+            if (err) {
+                return reject(err);
+            }
+
+            return resolve();
+        });
+    });
+};
+
 export const run = async () => {
     const queue: Queue = new Queue('webhint-jobs', queueConnectionString);
     const queueResults: Queue = new Queue('webhint-results', queueConnectionString);
     const webhintVersion: string = getWebhintVersion();
 
-    const listener = async (jobs: Array<IJob>) => {
+    const listener = async (jobs: Array<IJob>, noCheckChromeError: boolean = false) => {
         const start = Date.now();
         const job = jobs[0];
 
@@ -357,7 +376,23 @@ export const run = async () => {
                 name: 'run-worker',
                 value: Date.now() - start
             });
+
+            return null;
         } catch (err) {
+            if (err.message === 'No inspectable targets' && !noCheckChromeError) {
+                logger.log('Error: No inspectable detected. Trying to kill chrome...', moduleName);
+
+                try {
+                    await closeChrome();
+
+                    logger.log('Chrome closed', moduleName);
+                } catch (e) {
+                    logger.error(`Error closing chrome: ${e}`, moduleName);
+                }
+
+                return listener(jobs, true);
+            }
+
             logger.error(generateLog('Error processing Job', job), moduleName, err);
             appInsightClient.trackException({ exception: err });
             debug(err);
@@ -366,7 +401,7 @@ export const run = async () => {
 
             await sendErrorMessage(err, queueResults, job);
 
-            return;
+            return null;
         }
     };
 
