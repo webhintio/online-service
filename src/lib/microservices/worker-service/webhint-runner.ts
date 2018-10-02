@@ -39,10 +39,12 @@ process.once('uncaughtException', (err) => {
 });
 
 process.once('unhandledRejection', (reason) => {
-    console.log(reason);
+    const source = reason.error ? reason.error : reason;
+
+    console.log(source);
     // reason can not be an instance of Error, but its behavior with JSON.stringify is the same, returns {}
     // Creating a new Error we ensure that reason is going to be an instance of Error.
-    process.send(createErrorResult(new Error(reason)));
+    process.send(createErrorResult(new Error(source)));
     process.exit(1);
 });
 
