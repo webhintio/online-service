@@ -42,8 +42,6 @@ export interface IJob {
     config: Array<UserConfig>;
     /** Time in seconds the job has to complete the execution in webhint. */
     maxRunTime: number;
-    /** DEPRECATED */
-    rules: Array<Hint>;
     /** List of hints to run. */
     hints: Array<Hint>;
     /** Webhint version. */
