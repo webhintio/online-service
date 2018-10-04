@@ -9,7 +9,6 @@ export const JobSchema: Schema = new Schema({
     investigated: Boolean,
     maxRunTime: Number,
     queued: Date,
-    rules: [{}],
     started: Date,
     status: {},
     url: String,

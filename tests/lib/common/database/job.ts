@@ -47,7 +47,6 @@ const jobResult: Array<IJob> = [{
     hints: null,
     maxRunTime: 180,
     queued: new Date(),
-    rules: null,
     started: new Date(),
     status: JobStatus.pending,
     url: 'url',

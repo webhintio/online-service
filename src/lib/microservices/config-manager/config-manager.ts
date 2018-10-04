@@ -104,7 +104,7 @@ export const active = async (): Promise<IServiceConfig> => {
         jobCacheTime: currentConfig.jobCacheTime,
         jobRunTime: currentConfig.jobRunTime,
         name: currentConfig.name,
-        webhintConfigs: currentConfig.webhintConfigs.length > 0 ? currentConfig.webhintConfigs : currentConfig.sonarConfigs
+        webhintConfigs: currentConfig.webhintConfigs
     };
 
     return result;

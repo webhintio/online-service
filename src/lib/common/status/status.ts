@@ -132,7 +132,7 @@ const getHintsStatus = (jobs: Array<IJob>) => {
     const result: IStatusHints = new StatusHints();
 
     jobs.reduce((total, job) => {
-        const hints: Array<Hint> = job.hints.length > 0 ? job.hints : job.rules;
+        const hints: Array<Hint> = job.hints;
 
         hints.forEach((hint) => {
             let detail: IStatusHintDetail = total.hints[hint.name];

@@ -58,7 +58,6 @@ const createNewJob = async (url: string, configs: Array<UserConfig>, jobRunTime:
         id: databaseJob.id,
         maxRunTime: databaseJob.maxRunTime,
         queued: databaseJob.queued,
-        rules: databaseJob.rules,
         started: databaseJob.started,
         status: databaseJob.status,
         url: databaseJob.url,

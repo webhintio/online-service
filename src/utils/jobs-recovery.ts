@@ -33,7 +33,6 @@ const parseJob = (job: IJob) => {
         messagesInQueue: job.messagesInQueue,
         partInfo: job.partInfo,
         queued: job.queued,
-        rules: job.rules,
         started: job.started,
         status: job.status,
         url: job.url,
