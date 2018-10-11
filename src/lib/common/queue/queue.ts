@@ -141,7 +141,11 @@ export class Queue {
         let messages;
 
         try {
+            const x = Date.now();
+
             messages = await this.getMessages();
+
+            logger.log(`Time to get ${messages.length} messages: ${(Date.now() - x) / 1000} seconds`);
         } catch (err) {
             messages = null;
 
