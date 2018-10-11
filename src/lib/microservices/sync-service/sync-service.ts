@@ -13,7 +13,7 @@ import * as appInsight from '../../utils/appinsights';
 import { IssueData } from '../../types/issuedata';
 
 const moduleName: string = 'Sync Service';
-const { database: dbConnectionString, queue: queueConnectionString } = process.env; // eslint-disable-line no-process-env
+const { database: dbConnectionString, queue: queueConnectionString, messagestoget } = process.env; // eslint-disable-line no-process-env
 const appInsightClient = appInsight.getClient();
 
 /**
@@ -71,7 +71,8 @@ const reportGithubIssues = async (job: IJob) => {
             await issueReporter.report(issueData);
         }
     } catch (err) {
-        console.error(err);
+        logger.error('Error reporting issue:', moduleName);
+        logger.error(err, moduleName);
     }
 };
 
@@ -100,7 +101,8 @@ const reportGithubTimeoutIssues = async (job: IJob) => {
             await issueReporter.report(issueData);
         }
     } catch (err) {
-        console.error(err);
+        logger.error('Error reporting to GitHub', moduleName);
+        logger.error(err, moduleName);
     }
 };
 
@@ -125,8 +127,76 @@ const closeGithubIssues = async (dbJob: IJobModel) => {
             await issueReporter.report(issueData);
         }
     } catch (err) {
-        console.error(err);
+        logger.error('Error closing issue on GitHub', moduleName);
+        logger.error(err, moduleName);
     }
+};
+
+const syncJobs = async (id: string, jobs: Array<IJob>) => {
+    const lock = await database.lock(id);
+    const dbJob: IJobModel = await database.job.get(id);
+
+    if (!dbJob) {
+        logger.error(`Job ${id} not found in database`, moduleName);
+        await database.unlock(lock);
+
+        appInsightClient.trackException({ exception: new Error(`Job ${id} not found in database`) });
+
+        return; // eslint-disable-line no-continue
+    }
+
+    for (const job of jobs) {
+        logger.log(generateLog(`Synchronizing Job`, job, { showHint: true }), moduleName);
+
+        if (job.status === JobStatus.started) {
+            // When a job is split we receive more than one messages for the status `started`
+            // but we only want to store in the database the first one.
+            if (dbJob.status !== JobStatus.started) {
+                dbJob.webhintVersion = job.webhintVersion;
+            }
+
+            if (!dbJob.started || dbJob.started > new Date(job.started)) {
+                dbJob.started = job.started;
+            }
+
+            // double check just in case the started message is not the first one we are processing.
+            if (dbJob.status === JobStatus.pending) {
+                dbJob.status = job.status;
+            }
+        } else {
+            setHints(dbJob, job);
+
+            if (job.status === JobStatus.error) {
+                if (!dbJob.error) {
+                    dbJob.error = [];
+                }
+                dbJob.error.push(job.error);
+                await reportGithubIssues(job);
+            } else {
+                await reportGithubTimeoutIssues(job);
+            }
+
+            if (isJobFinished(dbJob)) {
+                dbJob.status = dbJob.error && dbJob.error.length > 0 ? JobStatus.error : job.status;
+
+                if (dbJob.status === JobStatus.finished) {
+                    await closeGithubIssues(dbJob);
+                }
+            }
+
+            if (!dbJob.finished || dbJob.finished < new Date(job.finished)) {
+                dbJob.finished = job.finished;
+            }
+        }
+
+        logger.log(generateLog(`Synchronized Job`, job, { showHint: true }), moduleName);
+    }
+
+    await database.job.update(dbJob);
+
+    logger.log(`Job ${id} updated in database`);
+
+    await database.unlock(lock);
 };
 
 /**
@@ -144,75 +214,20 @@ export const run = async () => {
 
             logger.log(`Synchronizing ${jobsArray.length} jobs messages in ${Object.entries(groups).length} groups`, moduleName);
 
+            const promises: Array<Promise<void>> = [];
+
+            const x = Date.now();
+
             for (const [id, jobs] of Object.entries(groups)) {
-                const lock = await database.lock(id);
-                const dbJob: IJobModel = await database.job.get(id);
-
-                if (!dbJob) {
-                    logger.error(`Job ${id} not found in database`, moduleName);
-                    await database.unlock(lock);
-
-                    appInsightClient.trackException({ exception: new Error(`Job ${id} not found in database`) });
-
-                    continue; // eslint-disable-line no-continue
-                }
-
-                for (const job of jobs) {
-                    logger.log(generateLog(`Synchronizing Job`, job, { showHint: true }), moduleName);
-
-                    if (job.status === JobStatus.started) {
-                        // When a job is split we receive more than one messages for the status `started`
-                        // but we only want to store in the database the first one.
-                        if (dbJob.status !== JobStatus.started) {
-                            dbJob.webhintVersion = job.webhintVersion;
-                        }
-
-                        if (!dbJob.started || dbJob.started > new Date(job.started)) {
-                            dbJob.started = job.started;
-                        }
-
-                        // double check just in case the started message is not the first one we are processing.
-                        if (dbJob.status === JobStatus.pending) {
-                            dbJob.status = job.status;
-                        }
-                    } else {
-                        setHints(dbJob, job);
-
-                        if (job.status === JobStatus.error) {
-                            if (!dbJob.error) {
-                                dbJob.error = [];
-                            }
-                            dbJob.error.push(job.error);
-                            await reportGithubIssues(job);
-                        } else {
-                            await reportGithubTimeoutIssues(job);
-                        }
-
-                        if (isJobFinished(dbJob)) {
-                            dbJob.status = dbJob.error && dbJob.error.length > 0 ? JobStatus.error : job.status;
-
-                            if (dbJob.status === JobStatus.finished) {
-                                await closeGithubIssues(dbJob);
-                            }
-                        }
-
-                        if (!dbJob.finished || dbJob.finished < new Date(job.finished)) {
-                            dbJob.finished = job.finished;
-                        }
-                    }
-
-                    logger.log(generateLog(`Synchronized Job`, job, { showHint: true }), moduleName);
-                }
-
-                await database.job.update(dbJob);
-
-                logger.log(`Job ${id} updated in database`);
-
-                await database.unlock(lock);
+                promises.push(syncJobs(id, jobs));
             }
 
+            await Promise.all(promises);
+
+            logger.log(`Time to sync ${jobsArray.length} jobs in ${Object.entries(groups).length} groups: ${(Date.now() - x) / 1000} seconds`);
+
             appInsightClient.trackMetric({
-                name: 'run-webhint',
+                name: 'run-webhint-sync',
                 value: Date.now() - start
             });
         } catch (err) {
@@ -223,7 +238,7 @@ export const run = async () => {
     };
 
     try {
-        await queueResults.listen(listener, { messagesToGet: 50 });
+        await queueResults.listen(listener, { messagesToGet: messagestoget || 50 });
         await database.disconnect();
         logger.log('Service finished\nExiting with status 0', moduleName);
 

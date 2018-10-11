@@ -36,14 +36,16 @@ const createNewJob = async (url: string, configs: Array<UserConfig>, jobRunTime:
 
     for (const config of configs) {
         const normalizedHints = normalizeHints(config.hints);
-        const partialHints = _.map(normalizedHints, (hint: string, key: string) => {
-            return {
+        const partialHints: Array<Hint> = [];
+
+        for (const [key] of Object.entries(normalizedHints)) {
+            partialHints.push({
                 category: loadHint(key, []).meta.docs.category,
                 messages: [],
                 name: key,
                 status: HintStatus.pending
-            };
-        });
+            });
+        }
 
         hints = hints.concat(partialHints);
     }
