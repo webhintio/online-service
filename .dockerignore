@@ -11,3 +11,4 @@ compose/
 scripts/
 Dockerfile.*
 .gitattributes
+package-lock.json
