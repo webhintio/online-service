@@ -80,14 +80,12 @@ const reportGithubIssues = async (job: IJob) => {
 
 const reportGithubTimeoutIssues = async (job: IJob) => {
     try {
-        const config = job.config[0];
-        const hints = Object.keys(config.hints);
-        const hint = job.hints.find((h) => {
-            return h.name === hints[0];
-        });
-
+        /*
+         * In case of timeout, all the rules will have
+         * the same error.
+         */
+        const hint = job.hints[0];
         const expectedMessage = `webhint didn't return the result fast enough`;
-
         const message = hint.messages && hint.messages[0] && hint.messages[0].message;
 
         if (message && message.includes(expectedMessage)) {
@@ -172,6 +170,13 @@ export const run = async () => {
             logger.error(`Job ${id} not found in database`, moduleName);
             await database.unlock(lock);
 
+            /*
+             * Delete messages from the queue
+             */
+            for (const message of serviceBusMessages) {
+                await queueResults.deleteMessage(message);
+            }
+
             appInsightClient.trackException({ exception: new Error(`Job ${id} not found in database`) });
 
             return; // eslint-disable-line no-continue
@@ -232,6 +237,9 @@ export const run = async () => {
 
         logger.log(`Job ${id} updated in database`);
 
+        /*
+         * Delete messages from the queue
+         */
         for (const message of serviceBusMessages) {
             await queueResults.deleteMessage(message);
         }
