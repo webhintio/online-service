@@ -7,7 +7,7 @@ import * as path from 'path';
 import * as appInsight from '../../utils/appinsights';
 import { debug as d } from '../../utils/debug';
 import { Queue } from '../../common/queue/queue';
-import { IJob, JobResult, Hint } from '../../types';
+import { IJob, JobResult, Hint, ServiceBusMessage } from '../../types';
 import { JobStatus, HintStatus } from '../../enums/status';
 import * as logger from '../../utils/logging';
 import { generateLog } from '../../utils/misc';
@@ -322,9 +322,9 @@ export const run = async () => {
     const queueResults: Queue = new Queue('sonar-results', queueConnectionString);
     const webhintVersion: string = getWebhintVersion();
 
-    const listener = async (jobs: Array<IJob>) => {
+    const listener = async (messages: Array<ServiceBusMessage>) => {
         const start = Date.now();
-        const job = jobs[0];
+        const job = messages[0].data;
 
         logger.log(generateLog('Processing Job', job), moduleName);
         const normalizedHints = normalizeHints(job.config[0].hints);
