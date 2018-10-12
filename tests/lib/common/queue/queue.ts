@@ -8,7 +8,8 @@ const azureSBService = {
     deleteMessage() { },
     getQueue() { },
     receiveQueueMessage() { },
-    sendQueueMessage() { }
+    sendQueueMessage() { },
+    unlockMessage() { }
 };
 
 const misc = { delay() { } };
@@ -261,6 +262,35 @@ test.serial('if listen is call with the option pooling defined, it should use it
 
     t.is(t.context.misc.delay.args[0][0], 3);
     t.true(t.context.azureSBService.deleteMessage.calledOnce);
+
+    t.context.azureSBService.receiveQueueMessage.restore();
+    t.context.azureSBService.deleteMessage.restore();
+});
+
+test.serial(`if listen is call with the autoDeleteMessages to false, it shouldn't delete messages`, async (t) => {
+    const message = { id: 'id', url: 'url' };
+
+    sinon.stub(azureSBService, 'receiveQueueMessage')
+        .onFirstCall()
+        .callsFake((param1, param2, callback) => {
+            callback('No messages to receive');
+        })
+        .onSecondCall()
+        .callsFake((param1, param2, callback) => {
+            callback(null, { body: JSON.stringify(message) });
+        });
+    sinon.spy(azureSBService, 'deleteMessage');
+
+    t.context.azureSBService = azureSBService;
+
+    const queueName = 'queueName';
+    const queue = new Queue(queueName, 'connectionString');
+
+    await queue.listen(() => {
+        queue.stopListener();
+    }, { autoDeleteMessages: false });
+
+    t.false(t.context.azureSBService.deleteMessage.called);
 
     t.context.azureSBService.receiveQueueMessage.restore();
     t.context.azureSBService.deleteMessage.restore();

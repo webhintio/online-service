@@ -215,6 +215,86 @@ test.serial('updateStatuses should calculate the averages', async (t) => {
     t.is(args.average.finish, 90000);
 });
 
+test.serial('updateStatuses should calculate the averages if some time is missed', async (t) => {
+    const recentDate = moment()
+        .subtract(16, 'm')
+        .startOf('minute');
+
+    sinon.stub(database.status, 'getMostRecent').resolves({ date: recentDate });
+
+    const data = getValidTestData();
+
+    data[1].started = null;
+
+    sinon.stub(database.job, 'getByDate').resolves(data);
+
+    await status.updateStatuses();
+
+    t.is(t.context.database.job.getByDate.callCount, 3);
+    t.true(t.context.database.status.add.calledOnce);
+    t.true(t.context.database.status.update.calledOnce);
+
+    const args = t.context.database.status.add.args[0][0];
+
+    t.is(args.average.start, 3000);
+    t.is(args.average.finish, 90000);
+});
+
+test.serial('updateStatuses should calculate the averages if some times are equal', async (t) => {
+    const recentDate = moment()
+        .subtract(16, 'm')
+        .startOf('minute');
+
+    sinon.stub(database.status, 'getMostRecent').resolves({ date: recentDate });
+
+    const data = getValidTestData();
+
+    data[1].queued = data[1].started;
+
+    sinon.stub(database.job, 'getByDate').resolves(data);
+
+    await status.updateStatuses();
+
+    t.is(t.context.database.job.getByDate.callCount, 3);
+    t.true(t.context.database.status.add.calledOnce);
+    t.true(t.context.database.status.update.calledOnce);
+
+    const args = t.context.database.status.add.args[0][0];
+
+    t.is(args.average.start, 3000);
+    t.is(args.average.finish, 90000);
+});
+
+test.serial('updateStatuses should calculate the averages if all times are equal', async (t) => {
+    const recentDate = moment()
+        .subtract(16, 'm')
+        .startOf('minute');
+
+    sinon.stub(database.status, 'getMostRecent').resolves({ date: recentDate });
+
+    const data = getValidTestData();
+
+    data[0].started = data[0].queued;
+    data[0].finished = data[0].queued;
+    data[1].started = data[1].queued;
+    data[1].finished = data[1].queued;
+    data[2].started = data[2].queued;
+    data[2].finished = data[2].queued;
+
+    sinon.stub(database.job, 'getByDate').resolves(data);
+
+    await status.updateStatuses();
+
+    t.is(t.context.database.job.getByDate.callCount, 3);
+    t.true(t.context.database.status.add.calledOnce);
+    t.true(t.context.database.status.update.calledOnce);
+
+    const args = t.context.database.status.add.args[0][0];
+
+    t.is(args.average.start, Number.MAX_SAFE_INTEGER);
+    t.is(args.average.finish, Number.MAX_SAFE_INTEGER);
+});
+
 test.serial('updateStatuses should calculate hints status', async (t) => {
     const recentDate = moment()
         .subtract(16, 'm')
