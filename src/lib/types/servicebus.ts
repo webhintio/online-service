@@ -1,5 +1,12 @@
-export type ServiceBusOptions = {
-    DefaultMessageTimeToLive: string;
-    LockDuration: string;
-    MaxSizeInMegabytes: string;
+import { IJob } from './job';
+
+export type ServiceBusListenerOptions = {
+    autoDeleteMessages?: boolean;
+    messagesToGet?: number;
+    pooling?: number;
+};
+
+export type ServiceBusMessage = {
+    [key: string]: any;
+    data: IJob;
 };
