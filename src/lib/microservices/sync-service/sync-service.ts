@@ -158,8 +158,9 @@ export const run = async () => {
 
         if (!lock) {
             /*
-             * If we are not able to lock the job in the database.
-             * Keep the item lock in the queue until the timeout (in the queue) expire.
+             * If we are not able to lock the job in the database, keep
+             * the item locked in the queue until the timeout (in the queue)
+             * expire.
              */
 
             return;
@@ -250,7 +251,7 @@ export const run = async () => {
 
             const promises: Array<Promise<void>> = [];
 
-            const x = Date.now();
+            const syncJobsStart = Date.now();
 
             for (const [id, serviceBusMessages] of Object.entries(groups)) {
                 promises.push(syncJobs(id, serviceBusMessages));
@@ -258,7 +259,7 @@ export const run = async () => {
 
             await Promise.all(promises);
 
-            logger.log(`Time to sync ${messages.length} jobs in ${Object.entries(groups).length} groups: ${(Date.now() - x) / 1000} seconds`, moduleName);
+            logger.log(`Time to sync ${messages.length} jobs in ${Object.entries(groups).length} groups: ${(Date.now() - syncJobsStart) / 1000} seconds`, moduleName);
 
             appInsightClient.trackMetric({
                 name: 'run-webhint-sync',

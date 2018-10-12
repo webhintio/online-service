@@ -46,7 +46,7 @@ test.beforeEach((t) => {
     t.context.childProcess = childProcess;
 });
 
-test.afterEach((t) => {
+test.afterEach.always((t) => {
     t.context.queueObject.Queue.restore();
     t.context.resultsQueue.sendMessage.restore();
 
@@ -111,7 +111,7 @@ test.serial(`If there is no problem running webhint, it should send a couple of 
 
     await worker.run();
 
-    const promise = t.context.jobsQueue.listen.args[0][0]([job]);
+    const promise = t.context.jobsQueue.listen.args[0][0]([{ data: job }]);
 
     // Wait a little bit to ensure that 'runWebhint' was launched
     await delay(500);
@@ -144,7 +144,7 @@ test.serial(`If there is a problem running webhint, it should send a couple of m
 
     await worker.run();
 
-    const promise = t.context.jobsQueue.listen.args[0][0]([job]);
+    const promise = t.context.jobsQueue.listen.args[0][0]([{ data: job }]);
 
     // Wait a little bit to ensure that 'runWebhint' was launched
     await delay(500);
@@ -200,7 +200,7 @@ test.serial(`If there is a problem running webhint, the job sent to the queue ha
 
     await worker.run();
 
-    const promise = t.context.jobsQueue.listen.args[0][0]([job]);
+    const promise = t.context.jobsQueue.listen.args[0][0]([{ data: job }]);
 
     // Wait a little bit to ensure that 'runWebhint' was launched
     await delay(500);
@@ -272,7 +272,7 @@ test.serial(`If a message is too big for Service Bus, we should send the hint wi
 
     await worker.run();
 
-    const promise = t.context.jobsQueue.listen.args[0][0]([job]);
+    const promise = t.context.jobsQueue.listen.args[0][0]([{ data: job }]);
 
     // Wait a little bit to ensure that 'runWebhint' was launched
     await delay(500);
@@ -335,7 +335,7 @@ test.serial(`If there is no problem running webhint, it should send to the queue
 
     await worker.run();
 
-    const promise = t.context.jobsQueue.listen.args[0][0]([job]);
+    const promise = t.context.jobsQueue.listen.args[0][0]([{ data: job }]);
 
     // Wait a little bit to ensure that 'runWebhint' was launched
     await delay(500);
@@ -399,7 +399,7 @@ test.serial(`If there is no problem running webhint, it should send to the queue
 
     await worker.run();
 
-    const promise = t.context.jobsQueue.listen.args[0][0]([job]);
+    const promise = t.context.jobsQueue.listen.args[0][0]([{ data: job }]);
 
     // Wait a little bit to ensure that 'runWebhint' was launched
     await delay(500);
@@ -457,7 +457,7 @@ test.serial(`If there is no problem running webhint, it should send a "Too many 
 
     await worker.run();
 
-    const promise = t.context.jobsQueue.listen.args[0][0]([job]);
+    const promise = t.context.jobsQueue.listen.args[0][0]([{ data: job }]);
 
     // Wait a little bit to ensure that 'runWebhint' was launched
     await delay(500);
@@ -498,7 +498,7 @@ test.serial(`If webhint doesn't finish before the job.maxRunTime, it should repo
     commonStub(emitter);
 
     await worker.run();
-    await t.context.jobsQueue.listen.args[0][0]([job]);
+    await t.context.jobsQueue.listen.args[0][0]([{ data: job }]);
 
     t.true(t.context.resultsQueue.sendMessage.calledTwice);
 

@@ -145,13 +145,12 @@ export class Queue {
 
     private async checkQueue() {
         let messages;
+        const startTime = Date.now();
 
         try {
-            const x = Date.now();
+
 
             messages = await this.getMessages();
-
-            logger.log(`Time to get ${messages.length} messages from queue: ${(Date.now() - x) / 1000} seconds`, moduleName);
         } catch (err) {
             messages = null;
 
@@ -167,6 +166,8 @@ export class Queue {
         if (!messages || messages.length === 0) {
             return null;
         }
+
+        logger.log(`Time to get ${messages.length} messages from queue: ${(Date.now() - startTime) / 1000} seconds`, moduleName);
 
         try {
             await this.handler(messages);

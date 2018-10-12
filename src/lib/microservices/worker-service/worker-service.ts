@@ -276,13 +276,32 @@ const sendResults = async (queue: Queue, job: IJob, normalizedHints) => {
     }
 };
 
+const getConsistentTime = async (previousTime: Date) => {
+    let result = await getTime();
+
+    if (!result) {
+        const previousDate = new Date(previousTime);
+
+        result = new Date();
+
+        /*
+         * Ensure times are consistent.
+         */
+        if (result < previousDate) {
+            result = previousDate;
+        }
+    }
+
+    return result;
+};
+
 /**
  * Send the job to the queue with the status `started`
  * @param {Queue} queue - Queue to send the message.
  * @param {IJob} job - Job to send in the message.
  */
 const sendStartedMessage = async (queue: Queue, job: IJob) => {
-    job.started = await getTime();
+    job.started = await getConsistentTime(job.queued);
     job.status = JobStatus.started;
 
     debug(`Changing job status to ${job.status}`);
@@ -311,7 +330,7 @@ const sendErrorMessage = async (error, queue: Queue, job: IJob) => {
     }
 
     job.status = isTimeOutError ? JobStatus.finished : JobStatus.error;
-    job.finished = await getTime();
+    job.finished = await getConsistentTime(job.started);
 
     debug(`Sending job result with status: ${job.status}`);
     await queue.sendMessage(job);
@@ -344,7 +363,7 @@ export const run = async () => {
 
             parseResult(job, result, normalizedHints);
 
-            job.finished = await getTime();
+            job.finished = await getConsistentTime(job.started);
             job.status = JobStatus.finished;
 
             debug(`Sending job result with status: ${job.status}`);
