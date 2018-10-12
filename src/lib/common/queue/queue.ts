@@ -2,10 +2,10 @@ import { promisify } from 'util';
 
 import * as azure from 'azure-sb';
 
-import { ServiceBusOptions } from '../../types';
 import { debug as d } from '../../utils/debug';
 import * as logger from '../../utils/logging';
 import { delay } from '../../utils/misc';
+import { ServiceBusListenerOptions, ServiceBusMessage } from '../../types'; // eslint-disable-line no-unused-vars
 
 const moduleName: string = 'Queue';
 const debug: debug.IDebugger = d(__filename);
@@ -15,24 +15,21 @@ export class Queue {
     private serviceBus;
     /** Queue name. */
     private name: string;
-    /** Queue options. */
-    private options: ServiceBusOptions;
     /** If the listener has to stop. */
     private stop: boolean;
     /** Handler for a listener. */
     private handler: Function;
     /** Pooling time for the listener. */
     private pooling: number = 1000;
-    /** Timeout id for the listener scheduler. */
-    private timeoutId: number;
-    /** Number of messages to get by the listener */
+    /** Number of messages to get by the listener. */
     private messagesToGet: number = 1;
+    /** Auto delete messages in queue after listener process it. */
+    private autoDeleteMessages: boolean = true;
 
     /**
      * @constructor
      * @param {string} name - Queue name.
      * @param {string} connectionString - Connection string to ServiceBus.
-     * @param {ServiceBusOptions} options - Options.
      */
     public constructor(name: string, connectionString: string) {
         this.name = name;
@@ -41,6 +38,7 @@ export class Queue {
         this.serviceBus.receiveQueueMessageAsync = promisify(this.serviceBus.receiveQueueMessage);
         this.serviceBus.getQueueAsync = promisify(this.serviceBus.getQueue);
         this.serviceBus.deleteMessageAsync = promisify(this.serviceBus.deleteMessage);
+        this.serviceBus.unlockMessageAsync = promisify(this.serviceBus.unlockMessage);
     }
 
     private retry(action: Function, errMessage: string) {
@@ -111,6 +109,14 @@ export class Queue {
         }
     }
 
+    public async unlockMessage(message) {
+        try {
+            await this.serviceBus.unlockMessageAsync(message);
+        } catch (err) {
+            logger.error('Error unlocking message', moduleName, err);
+        }
+    }
+
     public getMessagesCount(): Promise<number> {
         return this.retry(async () => {
             const queue = await this.serviceBus.getQueueAsync(this.name);
@@ -145,7 +151,7 @@ export class Queue {
 
             messages = await this.getMessages();
 
-            logger.log(`Time to get ${messages.length} messages: ${(Date.now() - x) / 1000} seconds`);
+            logger.log(`Time to get ${messages.length} messages from queue: ${(Date.now() - x) / 1000} seconds`, moduleName);
         } catch (err) {
             messages = null;
 
@@ -163,13 +169,13 @@ export class Queue {
         }
 
         try {
-            await this.handler(messages.map((message) => {
-                return message.data;
-            }));
+            await this.handler(messages);
 
             // Remove the message from the queue when the handler finishes.
-            for (const message of messages) {
-                await this.deleteMessage(message);
+            if (this.autoDeleteMessages) {
+                for (const message of messages) {
+                    await this.deleteMessage(message);
+                }
             }
 
             return 0;
@@ -180,7 +186,7 @@ export class Queue {
         }
     }
 
-    public async listen(handler: (jobs: Array<any>) => any, options?): Promise<void> {
+    public async listen(handler: (messages: Array<ServiceBusMessage>) => any, options?: ServiceBusListenerOptions): Promise<void> {
         if (!handler) {
             throw new Error('Listen needs a handler to work');
         }
@@ -192,6 +198,7 @@ export class Queue {
         if (options) {
             this.pooling = options.pooling || this.pooling;
             this.messagesToGet = options.messagesToGet || this.messagesToGet;
+            this.autoDeleteMessages = typeof options.autoDeleteMessages !== 'undefined' ? options.autoDeleteMessages : true;
         }
 
         this.stop = false;

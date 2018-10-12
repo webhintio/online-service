@@ -10,7 +10,7 @@ import normalizeHints from 'hint/dist/src/lib/config/normalize-hints';
 import * as appInsight from '../../utils/appinsights';
 import { debug as d } from '../../utils/debug';
 import { Queue } from '../../common/queue/queue';
-import { IJob, JobResult, Hint } from '../../types';
+import { IJob, JobResult, Hint, ServiceBusMessage } from '../../types';
 import { JobStatus, HintStatus } from '../../enums/status';
 import * as logger from '../../utils/logging';
 import { generateLog } from '../../utils/misc';
@@ -341,9 +341,9 @@ export const run = async () => {
     const queueResults: Queue = new Queue('webhint-results', queueConnectionString);
     const webhintVersion: string = getWebhintVersion();
 
-    const listener = async (jobs: Array<IJob>, noCheckChromeError: boolean = false) => {
+    const listener = async (messages: Array<ServiceBusMessage>, noCheckChromeError: boolean = false) => {
         const start = Date.now();
-        const job = jobs[0];
+        const job = messages[0].data;
 
         logger.log(generateLog('Processing Job', job), moduleName);
         const normalizedHints = normalizeHints(job.config[0].hints);
@@ -390,7 +390,7 @@ export const run = async () => {
                     logger.error(`Error closing chrome: ${e}`, moduleName);
                 }
 
-                return listener(jobs, true);
+                return listener(messages, true);
             }
 
             logger.error(generateLog('Error processing Job', job), moduleName, err);
