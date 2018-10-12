@@ -1,4 +1,5 @@
 import NtpTimeSync from 'ntp-time-sync';
+import * as tri from 'tri';
 
 const options = {
     servers: [
@@ -13,5 +14,18 @@ const options = {
 const timeSync = NtpTimeSync.getInstance(options);
 
 export const getTime = async (): Promise<Date> => {
-    return (await timeSync.getTime()).now;
+    let time;
+
+    try {
+        const timeObject = await tri(timeSync.getTime.bind(timeSync), {
+            delay: 500,
+            maxAttempts: 10
+        });
+
+        time = timeObject.now;
+    } catch (err) {
+        time = null;
+    }
+
+    return time;
 };

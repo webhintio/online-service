@@ -83,7 +83,7 @@ const avg = (jobs: Array<IJob>, fieldEnd: string, fieldStart: string): number =>
         return null;
     }
 
-    const acc = jobs.reduce((total: number, job: IJob) => {
+    const result = jobs.reduce((total: { acc: number, length: number }, job: IJob) => {
         let field;
 
         if (!job[fieldEnd]) {
@@ -94,12 +94,42 @@ const avg = (jobs: Array<IJob>, fieldEnd: string, fieldStart: string): number =>
 
         if (field) {
             console.log(`Field: ${field} doesn't exists in job ${job.id}`);
+
+            /*
+             * If we are missing any field, ignore the value.
+             */
+            total.length--;
+
+            return total;
         }
 
-        return total + (job[fieldEnd].getTime() - job[fieldStart].getTime());
-    }, 0);
+        const delta = job[fieldEnd].getTime() - job[fieldStart].getTime();
 
-    return acc / jobs.length;
+        if (delta === 0) {
+            /*
+             * If the time difference is 0, ignore the value.
+             * This should happen only when there was an error
+             * with the time service, or when there was an error
+             * sending messages to the queue for a new job.
+             */
+            total.length--;
+
+            return total;
+        }
+
+        total.acc += delta;
+
+        return total;
+    }, {
+        acc: 0,
+        length: jobs.length
+    });
+
+    if (result.length === 0) {
+        return Number.MAX_SAFE_INTEGER;
+    }
+
+    return result.acc / result.length;
 };
 
 /**

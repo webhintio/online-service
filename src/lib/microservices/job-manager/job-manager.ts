@@ -204,7 +204,24 @@ export const startJob = async (data: RequestData): Promise<IJob> => {
             const dbJob = await database.job.get(job.id);
 
             dbJob.status = JobStatus.error;
-            dbJob.finished = await getTime();
+
+            let finished = await getTime();
+
+            if (!finished) {
+                finished = new Date();
+                const queued = new Date(dbJob.queued);
+
+                /*
+                 * Ensure times are consistent.
+                 */
+                if (finished < new Date(dbJob.queued)) {
+                    finished = queued;
+                }
+            }
+
+            dbJob.started = finished;
+            dbJob.finished = finished;
+
             if (err instanceof Error) {
                 dbJob.error = JSON.stringify({
                     message: err.message,

@@ -54,7 +54,7 @@ export const get = async (id: string): Promise<IJobModel> => {
 export const getUnfinished = async (): Promise<Array<IJobModel>> => {
     validateConnection();
     debug(`Getting unfinished jobs`);
-    const query = Job.find({$and: [{ $nor: [{ status: JobStatus.finished }, { status: JobStatus.error }] }, { queued: { $lt: moment().subtract(1, 'day') } }]});
+    const query = Job.find({ $and: [{ $nor: [{ status: JobStatus.finished }, { status: JobStatus.error }] }, { queued: { $lt: moment().subtract(1, 'day') } }] });
 
     const jobs: Array<IJobModel> = await query.exec();
 
@@ -75,12 +75,22 @@ export const add = async (url: string, status: JobStatus, hints: Array<Hint>, co
 
     debug(`Creating new job for url: ${url}`);
 
+    let queued = await getTime();
+
+    /*
+     * If ntp service has some problem, use the current
+     * date in the machine.
+     */
+    if (!queued) {
+        queued = new Date();
+    }
+
     const job = new Job({
         config,
         hints,
         id: uuid(),
         maxRunTime: jobRunTime,
-        queued: await getTime(),
+        queued,
         status,
         url
     });
