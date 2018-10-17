@@ -1,0 +1,233 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker-service
+spec:
+  selector:
+    matchLabels:
+      app: worker-service
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5
+  template:
+    metadata:
+      labels:
+        app: worker-service
+    spec:
+      containers:
+      - name: worker-service
+        image: yourrepository/worker-service:version
+        env:
+        - name: CLOUDINARY_URL
+          value: "YourCloudinaryUrl"
+        - name: queue
+          value: "YourAzureServiceBusConnectionString"
+        - name: APP_INSIGHTS_KEY
+          value: "YourAppInsightKey"
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: config-manager-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: config-manager
+  ports:
+  - port: 81
+    nodePort: 30002
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: config-manager
+spec:
+  selector:
+    matchLabels:
+      app: config-manager
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5
+  template:
+    metadata:
+      labels:
+        app: config-manager
+    spec:
+      containers:
+      - name: config-manager
+        image: yourrepository/config-manager:version
+        env:
+        - name: port
+          value: "80"
+        - name: database
+          value: "YourDatabaseConnectionString"
+        - name: sessionSecret
+          value: "YourSessionSecret"
+        - name: callbackURL
+          value: "YourCallbackUrl"
+        - name: githubId
+          value: "YourGithubClientId"
+        - name: githubSecret
+          value: "YourGithubSecret"
+        ports:
+        - containerPort: 81
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: job-manager-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: job-manager
+  ports:
+  - port: 80
+    nodePort: 30001
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: job-manager
+spec:
+  selector:
+    matchLabels:
+      app: job-manager
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5
+  template:
+    metadata:
+      labels:
+        app: job-manager
+    spec:
+      containers:
+      - name: job-manager
+        image: yourrepository/job-manager:version
+        env:
+        - name: port
+          value: "80"
+        - name: database
+          value: "YourDatabaseConnectionString"
+        - name: queue
+          value: "YourAzureServiceBusConnectionString"
+        - name: auth
+          value: "YourAuthCode"
+        ports:
+        - containerPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sync-service
+spec:
+  selector:
+    matchLabels:
+      app: sync-service
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5
+  template:
+    metadata:
+      labels:
+        app: sync-service
+    spec:
+      containers:
+      - name: sync-service
+        image: yourrepository/sync-service:version
+        env:
+        - name: database
+          value: "YourDatabaseConnectionString"
+        - name: queue
+          value: "YourAzureServiceBusConnectionString"
+        - name: GITHUB_OWNER
+          value: "YourGithubUserName"
+        - name: GITHUB_REPO
+          value: "YourGithubRepository"
+        - name: GITHUB_API_TOKEN
+          value: "YourGithubApiToken"
+        - name: APP_INSIGHTS_KEY
+          value: "YourAppInsightKey"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: status-service
+spec:
+  selector:
+    matchLabels:
+      app: status-service
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5
+  template:
+    metadata:
+      labels:
+        app: status-service
+    spec:
+      containers:
+      - name: status-service
+        image: yourrepository/status-service:version
+        env:
+        - name: database
+          value: "YourDatabaseConnectionString"
+        - name: queue
+          value: "YourAzureServiceBusConnectionString"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backup-service
+spec:
+  selector:
+    matchLabels:
+      app: backup-service
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5
+  template:
+    metadata:
+      labels:
+        app: backup-service
+    spec:
+      containers:
+      - name: backup-service
+        image: yourrepository/status-service:version
+        env:
+        - name: database
+          value: "YourDatabaseConnectionString"
+        - name: queue
+          value: "YourAzureServiceBusConnectionString"
+        - name: adminUser
+          value: "YourAdminUser"
+        - name: adminPassword
+          value: "YourAdminPassword"
+        - name: storageAccount
+          value: "YourStorageAccountName"
+        - name: storageAccessKey
+          value: "YourStorageAccountKey"
+        - name: emailApikey
+          value: "YourEmailApiKey"
+        - name: emailFrom
+          value: "YourEmailAccount"
+        - name: emailUrl
+          value: "YourEmailUrl"
+        - name: authDatabase
+          value: "AuthorizationDatabase"
