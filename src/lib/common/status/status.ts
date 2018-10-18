@@ -84,6 +84,18 @@ const avg = (jobs: Array<IJob>, fieldEnd: string, fieldStart: string): number =>
     }
 
     const acc = jobs.reduce((total: number, job: IJob) => {
+        let field;
+
+        if (!job[fieldEnd]) {
+            field = fieldEnd;
+        } else if (!job[fieldStart]) {
+            field = fieldStart;
+        }
+
+        if (field) {
+            console.log(`Field: ${field} doesn't exists in job ${job.id}`);
+        }
+
         return total + (job[fieldEnd].getTime() - job[fieldStart].getTime());
     }, 0);
 
