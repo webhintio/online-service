@@ -6,3 +6,5 @@ coverage/
 docker-compose.override.yml
 nginx-*.yml
 online-service-*.yml
+kubernetes-*.yaml
+az-init.sh
