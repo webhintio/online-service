@@ -73,6 +73,8 @@ const getEmitter = () => {
 
     (emitter as any).send = () => { };
     (emitter as any).kill = () => { };
+    (emitter as any).stdout = new EventEmitter();
+    (emitter as any).stderr = new EventEmitter();
 
     return emitter;
 };

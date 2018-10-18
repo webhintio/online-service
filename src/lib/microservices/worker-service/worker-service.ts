@@ -171,7 +171,11 @@ const runWebhint = (job: IJob): Promise<Array<Problem>> => {
                 return resolve(result.messages);
             }
 
-            const error = JSON.parse(result.error);
+            let error = JSON.parse(result.error);
+
+            if (typeof error === 'string') {
+                error = new Error(error);
+            }
 
             error.log = getLastLogLines(log);
 
