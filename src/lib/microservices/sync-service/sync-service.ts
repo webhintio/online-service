@@ -64,6 +64,7 @@ const reportGithubIssues = async (job: IJob) => {
                 configs: job.config,
                 errorMessage,
                 errorType: 'crash',
+                log: job.log,
                 scan: moment().format('YYYY-MM-DD'),
                 url: job.url
             };
@@ -94,6 +95,7 @@ const reportGithubTimeoutIssues = async (job: IJob) => {
                 configs: job.config,
                 errorMessage: message,
                 errorType: 'timeout',
+                log: job.log,
                 scan: moment().format('YYYY-MM-DD'),
                 url: job.url
             };
@@ -206,6 +208,12 @@ export const run = async () => {
                 }
             } else {
                 setHints(dbJob, job);
+
+                if (!dbJob.log) {
+                    dbJob.log = '';
+                }
+
+                dbJob.log += job.log;
 
                 if (job.status === JobStatus.error) {
                     if (!dbJob.error) {

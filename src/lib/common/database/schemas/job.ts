@@ -7,6 +7,7 @@ export const JobSchema: Schema = new Schema({
     hints: [{}],
     id: String,
     investigated: Boolean,
+    log: String,
     maxRunTime: Number,
     queued: Date,
     rules: [{}],

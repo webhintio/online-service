@@ -84,6 +84,12 @@ ${issueData.errorMessage}
 \`\`\`json
 ${JSON.stringify(issueData.configs, null, 4)}
 \`\`\`
+
+## Log:
+
+\`\`\`json
+${issueData.log}
+\`\`\`
 `;
 
         return errorMessage;
