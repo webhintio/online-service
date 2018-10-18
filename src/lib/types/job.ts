@@ -60,4 +60,6 @@ export interface IJob {
     partInfo?: PartInfo;
     /** Indicates if a job was investigated for someone */
     investigated?: boolean;
+    /** Last log lines */
+    log?: string;
 }

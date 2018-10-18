@@ -118,6 +118,20 @@ const killProcess = (runner: ChildProcess) => {
     }
 };
 
+const getLastLogLines = (log: string, numberOfLines = 5): string => {
+    const rawLines = log.split('\n');
+
+    const lines = rawLines.reduce((total, line) => {
+        if (line) {
+            total.push(line);
+        }
+
+        return total;
+    }, []);
+
+    return lines.slice(lines.length - numberOfLines).join('\n');
+};
+
 /**
  * Create a child process to run webhint.
  * @param {IJob} job - Job to run in webhint.
@@ -127,8 +141,23 @@ const runWebhint = (job: IJob): Promise<Array<Problem>> => {
         // if we don't set execArgv to [], when the process is created, the execArgv
         // has the same parameters as his father so if we are debugging, the child
         // process try to debug in the same port, and that throws an error.
-        const runner: ChildProcess = fork(path.join(__dirname, 'webhint-runner'), [], { execArgv: [], stdio: [0, 1, 2, 'ipc'] });
+        const runner: ChildProcess = fork(path.join(__dirname, 'webhint-runner'), ['--debug'], { execArgv: [], stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
         let timeoutId: NodeJS.Timer;
+
+        let log = '';
+
+        runner.stdout.on('data', (data) => {
+            const message = data.toString('utf-8');
+
+            logger.log(message);
+        });
+
+        runner.stderr.on('data', (data) => {
+            const message = data.toString('utf-8');
+
+            log += message;
+            logger.log(message);
+        });
 
         runner.on('message', (result: JobResult) => {
             logger.log(generateLog('Message from webhint process received for job', job), moduleName);
@@ -142,7 +171,11 @@ const runWebhint = (job: IJob): Promise<Array<Problem>> => {
                 return resolve(result.messages);
             }
 
-            return reject(JSON.parse(result.error));
+            const error = JSON.parse(result.error);
+
+            error.log = getLastLogLines(log);
+
+            return reject(error);
         });
 
         runner.send(job);
@@ -151,7 +184,11 @@ const runWebhint = (job: IJob): Promise<Array<Problem>> => {
             debug(`Job with id: ${job.id} timeout. Killing process and reporting an error`);
             killProcess(runner);
 
-            reject(new Error('TIMEOUT'));
+            const error = new Error('TIMEOUT');
+
+            (error as any).log = getLastLogLines(log);
+
+            reject(error);
         }, job.maxRunTime * 1000 || 180000);
     });
 };
@@ -329,6 +366,7 @@ const sendErrorMessage = async (error, queue: Queue, job: IJob) => {
         job.error = error;
     }
 
+    job.log = error.log;
     job.status = isTimeOutError ? JobStatus.finished : JobStatus.error;
     job.finished = await getConsistentTime(job.started);
 
