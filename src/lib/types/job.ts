@@ -62,4 +62,6 @@ export interface IJob {
     investigated?: boolean;
     /** Last log lines */
     log?: string;
+    /** Indicates if a job is new */
+    isNew?: boolean;
 }
