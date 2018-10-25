@@ -3,7 +3,7 @@ FROM ubuntu:18.04
 #Update ubuntu and install dependencies
 RUN apt-get update
 RUN apt-get upgrade -y
-RUN apt-get install -y curl apt-transport-https gnupg
+RUN apt-get install -y curl apt-transport-https gnupg vim
 
 # Install nodejs
 RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
