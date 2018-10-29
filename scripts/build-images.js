@@ -2,9 +2,9 @@ const path = require('path');
 
 const shell = require('shelljs');
 const images = require('./images');
+const common = require('./common');
 
-shell.config.silent = true;
-shell.config.fatal = false;
+common.setShellJSDefaultConfig(shell);
 
 const getDockerFilesDirectory = () => {
     return path.join(__dirname, '..');

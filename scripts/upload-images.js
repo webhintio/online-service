@@ -1,8 +1,8 @@
 const shell = require('shelljs');
 const images = require('./images');
+const common = require('./common');
 
-shell.config.silent = true;
-shell.config.fatal = false;
+common.setShellJSDefaultConfig(shell);
 
 const uploadImages = (repository, newVersion) => {
     const version = newVersion || 'latest';

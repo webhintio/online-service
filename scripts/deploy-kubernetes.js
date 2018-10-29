@@ -1,9 +1,9 @@
 const path = require('path');
 
 const shell = require('shelljs');
+const common = require('./common');
 
-shell.config.silent = true;
-shell.config.fatal = false;
+common.setShellJSDefaultConfig(shell);
 
 const getComposeFilePath = (file) => {
     if (file) {

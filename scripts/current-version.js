@@ -1,7 +1,7 @@
 const shell = require('shelljs');
+const common = require('./common');
 
-shell.config.silent = true;
-shell.config.fatal = false;
+common.setShellJSDefaultConfig(shell);
 
 const getVersion = (dockerImages) => {
     const tags = dockerImages.reduce((total, dockerImage) => {
