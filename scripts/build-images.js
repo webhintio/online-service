@@ -25,7 +25,7 @@ const buildImages = (repository, newVersion) => {
         const child = shell.exec(`docker build --file ${image.file} . -t ${fullImageName}`);
 
         console.log(child.stdout);
-        console.log(child.stderr);
+        console.error(child.stderr);
 
         if (child.code === 0) {
             console.log(`Image ${fullImageName} built.`);
