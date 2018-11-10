@@ -142,7 +142,7 @@ const closeGithubIssues = async (dbJob: IJobModel) => {
  * Run the sync service.
  */
 export const run = async () => {
-    const queueResults = new Queue('sonar-results', queueConnectionString);
+    const queueResults = new Queue('webhint-results', queueConnectionString);
 
     await database.connect(dbConnectionString);
 

@@ -4,6 +4,7 @@
 
 * A MongoDB database or API compatible (Azure Cosmos DB)
 * Azure service bus
+* Kubernetes
 
 ## Installation
 
@@ -16,7 +17,8 @@ npm run build
 
 ## Configuration
 
-You need to configure the following **env** variables in order to run the service
+You need to configure at least the following **env** variables in order to
+run the service:
 * database: The connection string for the database
 * queue: The connection string for Azure service bus
 * port: The port where the job manager will be listening
@@ -61,7 +63,7 @@ variables before continue: `NODE_ENV=production`,
 `database=YourConnectionStringToTheDatabase` and
 `queue=YourConnectionStringToServiceBus`
 
-## Docker
+## Kubernetes
 
 ### Local environment
 
@@ -69,49 +71,61 @@ If you want to run the `online-service` in you local machine,
 you just need to run:
 
 ```bash
-docker-compose -file compose/online-service.yml -d
+kubectl apply -f kubernetes.yml
 ```
 
 **NOTE:**
 
-We are assuming that you are in the folder `compose` before running
-`docker-compose`.
-If you are in another folder, replace the file with your path to
-the file `online-service.yml`.
+Kubernetes needs to be installed in your computer.
 
-Remember you need to replace the enviroment variables values in `compose/online-service.yml` with your own values before run `docker-compose`.
+We are assuming that you are in the folder `compose` before running
+`kubectl`.
+If you are in another folder, replace the file with your path to
+the file `kubernetes.yml`.
+
+Remember you need to replace the enviroment variables values in
+`compose/kubernetes.yml` with your own values before run `kubectl`.
 
 ### Azure environment
 
-First of all we need to deploy docker in Azure. To do so, follow [this documentation][docker-for-azure]. ([see note below](#using-private-network))
+First of all we need to deploy kubernetes services in Azure.
 
-#### Using private network
+To do so, first you need to go to the folder `deploy` inside
+the folder `scripts`.
 
-If you need to enable https with [NGINX](#deploy-nginx), then you need to make some
-changes in the template to keep the `online service` in a private network.
-
-To do that, remove the public IP in the template, and replace the
-properties for the `frontendIPConfigurations` in the `load balancer`.
-
-```json
-"frontendIPConfigurations": [
-    {
-        "name": "default",
-        "properties": {
-            "privateIPAddress": "10.0.0.10",
-            "privateIPAllocationMethod": "Static",
-            "subnet": {
-                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variable('virtualNetworksName'), variable('subnetName'))]"
-    }
-        }
-    }
-],
+```bash
+cd scripts/deploy
 ```
+
+Make the file `deploy.sh` executable.
+
+```bash
+chmod +x deploy.sh
+```
+
+Run `deploy.sh`. If you don't want to pass the parameters,
+the script will ask you later for the information needed.
+
+```bash
+./deploy.sh -i <subscriptionName> -g <resourceGroupName> -l <resourceGroupLocation> -k <sshPublicKey> -r <containerRegistryName>"
+```
+
+The deployment script will create all the necessary to run the online scanner:
+
+1. An Azure kubernetes service.
+1. An Azure Service bus.
+1. A Virtual machine with linux to install nginx.
+1. If needed, a replicated mongodb.
+1. The peering between the linux VM and the database (the new one or an old one).
+
+**NOTE:**
+
+`sshPublicKey` is the path to the file containing the public ssh key.
 
 #### Build images
 
 To build all the images at the same time you need
-to run the script `build-images.sh`.
+to run the script `build-images.js`.
 
 To do so, first you need to go to the folder `scripts`.
 
@@ -119,23 +133,17 @@ To do so, first you need to go to the folder `scripts`.
 cd scripts
 ```
 
-Make the file `build-images.sh` executable.
+Run `build-images.js` with the name of your repository and the
+image version as parameters.
 
 ```bash
-chmod +x build-images.sh
+node build-images.js webhint 1
 ```
 
-Run `build-images.sh` with the name of your repository as a
-parameter.
-
-```bash
-./build-images.sh webhint
-```
-
-#### Upload the images to your docker repository
+#### Upload the images to your Container Registry
 
 To upload all the images at the same time you need
-to run the script `update-images.sh`.
+to run the script `update-images.js`.
 
 To do so, first you need to go to the folder `scripts`.
 
@@ -143,165 +151,131 @@ To do so, first you need to go to the folder `scripts`.
 cd scripts
 ```
 
-Make the file `upload-images.sh` executable.
+Run `upload-images.js` with the name of your repository and the
+image version as parameters.
 
 ```bash
-chmod +x build-images.sh
+node upload-images.js webhint 1
 ```
 
-Run `upload-images.sh` with the name of you repository as a
-parameter.
+**NOTE:**
+You need to be logged in into you Container Registry
+`az acr login --name ContainerRegistryName` before upload the images.
 
-```bash
-./upload-images.sh webhint
-```
+#### Update the configuration file
 
-#### Build and upload
+Before deploy, the configuration file needs to point to the right
+repository and to the current version of the images. You can do that
+manually or you can run the script `update-config-file.js`.
 
-To build and upload everything with just one script, use the script `build-and-upload-images.sh`.
+To do so, first you need to go to the folder `scripts`.
 
 ```bash
 cd scripts
 ```
 
-Make the file `build-and-upload-images.sh` executable.
+Run `update-config-file.js` with the name of your repository, the
+image version and the path to the configuration file as parameters.
 
 ```bash
-chmod +x build-images.sh
+node update-config-file.js webhint 1 ../compose/kubernetes-azure.yml
 ```
-
-Run `build-and-upload-images.sh` with the name of your
-repository as a parameter.
-
-```bash
-./build-and-upload-images.sh webhint
-```
-
-#### Deploy Online Service
-
-To deploy the online service we need to use `ssh`.
-
-First of all we are going to add the ssh key into the bash.
-
-Check if the key is stored.
-
-```bash
-ssh-add -L
-```
-
-Add it if it isn't.
-
-```bash
-ssh-add my-key.pem
-```
-
-Now we have two options to deploy the `online service`:
-
-**Copy the compose file into the machine where we want to deploy:**
-
-1. Copy the file `online-service.yml`:
-
-    ```bash
-    scp online-service.yml docker@your.ip:path/in/the/remote/machine/online-service.yml
-    ```
-
-1. Go into the machine:
-
-    ```bash
-    ssh -p your.port docker@your.ip
-    ```
-
-1. Now deploy using:
-
-    ```bash
-    docker stack deploy online-service -c path/in/the/remote/machine/online-service.yml
-    ```
-
-**Create a tunnel to the remote machine where we want to deploy:**
-
-1. Create a tunnel to the remote machine:
-
-    ```bash
-    ssh -fNL localhost:2374:/var/run/docker.sock docker@your.ip
-    ```
-
-1. Map docker to use the remote server:
-    ```bash
-    export DOCKER_HOST=localhost:2374
-    ```
-
-1. Now deploy using:
-
-    ```bash
-    docker stack deploy online-service -c online-service.yml
-    ```
 
 **NOTE:**
 
-We are assuming that you are in the folder `compose`
-before `scp` or `docker stack`.
-If you are in another folder, replace the file with your path to
-the file `online-service.yml`.
+The file path is optional, by default the value is
+`../compose/kubernetes-azure.yml`
 
-Remember you need to replace the enviroment variables
-values in `compose/online-service.yml` with your own
-values before `scp` and `docker stack`.
+#### Deploy
+
+To deploy the online scanner in kubernetes you need to run the
+script `deploy-kubernetes.js`
+
+To do so, first you need to go to the folder `scripts`.
+
+```bash
+cd scripts
+```
+
+Run `deploy-kubernetes.js` with the path to the configuration file as 
+a parameter.
+
+```bash
+node deploy-kubernetes.js ../compose/kubernetes-azure.yml
+```
+
+**NOTE:**
+
+The file path is optional, by default the value is `../compose/kubernetes-azure.yml`
+
+#### Build, upload, configure and deploy (all in one)
+
+You can run all the previous steps with just one script using `build-and-deploy.js`
+
+To do so, first you need to go to the folder `scripts`.
+
+```bash
+cd scripts
+```
+
+Run `build-and-deploy.js` with the name of your repository and
+the path to the configuration file as parameters.
+
+```bash
+node build-and-deploy.js webhint ../compose/kubernetes-azure.yml
+```
+
+**NOTE:**
+
+The version for the images will be auto calculated using your current
+images you have in your computer.
 
 #### Deploy NGINX
 
-To deploy NGINX add to the resource group you previously
-create a `Docker for Azure CE VM`.
+To deploy NGINX, you will find a few files in `scripts/deploy/nginx`:
 
-As with the [`online service`](#deploy-online-service) you
-need to connect via `ssh` to the server using the IP to the
-VM and have 2 options to do it:
+* `install-nginx.sh`
+* `configure-nginx.sh`
+* `nginx-step1.conf`
+* `nginx-step2.conf` 
 
-**Copy the compose file into the machine where we want to deploy:**
+Before start deploying NGINX, you need to copy these files to
+your NGINX machine:
 
-1. Copy the file `nginx.yml`:
+**Copy files into the machine where we want to deploy:**
+
+1. Copy files:
 
     ```bash
-    scp nginx.yml docker@your.ip:path/in/the/remote/machine/nginx.yml
+    scp *.sh *.conf nginx@your.ip:~
     ```
 
 1. Go into the machine:
 
     ```bash
-    ssh -p your.port docker@your.ip
+    ssh -p your.port nginx@your.ip
     ```
 
-1. Now deploy using:
+1. Install NGINX and Certbot:
 
     ```bash
-    docker stack deploy online-service-nginx -c path/in/the/remote/machine/nginx.yml
+    sudo ./install-nginx.sh
     ```
 
-**Create a tunnel to the remote machine where we want to deploy:**\
+**NOTE:**
+If you get an error GPG error, loof for the instructions
+in `install-nginx.sh`.
 
-1. Create a tunnel to the remote machine:
-
-    ```bash
-    ssh -fNL localhost:2373:/var/run/docker.sock docker@your.ip
-    ```
-
-1. Map docker to use the remote server:
+1. Configure NGINX
 
     ```bash
-    export DOCKER_HOST=localhost:2373
-    ```
-
-1. Now deploy using:
-
-    ```bash
-    docker stack deploy online-service-nginx -c nginx.yml
+    sudo ./configure-nginx.sh -s <serverName> -j <jobsIpAndPort> -c <configIpAndPort>
     ```
 
 **NOTE:**
 
-We are assuming that you are in the folder `compose`
-before `scp` or `docker stack`.
-If you are in another folder, replace the file with your path to
-the file `nginx.yml`.
+`jobsIPAndPort` is the IP and port where the `job-manager` is deployed.
+`configIpAndPort` is the IP and port where the `config-manager` is deployed.
 
 ## Code of Conduct
 
