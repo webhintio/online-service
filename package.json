@@ -13,7 +13,7 @@
   "dependencies": {
     "@hint/configuration-progressive-web-apps": "^1.1.1",
     "@hint/configuration-web-recommended": "^2.0.0",
-    "@hint/hint-image-optimization-cloudinary": "^1.0.3",
+    "@hint/hint-image-optimization-cloudinary": "^2.1.0",
     "@hint/hint-minified-js": "^1.0.2",
     "@hint/hint-no-broken-links": "^1.0.7",
     "@hint/hint-no-p3p": "^1.0.4",
