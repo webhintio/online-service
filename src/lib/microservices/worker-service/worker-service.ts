@@ -141,7 +141,7 @@ const runWebhint = (job: IJob): Promise<Array<Problem>> => {
         // if we don't set execArgv to [], when the process is created, the execArgv
         // has the same parameters as his father so if we are debugging, the child
         // process try to debug in the same port, and that throws an error.
-        const runner: ChildProcess = fork(path.join(__dirname, 'webhint-runner'), ['--debug'], { execArgv: [], stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
+        const runner: ChildProcess = fork(path.join(__dirname, 'browser-runner'), ['--debug'], { execArgv: [], stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
         let timeoutId: NodeJS.Timer;
 
         let log = '';
