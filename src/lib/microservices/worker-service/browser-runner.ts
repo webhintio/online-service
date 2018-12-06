@@ -1,6 +1,6 @@
 /* eslint no-process-exit:off */
 
-import { launch } from 'puppeteer';
+import { launch, Page } from 'puppeteer';
 
 import { Problem } from 'hint/dist/src/lib/types';
 
@@ -49,18 +49,8 @@ process.once('unhandledRejection', (reason) => {
     process.exit(1);
 });
 
-const getProblemsFromResults = (results: Results): Problem[] => {
-    return results.categories.reduce((arrCat, category) => {
-        return [...arrCat, ...category.hints.reduce((arrHint, hint) => {
-            return [...arrHint, ...hint.problems];
-        }, [] as Problem[])];
-    }, [] as Problem[]);
-};
-
-const runBundle = async (url: string): Promise<Problem[]> => {
-    const browser = await launch();
-    const page = (await browser.pages())[0];
-
+/** Watch for network requests and generate `fetch::*` events for the `webhint.js` bundle. */
+const generateFetchEvents = (page: Page): void => {
     let events: Events[] = [];
 
     page.on('request', (request) => {
@@ -70,7 +60,8 @@ const runBundle = async (url: string): Promise<Problem[]> => {
     page.on('requestfinished', async (request) => {
         const response = await request.response();
 
-        if (!response) {
+        // Ignore anything without a response or success status (e.g. redirects).
+        if (!response || response.status() !== 200) {
             return;
         }
 
@@ -101,9 +92,27 @@ const runBundle = async (url: string): Promise<Problem[]> => {
         });
     });
 
-    await page.goto(url);
+    page.exposeFunction('webhintReady', () => {
+        const messages = events;
 
-    const resultsPromise: Promise<Results> = page.evaluate(() => {
+        events = [];
+
+        return messages;
+    });
+};
+
+/** Convert extension-browser `Results` structure back to a flat `Problem[]`. */
+const getProblemsFromResults = (results: Results): Problem[] => {
+    return results.categories.reduce((arrCat, category) => {
+        return [...arrCat, ...category.hints.reduce((arrHint, hint) => {
+            return [...arrHint, ...hint.problems];
+        }, [] as Problem[])];
+    }, [] as Problem[]);
+};
+
+/** Stub Web Extensions APIs and watch for results to be returned. */
+const stubExtensionAPIs = (page: Page): Promise<Results> => {
+    return page.evaluate(() => {
         return new Promise<Results>((resolve) => {
             let onMessage: ((events: Events) => void) = () => {};
 
@@ -115,15 +124,17 @@ const runBundle = async (url: string): Promise<Problem[]> => {
                         },
                         removeListener: () => {}
                     },
-                    sendMessage: (event: Events) => {
+                    sendMessage: async (event: Events) => {
                         if (event.requestConfig) {
                             onMessage({ enable: {} });
                         }
                         if (event.ready) {
-                            events.forEach((evt) => {
+                            // Get `fetch` messages from `webhintReady` (injected by `generateFetchEvents`).
+                            const messages = await (window as any).webhintReady();
+
+                            messages.forEach((evt) => {
                                 onMessage(evt);
                             });
-                            events = [];
                         }
                         if (event.results) {
                             resolve(event.results);
@@ -133,10 +144,33 @@ const runBundle = async (url: string): Promise<Problem[]> => {
             } as any;
         });
     });
+};
+
+/** Launch the target url in Puppeteer and inject `webhint.js` bundle. */
+const runBundle = async (url: string): Promise<Problem[]> => {
+    const browser = await launch();
+
+    const page = (await browser.pages())[0];
+
+    generateFetchEvents(page);
+
+    // Forward console logs from the page for debugging.
+    page.on('console', (message) => {
+        console.debug(message.text());
+    });
+
+    await page.goto(url);
+
+    const resultsPromise = stubExtensionAPIs(page);
 
     await page.addScriptTag({ path: `${__dirname}/webhint.js` });
 
-    return getProblemsFromResults(await resultsPromise);
+    const results = await resultsPromise;
+    const problems = getProblemsFromResults(results);
+
+    console.log(problems);
+
+    return problems;
 };
 
 /**
