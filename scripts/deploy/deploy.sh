@@ -231,7 +231,7 @@ if [ $? != 0 ]; then
 
 	echo "Service Principal with name " $resourceGroupName "could not be found. Creating new Service Principal..."
 	set -x
-	servicePrincipal=$(az ad sp create-for-rbac -n $resourceGroupName --skip-assignment)
+	servicePrincipal=$(az ad sp create-for-rbac -n "http://$resourceGroupName" --skip-assignment)
 
 	# Get service principal appId
 	spAppId=$(jq -r '.appId' <<< "$servicePrincipal")
@@ -437,6 +437,7 @@ if [ $? != 0 ]; then
 		set -x
 		sed "s/%baseName%/${databaseResourceGroup}/g
 			 s/%networkName%/${databaseNetworkName}/g
+			 s/%dbPassword%/${dbPassword}/g
 			 s~%publicKey%~${publicKey}~g" $parametersMongoDBTemplatePath > $parametersMongoDBPath
 	)
 
