@@ -30,7 +30,7 @@
             "value": "%spPassword%"
         },
         "kubernetesVersion": {
-            "value": "1.11.3"
+            "value": "1.11.5"
         },
         "workspaceName": {
             "value": "%baseName%-workspace"

@@ -8,3 +8,4 @@ nginx-*.yml
 online-service-*.yml
 kubernetes-*.yaml
 az-init.sh
+scripts/deploy/**/parameters.json

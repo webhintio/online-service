@@ -11,6 +11,7 @@ const getDockerFilesDirectory = () => {
 };
 
 const buildImages = (repository, newVersion) => {
+    const cwd = process.cwd();
     const dockerFilesDirectory = getDockerFilesDirectory();
     const version = newVersion || 'latest';
 
@@ -33,6 +34,8 @@ const buildImages = (repository, newVersion) => {
             throw new Error(`Error building ${fullImageName}`);
         }
     }
+
+    shell.cd(cwd);
 };
 
 module.exports = buildImages;

@@ -1,5 +1,5 @@
 const setShellJSDefaultConfig = (shell) => {
-    shell.config.silent = true;
+    shell.config.silent = false;
     shell.config.fatal = false;
 };
 
