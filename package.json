@@ -16,7 +16,7 @@
     "@hint/hint-image-optimization-cloudinary": "^1.0.3",
     "@hint/hint-minified-js": "^1.0.2",
     "@hint/hint-no-broken-links": "^1.0.7",
-    "@hint/hint-no-p3p": "^1.0.4",
+    "@hint/hint-no-p3p": "^2.1.0",
     "@hint/hint-performance-budget": "^2.1.0",
     "applicationinsights": "^1.0.6",
     "@octokit/rest": "^15.12.1",
