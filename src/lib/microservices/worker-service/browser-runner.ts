@@ -150,29 +150,31 @@ const stubExtensionAPIs = (page: Page): Promise<Results> => {
 const runBundle = async (url: string): Promise<Problem[]> => {
     const browser = await launch();
 
-    const page = (await browser.pages())[0];
+    try {
+        const page = (await browser.pages())[0];
 
-    generateFetchEvents(page);
+        generateFetchEvents(page);
 
-    // Forward console logs from the page for debugging.
-    page.on('console', (message) => {
-        console.debug(message.text());
-    });
+        // Forward console logs from the page for debugging.
+        page.on('console', (message) => {
+            console.debug(message.text());
+        });
 
-    await page.goto(url);
+        await page.goto(url);
 
-    const resultsPromise = stubExtensionAPIs(page);
+        const resultsPromise = stubExtensionAPIs(page);
 
-    await page.addScriptTag({ path: `${__dirname}/webhint.js` });
+        await page.addScriptTag({ path: `${__dirname}/webhint.js` });
 
-    const results = await resultsPromise;
-    const problems = getProblemsFromResults(results);
+        const results = await resultsPromise;
+        const problems = getProblemsFromResults(results);
 
-    console.log(problems);
+        console.log(problems);
 
-    browser.close();
-
-    return problems;
+        return problems;
+    } finally {
+        await browser.close();
+    }
 };
 
 /**

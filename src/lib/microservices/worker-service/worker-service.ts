@@ -4,6 +4,8 @@ import { Problem, Severity } from 'hint/dist/src/lib/types';
 import normalizeHints from 'hint/dist/src/lib/config/normalize-hints';
 import * as path from 'path';
 
+import * as pkill from 'pkill';
+
 import * as appInsight from '../../utils/appinsights';
 import { debug as d } from '../../utils/debug';
 import { Queue } from '../../common/queue/queue';
@@ -378,6 +380,20 @@ const sendErrorMessage = async (error, queue: Queue, job: IJob) => {
     await queue.sendMessage(job);
 };
 
+const closeProcessByName = (name: string) => {
+    return new Promise((resolve, reject) => {
+        pkill(name, (err) => {
+            if (err) {
+                logger.error(err, moduleName);
+
+                return reject(err);
+            }
+
+            return resolve();
+        });
+    });
+};
+
 export const run = async () => {
     const queue: Queue = new Queue('webhint-jobs', queueConnectionString);
     const queueResults: Queue = new Queue('webhint-results', queueConnectionString);
@@ -397,6 +413,20 @@ export const run = async () => {
 
             const webhintStart = Date.now();
             const result: Array<Problem> = await runWebhint(job);
+
+            // TODO: Check if it is necessary to have this in the try block.
+            try {
+                await closeProcessByName('chrome');
+            } catch (e) {
+                // do nothing.
+            }
+
+            // TODO: Check if it is necessary close 'chromium'
+            try {
+                await closeProcessByName('chromium');
+            } catch (e) {
+                // do nothing.
+            }
 
             appInsightClient.trackMetric({
                 name: 'run-webhint',
@@ -419,6 +449,17 @@ export const run = async () => {
                 value: Date.now() - start
             });
         } catch (err) {
+            try {
+                await closeProcessByName('chrome');
+            } catch (e) {
+                // do nothing.
+            }
+
+            try {
+                await closeProcessByName('chromium');
+            } catch (e) {
+                // do nothing.
+            }
             logger.error(generateLog('Error processing Job', job), moduleName, err);
             appInsightClient.trackException({ exception: err });
             debug(err);
