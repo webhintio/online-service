@@ -201,8 +201,8 @@ test.serial('serviceConfig.activate should activate the configuration with the g
 
 test.serial('serviceConfig.getAll should returns a list of configurations', async (t) => {
     const configurations = [{ name: 'config0' },
-    { name: 'config1' },
-    { name: 'config2' }];
+        { name: 'config1' },
+        { name: 'config2' }];
 
     sinon.stub(query, 'exec').resolves(configurations);
 

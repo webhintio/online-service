@@ -10,7 +10,7 @@ Octokit.prototype.authenticate = () => { };
 Octokit.prototype.issues = {
     create() { },
     createComment() { },
-    edit() { }
+    update() { }
 };
 Octokit.prototype.search = { issues() { } };
 
@@ -22,7 +22,7 @@ test.serial('If no error and no issue, nothing happens', async (t) => {
     const sandbox = sinon.createSandbox();
 
     sandbox.stub(Octokit.prototype.search, 'issues').resolves({ data: { items: [] } });
-    sandbox.spy(Octokit.prototype.issues, 'edit');
+    sandbox.spy(Octokit.prototype.issues, 'update');
     sandbox.spy(Octokit.prototype.issues, 'create');
 
     t.context.search = Octokit.prototype.search;
@@ -33,7 +33,7 @@ test.serial('If no error and no issue, nothing happens', async (t) => {
     await issueReporter.report({ configs: [], scan: moment().format('YYYY-MM-DD'), url: 'http://example.com' });
 
     t.true(t.context.search.issues.called);
-    t.false(t.context.issues.edit.called);
+    t.false(t.context.issues.update.called);
     t.false(t.context.issues.create.called);
 
     sandbox.restore();
@@ -43,7 +43,7 @@ test.serial('If no error but issue exists, it should close the issue', async (t)
     const sandbox = sinon.createSandbox();
 
     sandbox.stub(Octokit.prototype.search, 'issues').resolves({ data: { items: [{ number: 1 }] } });
-    sandbox.stub(Octokit.prototype.issues, 'edit').resolves();
+    sandbox.stub(Octokit.prototype.issues, 'update').resolves();
     sandbox.spy(Octokit.prototype.issues, 'create');
 
     t.context.search = Octokit.prototype.search;
@@ -54,10 +54,10 @@ test.serial('If no error but issue exists, it should close the issue', async (t)
     await issueReporter.report({ configs: [], scan: moment().format('YYYY-MM-DD'), url: 'http://example.com' });
 
     t.true(t.context.search.issues.called);
-    t.true(t.context.issues.edit.calledOnce);
+    t.true(t.context.issues.update.calledOnce);
     t.false(t.context.issues.create.called);
 
-    const args = t.context.issues.edit.args[0][0];
+    const args = t.context.issues.update.args[0][0];
 
     t.is(args.state, 'closed');
     t.is(args.number, 1);
@@ -69,7 +69,7 @@ test.serial(`If there is an error and issue doesn't exists yet, it should create
     const sandbox = sinon.createSandbox();
 
     sandbox.stub(Octokit.prototype.search, 'issues').resolves({ data: { items: [] } });
-    sandbox.spy(Octokit.prototype.issues, 'edit');
+    sandbox.spy(Octokit.prototype.issues, 'update');
     sandbox.stub(Octokit.prototype.issues, 'create').resolves();
 
     t.context.search = Octokit.prototype.search;
@@ -90,7 +90,7 @@ test.serial(`If there is an error and issue doesn't exists yet, it should create
     });
 
     t.true(t.context.search.issues.called);
-    t.false(t.context.issues.edit.called);
+    t.false(t.context.issues.update.called);
     t.true(t.context.issues.create.calledOnce);
 
     const args = t.context.issues.create.args[0][0];
@@ -112,7 +112,7 @@ test.serial(`If there is an error and issue exists, it should create a comment`,
             }]
         }
     });
-    sandbox.spy(Octokit.prototype.issues, 'edit');
+    sandbox.spy(Octokit.prototype.issues, 'update');
     sandbox.spy(Octokit.prototype.issues, 'create');
     sandbox.stub(Octokit.prototype.issues, 'createComment').resolves();
 
@@ -135,7 +135,7 @@ test.serial(`If there is an error and issue exists, it should create a comment`,
     });
 
     t.true(t.context.search.issues.called);
-    t.true(t.context.issues.edit.calledOnce);
+    t.true(t.context.issues.update.calledOnce);
     t.false(t.context.issues.create.called);
     t.true(t.context.issues.createComment.calledOnce);
 
@@ -145,7 +145,7 @@ test.serial(`If there is an error and issue exists, it should create a comment`,
     t.true(args.body.includes('"hint2": "warning"'));
     t.is(args.number, 1);
 
-    const editArgs = t.context.issues.edit.args[0][0];
+    const editArgs = t.context.issues.update.args[0][0];
 
     t.true(editArgs.labels.includes(`scan:${scan}`));
     t.true(editArgs.labels.includes('error:crash'));
@@ -165,7 +165,7 @@ test.serial(`If there is an error and the issue exists but the error label is di
             }]
         }
     });
-    sandbox.spy(Octokit.prototype.issues, 'edit');
+    sandbox.spy(Octokit.prototype.issues, 'update');
     sandbox.stub(Octokit.prototype.issues, 'create').resolves();
     sandbox.spy(Octokit.prototype.issues, 'createComment');
 
@@ -188,7 +188,7 @@ test.serial(`If there is an error and the issue exists but the error label is di
     });
 
     t.true(t.context.search.issues.called);
-    t.false(t.context.issues.edit.called);
+    t.false(t.context.issues.update.called);
     t.true(t.context.issues.create.calledOnce);
     t.false(t.context.issues.createComment.called);
 
