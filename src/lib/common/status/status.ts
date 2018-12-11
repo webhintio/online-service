@@ -83,7 +83,7 @@ const avg = (jobs: Array<IJob>, fieldEnd: string, fieldStart: string): number =>
         return null;
     }
 
-    const result = jobs.reduce((total: { acc: number, length: number }, job: IJob) => {
+    const result = jobs.reduce((total: { acc: number; length: number }, job: IJob) => {
         let field;
 
         if (!job[fieldEnd]) {
@@ -146,10 +146,10 @@ const getFinishedByStatus = (jobs: Array<IJob>): StatusFinished => {
 
         return total;
     },
-        {
-            error: 0,
-            success: 0
-        });
+    {
+        error: 0,
+        success: 0
+    });
 };
 
 /**

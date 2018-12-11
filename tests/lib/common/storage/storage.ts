@@ -12,10 +12,10 @@ const blobService = {
     withFilter() { }
 };
 const azureStorage = {
-    ExponentialRetryPolicyFilter: function () { }, // eslint-disable-line object-shorthand
     createBlobService() {
         return blobService;
-    }
+    },
+    ExponentialRetryPolicyFilter: function () { } // eslint-disable-line object-shorthand
 };
 
 proxyquire('../../../../src/lib/common/storage/storage', { 'azure-storage': azureStorage });

@@ -1,5 +1,5 @@
 import * as Octokit from '@octokit/rest';
-import { IssuesEditResponse } from '@octokit/rest';
+import { IssuesUpdateParams } from '@octokit/rest';
 
 import { IssueData } from '../../types/issuedata';
 
@@ -52,7 +52,7 @@ export class IssueReporter {
 
     }
 
-    private async closeIssue(issue: IssuesEditResponse) {
+    private async closeIssue(issue: IssuesUpdateParams) {
         await this.editIssue({
             number: issue.number,
             state: 'closed'
@@ -60,7 +60,7 @@ export class IssueReporter {
     }
 
     private editIssue(configs) {
-        return this.octokit.issues.edit(Object.assign(
+        return this.octokit.issues.update(Object.assign(
             {},
             this.GITHUB_DATA,
             configs
@@ -105,7 +105,7 @@ ${issueData.log}
         return `scan:${scanNumber}`;
     }
 
-    private getEmoji(errorType: "crash" | "stderr" | "timeout") {
+    private getEmoji(errorType: 'crash' | 'stderr' | 'timeout') {
         let result;
 
         switch (errorType) {
@@ -204,7 +204,7 @@ ${issueData.log}
         await this.openIssue(issueData);
     }
 
-    private async updateIssueLabels(issue: IssuesEditResponse, labels: string[]) {
+    private async updateIssueLabels(issue: IssuesUpdateParams, labels: string[]) {
         await this.editIssue({
             labels,
             number: issue.number
