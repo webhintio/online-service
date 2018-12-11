@@ -170,6 +170,8 @@ const runBundle = async (url: string): Promise<Problem[]> => {
 
     console.log(problems);
 
+    browser.close();
+
     return problems;
 };
 
