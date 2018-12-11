@@ -23,7 +23,7 @@
     "azure-sb": "^0.10.6",
     "azure-storage": "^2.10.2",
     "body-parser": "^1.18.3",
-    "connect-mongo": "^2.0.1",
+    "connect-mongo": "^2.0.3",
     "express": "^4.16.4",
     "express-handlebars": "^3.0.0",
     "express-session": "^1.15.6",
