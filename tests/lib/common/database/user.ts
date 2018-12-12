@@ -4,9 +4,19 @@ import * as proxyquire from 'proxyquire';
 
 const common = { validateConnection() { } };
 
-const query = {
-    exec() { },
-    remove() { }
+type Query = {
+    exec: () => Query;
+    remove: () => Query;
+};
+
+
+const query: Query = {
+    exec() {
+        return query;
+    },
+    remove() {
+        return query;
+    }
 };
 
 const modelObject = { save() { } };

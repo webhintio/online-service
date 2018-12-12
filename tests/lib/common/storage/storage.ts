@@ -3,13 +3,33 @@ import * as sinon from 'sinon';
 import * as proxyquire from 'proxyquire';
 
 process.env.storageAccount = 'storageAccount'; // eslint-disable-line no-process-env
-const blobService = {
-    createBlockBlobFromLocalFile() { },
+
+type BlobService = {
+    createBlockBlobFromLocalFile: () => BlobService;
+    createContainerIfNotExists: (name: any, callback: any) => void;
+    deleteBlobIfExists: () => BlobService;
+    listBlobsSegmented: () => BlobService;
+    startCopyBlob: () => BlobService;
+    withFilter: () => BlobService;
+};
+
+const blobService: BlobService = {
+    createBlockBlobFromLocalFile() {
+        return blobService;
+    },
     createContainerIfNotExists() { },
-    deleteBlobIfExists() { },
-    listBlobsSegmented() { },
-    startCopyBlob() { },
-    withFilter() { }
+    deleteBlobIfExists() {
+        return blobService;
+    },
+    listBlobsSegmented() {
+        return blobService;
+    },
+    startCopyBlob() {
+        return blobService;
+    },
+    withFilter() {
+        return blobService;
+    }
 };
 const azureStorage = {
     createBlobService() {

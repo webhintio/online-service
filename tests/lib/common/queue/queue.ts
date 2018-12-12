@@ -2,14 +2,26 @@ import test from 'ava';
 import * as sinon from 'sinon';
 import * as proxyquire from 'proxyquire';
 
-const azureSB = { createServiceBusService() { } };
+type AzureSBService = {
+    deleteMessage: (param1: any, callback: any) => void;
+    getQueue: (param1: any, callback: any) => void;
+    receiveQueueMessage: (param1: any, param2: any, callback: any) => void;
+    sendQueueMessage: (param1: any, param2: any, callback: any) => void;
+    unlockMessage: () => void;
+};
 
-const azureSBService = {
+const azureSBService: AzureSBService = {
     deleteMessage() { },
     getQueue() { },
     receiveQueueMessage() { },
     sendQueueMessage() { },
     unlockMessage() { }
+};
+
+const azureSB = {
+    createServiceBusService(): AzureSBService {
+        return azureSBService;
+    }
 };
 
 const misc = { delay() { } };

@@ -14,11 +14,18 @@ IssueReporter.prototype.report = () => { };
 const github = { IssueReporter };
 
 const logger = { error() { } };
-const resultsQueue = {
+
+type ResultQueue = {
+    deleteMessage: () => void;
+    listen: () => void;
+};
+
+const resultsQueue: ResultQueue = {
     deleteMessage() { },
     listen() { }
 };
-const Queue = function () {
+const Queue = function (): ResultQueue {
+    return resultsQueue;
 };
 const queueObject = { Queue };
 const database = {

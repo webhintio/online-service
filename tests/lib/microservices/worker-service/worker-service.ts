@@ -4,10 +4,14 @@ import test from 'ava';
 import { EventEmitter2 as EventEmitter } from 'eventemitter2';
 import * as sinon from 'sinon';
 import * as proxyquire from 'proxyquire';
-
-const resultsQueue = { sendMessage() { } };
-const jobsQueue = { listen() { } };
-const Queue = function () {
+type Queue = {
+    sendMessage?: (j: any) => void;
+    listen?: () => void;
+};
+const resultsQueue: Queue = { sendMessage() { } };
+const jobsQueue: Queue = { listen() { } };
+const Queue = function (): Queue {
+    return resultsQueue;
 };
 
 const queueObject = { Queue };
@@ -259,7 +263,7 @@ test.serial(`If a message is too big for Service Bus, we should send the hint wi
         .onFirstCall()
         .resolves()
         .onSecondCall()
-        .callsFake((j) => {
+        .callsFake((j): void => {
             // j.hints change in each call, so we need to test the value here for the second call.
             t.is(j.hints[0].messages.length, 2);
 

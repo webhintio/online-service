@@ -2,9 +2,21 @@ import test from 'ava';
 import * as sinon from 'sinon';
 import * as proxyquire from 'proxyquire';
 
-const multiparty = { Form() { } };
+type MultiPartyObject = {
+    parse: () => void;
+};
 
-const multipartyObject = { parse() { } };
+type Multipoarty = {
+    Form: () => MultiPartyObject;
+};
+
+const multipartyObject: MultiPartyObject = { parse(): void { } };
+
+const multiparty: Multipoarty = {
+    Form() {
+        return multipartyObject;
+    }
+};
 
 proxyquire('../../../src/lib/utils/misc', { multiparty });
 

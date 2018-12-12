@@ -29,9 +29,17 @@ const Queue = function () {
 
 const queueObject = { Queue };
 
-const hint = { meta: { docs: { category: 'category' } } };
+type Hint = {
+    meta: any;
+};
 
-const resourceLoader = { loadHint() { } };
+const hint: Hint = { meta: { docs: { category: 'category' } } };
+
+const resourceLoader = {
+    loadHint(): Hint {
+        return hint;
+    }
+};
 
 const ntp = {
     getTime() {

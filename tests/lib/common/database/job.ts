@@ -4,13 +4,32 @@ import * as proxyquire from 'proxyquire';
 import { UserConfig } from 'hint/dist/src/lib/types';
 import * as moment from 'moment';
 
-const common = { validateConnection() { } };
+const common = {
+    validateConnection(): boolean {
+        return false;
+    }
+};
 
-const query = {
-    count() { },
-    exec() { },
-    remove() { },
-    sort() { }
+type Query = {
+    count: () => Query;
+    exec: () => Query;
+    remove: () => Query;
+    sort: () => Query;
+};
+
+const query: Query = {
+    count() {
+        return query;
+    },
+    exec() {
+        return query;
+    },
+    remove() {
+        return query;
+    },
+    sort() {
+        return query;
+    }
 };
 
 const modelObject = { save() { } };
