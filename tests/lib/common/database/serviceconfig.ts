@@ -3,11 +3,24 @@ import * as sinon from 'sinon';
 import * as proxyquire from 'proxyquire';
 import { UserConfig } from 'hint/dist/src/lib/types';
 
-const common = { validateConnection() { } };
+const common = {
+    validateConnection(): boolean {
+        return false;
+    }
+};
 
-const query = {
-    exec() { },
-    remove() { }
+type Query = {
+    exec: () => Query;
+    remove: () => Query;
+};
+
+const query: Query = {
+    exec(): Query {
+        return query;
+    },
+    remove(): Query {
+        return query;
+    }
 };
 
 const modelObject = { save() { } };
@@ -200,9 +213,11 @@ test.serial('serviceConfig.activate should activate the configuration with the g
 });
 
 test.serial('serviceConfig.getAll should returns a list of configurations', async (t) => {
-    const configurations = [{ name: 'config0' },
+    const configurations = [
+        { name: 'config0' },
         { name: 'config1' },
-        { name: 'config2' }];
+        { name: 'config2' }
+    ];
 
     sinon.stub(query, 'exec').resolves(configurations);
 

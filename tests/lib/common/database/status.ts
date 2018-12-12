@@ -4,11 +4,24 @@ import * as proxyquire from 'proxyquire';
 
 import { IStatus } from '../../../../src/lib/types';
 
-const common = { validateConnection() { } };
+const common = {
+    validateConnection(): boolean {
+        return false;
+    }
+};
 
-const query = {
-    exec() { },
-    sort() { }
+type Query = {
+    exec: () => Query;
+    sort: () => Query;
+};
+
+const query: Query = {
+    exec() {
+        return query;
+    },
+    sort() {
+        return query;
+    }
 };
 
 const modelObject = { save() { } };

@@ -14,7 +14,7 @@ const db = {
     host() { },
     replicaSetStatus() { }
 };
-const rimraf = () => { };
+const rimraf = (param: any, callback: any): void => { };
 const rimrafContainer = { rimraf };
 const tar = { c() { } };
 
