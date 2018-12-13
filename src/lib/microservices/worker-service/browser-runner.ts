@@ -156,9 +156,9 @@ const runBundle = async (url: string): Promise<Problem[]> => {
         generateFetchEvents(page);
 
         // Forward console logs from the page for debugging.
-        page.on('console', (message) => {
-            console.debug(message.text());
-        });
+        // page.on('console', (message) => {
+        //     console.debug(message.text());
+        // });
 
         await page.goto(url);
 
@@ -169,7 +169,7 @@ const runBundle = async (url: string): Promise<Problem[]> => {
         const results = await resultsPromise;
         const problems = getProblemsFromResults(results);
 
-        console.log(problems);
+        // console.log(problems);
 
         return problems;
     } finally {
