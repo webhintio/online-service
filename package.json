@@ -40,6 +40,7 @@
     "pkill": "^2.0.0",
     "puppeteer": "^1.11.0",
     "request": "^2.88.0",
+    "shx": "^0.3.2",
     "strip-bom": "^3.0.0",
     "strip-json-comments": "^2.0.1",
     "tar": "^4.4.8",
@@ -114,7 +115,10 @@
     "lint:js": "eslint --ext ts --ignore-pattern dist .",
     "online-service": "node ./dist/src/bin/online-service",
     "test": "npm run lint && npm run build && nyc ava",
-    "watch:ts": "npm run build:ts -- --watch"
+    "watch:ts": "npm run build:ts -- --watch",
+    "steps": "npm run step1 && npm run step2",
+    "step1": "rimraf node_modules/hint && rimraf gitrepos/ && mkdir gitrepos && cd gitrepos && git clone https://github.com/webhintio/hint.git && cd hint && cd packages && cd hint && npm install && npm install @types/is-ci @types/proxyquire && npm run build",
+    "step2": "shx mv gitrepos/hint/packages/hint node_modules/"
   },
   "version": "0.16.0"
 }

@@ -133,6 +133,8 @@ ${issueData.log}
             labels.push('production');
         }
 
+        labels.push('browser');
+
         await this.octokit.issues.create(Object.assign(
             {},
             this.GITHUB_DATA,
