@@ -6,7 +6,7 @@ RUN apt-get upgrade -y
 RUN apt-get install -y curl apt-transport-https gnupg vim
 
 # Install nodejs
-RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
+RUN curl -sL https://deb.nodesource.com/setup_10.x | bash -
 RUN apt-get install -y nodejs build-essential
 
 # Install chrome
@@ -14,7 +14,7 @@ RUN curl -sL https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
 # RUN apt-key add ~/linux_signing_key.pub
 RUN echo "deb https://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
 RUN apt-get update
-RUN apt-get install google-chrome-stable -y
+RUN apt-get install -y google-chrome-unstable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst
 
 # Install git (just for browser extension tests)
 RUN apt-get install software-properties-common -y
