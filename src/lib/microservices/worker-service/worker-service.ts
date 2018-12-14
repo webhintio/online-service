@@ -15,11 +15,13 @@ import * as logger from '../../utils/logging';
 import { generateLog } from '../../utils/misc';
 import { getTime } from '../../common/ntp/ntp';
 
-const queueConnectionString = process.env.queue; // eslint-disable-line no-process-env
+const { queue: queueConnectionString, environment } = process.env; // eslint-disable-line no-process-env
 const appInsightClient = appInsight.getClient();
 const debug: debug.IDebugger = d(__filename);
 const moduleName: string = 'Worker Service';
 const MAX_MESSAGE_SIZE = 220 * 1024; // size in kB
+
+const runnerFile: string = `${environment === 'browser' ? 'browser' : 'webhint'}-runner`;
 
 /**
  * Parse the result returned for webhint.
@@ -143,7 +145,7 @@ const runWebhint = (job: IJob): Promise<Array<Problem>> => {
         // if we don't set execArgv to [], when the process is created, the execArgv
         // has the same parameters as his father so if we are debugging, the child
         // process try to debug in the same port, and that throws an error.
-        const runner: ChildProcess = fork(path.join(__dirname, 'browser-runner'), ['--debug'], { execArgv: [], stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
+        const runner: ChildProcess = fork(path.join(__dirname, runnerFile), ['--debug'], { execArgv: [], stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
         let timeoutId: NodeJS.Timer;
 
         let log = '';

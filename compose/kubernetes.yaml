@@ -27,6 +27,8 @@ spec:
           value: "YourAzureServiceBusConnectionString"
         - name: APP_INSIGHTS_KEY
           value: "YourAppInsightKey"
+        - name: environment
+          value: "YourConnectorOrExtension(chrome | jsdom | browser)"
 ---
 kind: Service
 apiVersion: v1
@@ -159,6 +161,8 @@ spec:
           value: "YourGithubApiToken"
         - name: APP_INSIGHTS_KEY
           value: "YourAppInsightKey"
+        - name: environment
+          value: "YourConnectorOrExtension(chrome | jsdom | browser)"
 ---
 apiVersion: apps/v1
 kind: Deployment
