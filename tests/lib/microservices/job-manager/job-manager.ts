@@ -424,7 +424,7 @@ test.serial(`if the source is a file and the config is valid, it should create a
 
     t.is(args[0], jobResult.url);
     t.is(args[1], JobStatus.pending);
-    t.deepEqual(args[2].length, 21);
+    t.deepEqual(args[2].length, 20);
     t.deepEqual(args[3].length, 7);
 });
 

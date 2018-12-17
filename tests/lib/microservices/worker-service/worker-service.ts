@@ -228,7 +228,7 @@ test.serial(`If there is a problem running webhint, the job sent to the queue ha
     t.is(jobSent.status, JobStatus.error);
     t.is(axe.status, HintStatus.error);
     t.is(contentType.status, HintStatus.error);
-    t.is(disown.status, HintStatus.pass);
+    t.is(disown.status, HintStatus.off);
     t.is(manifest.status, HintStatus.pending);
 });
 
