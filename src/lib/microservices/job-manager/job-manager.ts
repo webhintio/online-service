@@ -34,21 +34,25 @@ if (queueConnectionString) {
 const createNewJob = async (url: string, configs: Array<UserConfig>, jobRunTime: number): Promise<IJob> => {
     let hints: Array<Hint> = [];
 
-    for (const config of configs) {
+    configs.forEach((config) => {
         const normalizedHints = normalizeHints(config.hints);
-        const partialHints: Array<Hint> = [];
+        const partialHints: Array<Hint> = Object.entries(normalizedHints).reduce((total, [key, value]) => {
+            if (value === HintStatus.off) {
+                return total;
+            }
 
-        for (const [key] of Object.entries(normalizedHints)) {
-            partialHints.push({
+            total.push({
                 category: loadHint(key, []).meta.docs.category,
                 messages: [],
                 name: key,
                 status: HintStatus.pending
             });
-        }
+
+            return total;
+        }, []);
 
         hints = hints.concat(partialHints);
-    }
+    });
 
     const databaseJob = await database.job.add(url, JobStatus.pending, hints, configs, jobRunTime);
 

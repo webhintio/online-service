@@ -80,7 +80,7 @@ const setHintsToError = (job: IJob, normalizedHints, error) => {
         }
 
         if (hintOff(hintConfiguration)) {
-            hint.status = HintStatus.pass;
+            hint.status = HintStatus.off;
 
             return;
         }

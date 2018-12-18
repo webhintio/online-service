@@ -7,6 +7,7 @@ export enum JobStatus {
 
 export enum HintStatus {
     error = 'error',
+    off = 'off',
     pass = 'pass',
     pending = 'pending',
     warning = 'warning'
