@@ -1,4 +1,4 @@
-import test from 'ava';
+import test, { ExecutionContext } from 'ava';
 import * as sinon from 'sinon';
 import * as proxyquire from 'proxyquire';
 
@@ -26,6 +26,14 @@ const azureSB = {
 
 const misc = { delay() { } };
 
+type QueueTestContext = {
+    sandbox: sinon.SinonSandbox;
+    azureSBCreateServiceBusServiceStub: sinon.SinonStub;
+    miscDelaySpy: sinon.SinonSpy;
+};
+
+type TestContext = ExecutionContext<QueueTestContext>;
+
 proxyquire('../../../../src/lib/common/queue/queue', {
     '../../utils/misc': misc,
     'azure-sb': azureSB
@@ -33,31 +41,29 @@ proxyquire('../../../../src/lib/common/queue/queue', {
 
 import { Queue } from '../../../../src/lib/common/queue/queue';
 
-test.beforeEach((t) => {
-    sinon.spy(misc, 'delay');
-    sinon.stub(azureSB, 'createServiceBusService').returns(azureSBService);
+test.beforeEach((t: TestContext) => {
+    const sandbox = sinon.createSandbox();
 
-    t.context.azureSB = azureSB;
-    t.context.misc = misc;
+    t.context.miscDelaySpy = sandbox.spy(misc, 'delay');
+    t.context.azureSBCreateServiceBusServiceStub = sandbox.stub(azureSB, 'createServiceBusService').returns(azureSBService);
+
+    t.context.sandbox = sandbox;
 });
 
-test.afterEach.always((t) => {
-    t.context.azureSB.createServiceBusService.restore();
-    t.context.misc.delay.restore();
+test.afterEach.always((t: TestContext) => {
+    t.context.sandbox.restore();
 });
 
-test.serial('Constructor should create the instance of azure service bus', (t) => {
+test.serial('Constructor should create the instance of azure service bus', (t: TestContext) => {
     const queue = new Queue('QueueName', 'connectionString'); // eslint-disable-line no-unused-vars
 
-    t.true(t.context.azureSB.createServiceBusService.calledOnce);
+    t.true(t.context.azureSBCreateServiceBusServiceStub.calledOnce);
 });
 
-test.serial('sendMessage should send a message to service bus', async (t) => {
-    sinon.stub(azureSBService, 'sendQueueMessage').callsFake((param1, param2, callback) => {
+test.serial('sendMessage should send a message to service bus', async (t: TestContext) => {
+    const azureSBServiceSendQueueMessageStub = sinon.stub(azureSBService, 'sendQueueMessage').callsFake((param1, param2, callback) => {
         callback(null);
     });
-
-    t.context.azureSBService = azureSBService;
 
     const queueName = 'queueName';
     const queue = new Queue(queueName, 'connectionString');
@@ -65,15 +71,15 @@ test.serial('sendMessage should send a message to service bus', async (t) => {
 
     await queue.sendMessage(message);
 
-    t.true(t.context.azureSBService.sendQueueMessage.calledOnce);
-    t.is(t.context.azureSBService.sendQueueMessage.args[0][0], queueName);
-    t.deepEqual(JSON.parse(t.context.azureSBService.sendQueueMessage.args[0][1].body), message);
+    t.true(azureSBServiceSendQueueMessageStub.calledOnce);
+    t.is(azureSBServiceSendQueueMessageStub.args[0][0], queueName);
+    t.deepEqual(JSON.parse(azureSBServiceSendQueueMessageStub.args[0][1].body), message);
 
-    t.context.azureSBService.sendQueueMessage.restore();
+    azureSBServiceSendQueueMessageStub.restore();
 });
 
-test.serial('if sendMessage fails, it should retry it', async (t) => {
-    sinon.stub(azureSBService, 'sendQueueMessage')
+test.serial('if sendMessage fails, it should retry it', async (t: TestContext) => {
+    const azureSBServiceSendQueueMessageStub = sinon.stub(azureSBService, 'sendQueueMessage')
         .onFirstCall()
         .callsFake((param1, param2, callback) => {
             callback({});
@@ -83,29 +89,24 @@ test.serial('if sendMessage fails, it should retry it', async (t) => {
             callback(null);
         });
 
-    t.context.azureSBService = azureSBService;
-
     const queueName = 'queueName';
     const queue = new Queue(queueName, 'connectionString');
     const message = { id: 'id', url: 'url' };
 
     await queue.sendMessage(message);
 
-    t.true(t.context.azureSBService.sendQueueMessage.calledTwice);
+    t.true(azureSBServiceSendQueueMessageStub.calledTwice);
 
-    t.context.azureSBService.sendQueueMessage.restore();
+    azureSBServiceSendQueueMessageStub.restore();
 });
 
-test.serial('if sendMessage fails always, it should return an error', async (t) => {
+test.serial('if sendMessage fails always, it should return an error', async (t: TestContext) => {
     const error = new Error('error');
 
-    sinon.stub(azureSBService, 'sendQueueMessage')
+    const azureSBServiceSendQueueMessageStub = sinon.stub(azureSBService, 'sendQueueMessage')
         .callsFake((param1, param2, callback) => {
             callback(error);
         });
-
-    t.context.azureSBService = azureSBService;
-
     const queueName = 'queueName';
     const queue = new Queue(queueName, 'connectionString');
     const message = { id: 'id', url: 'url' };
@@ -115,62 +116,53 @@ test.serial('if sendMessage fails always, it should return an error', async (t) 
     try {
         await queue.sendMessage(message);
     } catch (err) {
-        t.is(t.context.azureSBService.sendQueueMessage.callCount, 10);
+        t.is(azureSBServiceSendQueueMessageStub.callCount, 10);
         t.is(err, error);
     }
-    t.context.azureSBService.sendQueueMessage.restore();
+    azureSBServiceSendQueueMessageStub.restore();
 });
 
-test.serial(`getMessage should return a message and don't delete it`, async (t) => {
+test.serial(`getMessage should return a message and don't delete it`, async (t: TestContext) => {
     const message = { id: 'id', url: 'url' };
 
-    sinon.stub(azureSBService, 'receiveQueueMessage').callsFake((param1, param2, callback) => {
+    const azureSBServiceReceiveQueueMessageStub = sinon.stub(azureSBService, 'receiveQueueMessage').callsFake((param1, param2, callback) => {
         callback(null, { body: JSON.stringify(message) });
     });
-
-    t.context.azureSBService = azureSBService;
-
     const queueName = 'queueName';
     const queue = new Queue(queueName, 'connectionString');
 
     const msg = await queue.getMessage();
 
-    t.true(t.context.azureSBService.receiveQueueMessage.calledOnce);
-    t.is(t.context.azureSBService.receiveQueueMessage.args[0][0], queueName);
-    t.true(t.context.azureSBService.receiveQueueMessage.args[0][1].isPeekLock);
+    t.true(azureSBServiceReceiveQueueMessageStub.calledOnce);
+    t.is(azureSBServiceReceiveQueueMessageStub.args[0][0], queueName);
+    t.true(azureSBServiceReceiveQueueMessageStub.args[0][1].isPeekLock);
     t.deepEqual(msg.data, message);
 
-    t.context.azureSBService.receiveQueueMessage.restore();
+    azureSBServiceReceiveQueueMessageStub.restore();
 });
 
-test.serial(`if there is no messages in the queue, getMessage should return null`, async (t) => {
-    sinon.stub(azureSBService, 'receiveQueueMessage').callsFake((param1, param2, callback) => {
+test.serial(`if there is no messages in the queue, getMessage should return null`, async (t: TestContext) => {
+    const azureSBServiceReceiveQueueMessageStub = sinon.stub(azureSBService, 'receiveQueueMessage').callsFake((param1, param2, callback) => {
         callback('No messages to receive');
     });
-
-    t.context.azureSBService = azureSBService;
-
     const queueName = 'queueName';
     const queue = new Queue(queueName, 'connectionString');
 
     const msg = await queue.getMessage();
 
-    t.true(t.context.azureSBService.receiveQueueMessage.calledOnce);
-    t.is(t.context.azureSBService.receiveQueueMessage.args[0][0], queueName);
+    t.true(azureSBServiceReceiveQueueMessageStub.calledOnce);
+    t.is(azureSBServiceReceiveQueueMessageStub.args[0][0], queueName);
     t.is(msg, null);
 
-    t.context.azureSBService.receiveQueueMessage.restore();
+    azureSBServiceReceiveQueueMessageStub.restore();
 });
 
-test.serial(`if there is another error, getMessage should return an error`, async (t) => {
+test.serial(`if there is another error, getMessage should return an error`, async (t: TestContext) => {
     const errorMessage = 'Something went wrong';
 
-    sinon.stub(azureSBService, 'receiveQueueMessage').callsFake((param1, param2, callback) => {
+    const azureSBServiceReceiveQueueMessageStub = sinon.stub(azureSBService, 'receiveQueueMessage').callsFake((param1, param2, callback) => {
         callback(new Error(errorMessage));
     });
-
-    t.context.azureSBService = azureSBService;
-
     const queueName = 'queueName';
     const queue = new Queue(queueName, 'connectionString');
 
@@ -179,14 +171,14 @@ test.serial(`if there is another error, getMessage should return an error`, asyn
         await queue.getMessage();
     } catch (err) {
         t.is(err.message, errorMessage);
-        t.true(t.context.azureSBService.receiveQueueMessage.calledOnce);
-        t.is(t.context.azureSBService.receiveQueueMessage.args[0][0], queueName);
+        t.true(azureSBServiceReceiveQueueMessageStub.calledOnce);
+        t.is(azureSBServiceReceiveQueueMessageStub.args[0][0], queueName);
     }
 
-    t.context.azureSBService.receiveQueueMessage.restore();
+    azureSBServiceReceiveQueueMessageStub.restore();
 });
 
-test.serial('getMessagesCount should return the number of active messages in the queue', async (t) => {
+test.serial('getMessagesCount should return the number of active messages in the queue', async (t: TestContext) => {
     const queueResult = { CountDetails: { 'd2p1:ActiveMessageCount': 15 } };
 
     sinon.stub(azureSBService, 'getQueue').callsFake((param1, callback) => {
@@ -201,7 +193,7 @@ test.serial('getMessagesCount should return the number of active messages in the
     t.is(result, queueResult.CountDetails['d2p1:ActiveMessageCount']);
 });
 
-test.serial(`if listen is called without handler, it should return an error`, async (t) => {
+test.serial(`if listen is called without handler, it should return an error`, async (t: TestContext) => {
     const queueName = 'queueName';
     const queue = new Queue(queueName, 'connectionString');
 
@@ -213,18 +205,16 @@ test.serial(`if listen is called without handler, it should return an error`, as
     }
 });
 
-test.serial(`if a listener is called twice without stop it before, it should return an error`, async (t) => {
+test.serial(`if a listener is called twice without stop it before, it should return an error`, async (t: TestContext) => {
     const message = { id: 'id', url: 'url' };
 
-    sinon.stub(azureSBService, 'receiveQueueMessage').callsFake((param1, param2, callback) => {
+    const azureSBServiceReceiveQueueMessageStub = sinon.stub(azureSBService, 'receiveQueueMessage').callsFake((param1, param2, callback) => {
         callback(null, { body: JSON.stringify(message) });
     });
 
-    sinon.stub(azureSBService, 'deleteMessage').callsFake((param1, callback) => {
+    const azureSBServiceDeleteMessageStub = sinon.stub(azureSBService, 'deleteMessage').callsFake((param1, callback) => {
         callback(null);
     });
-
-    t.context.azureSBService = azureSBService;
 
     const queueName = 'queueName';
     const queue = new Queue(queueName, 'connectionString');
@@ -243,14 +233,14 @@ test.serial(`if a listener is called twice without stop it before, it should ret
         }
     });
 
-    t.context.azureSBService.receiveQueueMessage.restore();
-    t.context.azureSBService.deleteMessage.restore();
+    azureSBServiceReceiveQueueMessageStub.restore();
+    azureSBServiceDeleteMessageStub.restore();
 });
 
-test.serial('if listen is call with the option pooling defined, it should use it as default value', async (t) => {
+test.serial('if listen is call with the option pooling defined, it should use it as default value', async (t: TestContext) => {
     const message = { id: 'id', url: 'url' };
 
-    sinon.stub(azureSBService, 'receiveQueueMessage')
+    const azureSBServiceReceiveQueueMessageStub = sinon.stub(azureSBService, 'receiveQueueMessage')
         .onFirstCall()
         .callsFake((param1, param2, callback) => {
             callback('No messages to receive');
@@ -259,12 +249,9 @@ test.serial('if listen is call with the option pooling defined, it should use it
         .callsFake((param1, param2, callback) => {
             callback(null, { body: JSON.stringify(message) });
         });
-    sinon.stub(azureSBService, 'deleteMessage').callsFake((param1, callback) => {
+    const azureSBServiceDeleteMessageStub = sinon.stub(azureSBService, 'deleteMessage').callsFake((param1, callback) => {
         callback(null);
     });
-
-    t.context.azureSBService = azureSBService;
-
     const queueName = 'queueName';
     const queue = new Queue(queueName, 'connectionString');
 
@@ -272,17 +259,17 @@ test.serial('if listen is call with the option pooling defined, it should use it
         queue.stopListener();
     }, { pooling: 3 });
 
-    t.is(t.context.misc.delay.args[0][0], 3);
-    t.true(t.context.azureSBService.deleteMessage.calledOnce);
+    t.is(t.context.miscDelaySpy.args[0][0], 3);
+    t.true(azureSBServiceDeleteMessageStub.calledOnce);
 
-    t.context.azureSBService.receiveQueueMessage.restore();
-    t.context.azureSBService.deleteMessage.restore();
+    azureSBServiceReceiveQueueMessageStub.restore();
+    azureSBServiceDeleteMessageStub.restore();
 });
 
-test.serial(`if listen is call with the autoDeleteMessages to false, it shouldn't delete messages`, async (t) => {
+test.serial(`if listen is call with the autoDeleteMessages to false, it shouldn't delete messages`, async (t: TestContext) => {
     const message = { id: 'id', url: 'url' };
 
-    sinon.stub(azureSBService, 'receiveQueueMessage')
+    const azureSBServiceReceiveQueueMessageStub = sinon.stub(azureSBService, 'receiveQueueMessage')
         .onFirstCall()
         .callsFake((param1, param2, callback) => {
             callback('No messages to receive');
@@ -291,10 +278,7 @@ test.serial(`if listen is call with the autoDeleteMessages to false, it shouldn'
         .callsFake((param1, param2, callback) => {
             callback(null, { body: JSON.stringify(message) });
         });
-    sinon.spy(azureSBService, 'deleteMessage');
-
-    t.context.azureSBService = azureSBService;
-
+    const azureSBServiceDeleteMessageSpy = sinon.spy(azureSBService, 'deleteMessage');
     const queueName = 'queueName';
     const queue = new Queue(queueName, 'connectionString');
 
@@ -302,25 +286,22 @@ test.serial(`if listen is call with the autoDeleteMessages to false, it shouldn'
         queue.stopListener();
     }, { autoDeleteMessages: false });
 
-    t.false(t.context.azureSBService.deleteMessage.called);
+    t.false(azureSBServiceDeleteMessageSpy.called);
 
-    t.context.azureSBService.receiveQueueMessage.restore();
-    t.context.azureSBService.deleteMessage.restore();
+    azureSBServiceReceiveQueueMessageStub.restore();
+    azureSBServiceDeleteMessageSpy.restore();
 });
 
-test.serial('the lisener should receive an array with as many messages as the option messagesToGet', async (t) => {
+test.serial('the lisener should receive an array with as many messages as the option messagesToGet', async (t: TestContext) => {
     const message = { id: 'id', url: 'url' };
 
-    sinon.stub(azureSBService, 'receiveQueueMessage')
+    const azureSBServiceReceiveQueueMessageStub = sinon.stub(azureSBService, 'receiveQueueMessage')
         .callsFake((param1, param2, callback) => {
             callback(null, { body: JSON.stringify(message) });
         });
-    sinon.stub(azureSBService, 'deleteMessage').callsFake((param1, callback) => {
+    const azureSBServiceDeleteMessageStub = sinon.stub(azureSBService, 'deleteMessage').callsFake((param1, callback) => {
         callback(null);
     });
-
-    t.context.azureSBService = azureSBService;
-
     const queueName = 'queueNme';
     const queue = new Queue(queueName, 'connectionString');
 
@@ -331,17 +312,17 @@ test.serial('the lisener should receive an array with as many messages as the op
         queue.stopListener();
     }, { messagesToGet: 3 });
 
-    t.is(t.context.azureSBService.deleteMessage.callCount, 3);
-    t.is(t.context.azureSBService.receiveQueueMessage.callCount, 3);
+    t.is(azureSBServiceDeleteMessageStub.callCount, 3);
+    t.is(azureSBServiceReceiveQueueMessageStub.callCount, 3);
 
-    t.context.azureSBService.receiveQueueMessage.restore();
-    t.context.azureSBService.deleteMessage.restore();
+    azureSBServiceReceiveQueueMessageStub.restore();
+    azureSBServiceDeleteMessageStub.restore();
 });
 
-test.serial('the lisener should receive an array with as many messages as the option messagesToGet or messages in the queue', async (t) => {
+test.serial('the lisener should receive an array with as many messages as the option messagesToGet or messages in the queue', async (t: TestContext) => {
     const message = { id: 'id', url: 'url' };
 
-    sinon.stub(azureSBService, 'receiveQueueMessage')
+    const azureSBServiceReceiveQueueMessageStub = sinon.stub(azureSBService, 'receiveQueueMessage')
         .onFirstCall()
         .callsFake((param1, param2, callback) => {
             callback(null, { body: JSON.stringify(message) });
@@ -350,12 +331,9 @@ test.serial('the lisener should receive an array with as many messages as the op
         .callsFake((param1, param2, callback) => {
             callback('No messages to receive');
         });
-    sinon.stub(azureSBService, 'deleteMessage').callsFake((param1, callback) => {
+    const azureSBServiceDeleteMessageStub = sinon.stub(azureSBService, 'deleteMessage').callsFake((param1, callback) => {
         callback(null);
     });
-
-    t.context.azureSBService = azureSBService;
-
     const queueName = 'queueNme';
     const queue = new Queue(queueName, 'connectionString');
 
@@ -366,17 +344,17 @@ test.serial('the lisener should receive an array with as many messages as the op
         queue.stopListener();
     }, { messagesToGet: 3 });
 
-    t.is(t.context.azureSBService.deleteMessage.callCount, 1);
-    t.is(t.context.azureSBService.receiveQueueMessage.callCount, 2);
+    t.is(azureSBServiceDeleteMessageStub.callCount, 1);
+    t.is(azureSBServiceReceiveQueueMessageStub.callCount, 2);
 
-    t.context.azureSBService.receiveQueueMessage.restore();
-    t.context.azureSBService.deleteMessage.restore();
+    azureSBServiceReceiveQueueMessageStub.restore();
+    azureSBServiceDeleteMessageStub.restore();
 });
 
-test.serial('if service bus returns an error 503, delay should be called with 10000', async (t) => {
+test.serial('if service bus returns an error 503, delay should be called with 10000', async (t: TestContext) => {
     const message = { id: 'id', url: 'url' };
 
-    sinon.stub(azureSBService, 'receiveQueueMessage')
+    const azureSBServiceReceiveQueueMessageStub = sinon.stub(azureSBService, 'receiveQueueMessage')
         .onFirstCall()
         .callsFake((param1, param2, callback) => {
             callback({ statusCode: 503 });
@@ -385,12 +363,9 @@ test.serial('if service bus returns an error 503, delay should be called with 10
         .callsFake((param1, param2, callback) => {
             callback(null, { body: JSON.stringify(message) });
         });
-    sinon.stub(azureSBService, 'deleteMessage').callsFake((param1, callback) => {
+    const azureSBServiceDeleteMessageStub = sinon.stub(azureSBService, 'deleteMessage').callsFake((param1, callback) => {
         callback(null);
     });
-
-    t.context.azureSBService = azureSBService;
-
     const queueName = 'queueName';
     const queue = new Queue(queueName, 'connectionString');
 
@@ -398,27 +373,24 @@ test.serial('if service bus returns an error 503, delay should be called with 10
         queue.stopListener();
     });
 
-    t.is(t.context.misc.delay.args[0][0], 10000);
+    t.is(t.context.miscDelaySpy.args[0][0], 10000);
 
-    t.context.azureSBService.receiveQueueMessage.restore();
-    t.context.azureSBService.deleteMessage.restore();
+    azureSBServiceReceiveQueueMessageStub.restore();
+    azureSBServiceDeleteMessageStub.restore();
 });
 
-test.serial(`if the handler throws an error, then the message shouldn't be deleted`, async (t) => {
+test.serial(`if the handler throws an error, then the message shouldn't be deleted`, async (t: TestContext) => {
     // In the online-service, the only case for the handler to fail is
     // if something goes wrong with the queue.
     const message = { id: 'id', url: 'url' };
 
-    sinon.stub(azureSBService, 'receiveQueueMessage')
+    const azureSBServiceReceiveQueueMessageStub = sinon.stub(azureSBService, 'receiveQueueMessage')
         .callsFake((param1, param2, callback) => {
             callback(null, { body: JSON.stringify(message) });
         });
-    sinon.stub(azureSBService, 'deleteMessage').callsFake((param1, callback) => {
+    const azureSBServiceDeleteMessageStub = sinon.stub(azureSBService, 'deleteMessage').callsFake((param1, callback) => {
         callback(null);
     });
-
-    t.context.azureSBService = azureSBService;
-
     const queueName = 'queueName';
     const queue = new Queue(queueName, 'connectionString');
 
@@ -433,8 +405,8 @@ test.serial(`if the handler throws an error, then the message shouldn't be delet
         queue.stopListener();
     });
 
-    t.true(t.context.azureSBService.deleteMessage.calledOnce);
+    t.true(azureSBServiceDeleteMessageStub.calledOnce);
 
-    t.context.azureSBService.receiveQueueMessage.restore();
-    t.context.azureSBService.deleteMessage.restore();
+    azureSBServiceReceiveQueueMessageStub.restore();
+    azureSBServiceDeleteMessageStub.restore();
 });

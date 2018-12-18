@@ -1,30 +1,30 @@
-import test from 'ava';
+import test, { ExecutionContext } from 'ava';
 import * as sinon from 'sinon';
 import * as proxyquire from 'proxyquire';
 
 process.env.storageAccount = 'storageAccount'; // eslint-disable-line no-process-env
 
 type BlobService = {
-    createBlockBlobFromLocalFile: () => BlobService;
+    createBlockBlobFromLocalFile: (containerName: string, blobName: string, filePath: string, callback: Function) => BlobService;
     createContainerIfNotExists: (name: any, callback: any) => void;
-    deleteBlobIfExists: () => BlobService;
-    listBlobsSegmented: () => BlobService;
-    startCopyBlob: () => BlobService;
+    deleteBlobIfExists: (containerName: string, blobName: string, callback: Function) => BlobService;
+    listBlobsSegmented: (containerName: string, token: string, callback: Function) => BlobService;
+    startCopyBlob: (blobUri: string, targetContainerName: string, targetName: string, callback: Function) => BlobService;
     withFilter: () => BlobService;
 };
 
 const blobService: BlobService = {
-    createBlockBlobFromLocalFile() {
+    createBlockBlobFromLocalFile(containerName: string, blobName: string, filePath: string, callback: Function): BlobService {
         return blobService;
     },
     createContainerIfNotExists() { },
-    deleteBlobIfExists() {
+    deleteBlobIfExists(containerName: string, blobName: string, callback: Function): BlobService {
         return blobService;
     },
-    listBlobsSegmented() {
+    listBlobsSegmented(containerName: string, token: string, callback: Function): BlobService {
         return blobService;
     },
-    startCopyBlob() {
+    startCopyBlob(blobUri: string, targetContainerName: string, targetName: string, callback: Function): BlobService {
         return blobService;
     },
     withFilter() {
@@ -38,60 +38,67 @@ const azureStorage = {
     ExponentialRetryPolicyFilter: function () { } // eslint-disable-line object-shorthand
 };
 
+type StorageTestContext = {
+    sandbox: sinon.SinonSandbox;
+    blobServiceWithFilterStub: sinon.SinonStub;
+    blobServiceCreateContainerIfNotExistsStub: sinon.SinonStub;
+};
+
+type TestContext = ExecutionContext<StorageTestContext>;
+
 proxyquire('../../../../src/lib/common/storage/storage', { 'azure-storage': azureStorage });
 
 import * as service from '../../../../src/lib/common/storage/storage';
 
 
-test.beforeEach((t) => {
+test.beforeEach((t: TestContext) => {
     const sandbox = sinon.createSandbox();
 
     sandbox.stub(azureStorage, 'createBlobService').returns(blobService);
-    sandbox.stub(blobService, 'withFilter').returns(blobService);
-    sandbox.stub(blobService, 'createContainerIfNotExists').callsFake((name, callback) => {
+    t.context.blobServiceWithFilterStub = sandbox.stub(blobService, 'withFilter').returns(blobService);
+    t.context.blobServiceCreateContainerIfNotExistsStub = sandbox.stub(blobService, 'createContainerIfNotExists').callsFake((name, callback) => {
         callback(null, 'ok');
     });
 
     t.context.sandbox = sandbox;
-    t.context.blobService = blobService;
 });
 
-test.afterEach.always((t) => {
+test.afterEach.always((t: TestContext) => {
     t.context.sandbox.restore();
 });
 
-test.serial('getContainer should return a StorageContainer', async (t) => {
+test.serial('getContainer should return a StorageContainer', async (t: TestContext) => {
     const container = await service.getContainer('newcontainer');
 
     t.true(container instanceof service.StorageContainer);
 });
 
-test.serial('container.uploadFile should call to createBlockBlobFromLocalFile with the right data', async (t) => {
+test.serial('container.uploadFile should call to createBlockBlobFromLocalFile with the right data', async (t: TestContext) => {
     const sandbox = t.context.sandbox;
 
-    sandbox.stub(blobService, 'createBlockBlobFromLocalFile').callsFake((containerName, blobName, filePath, callback) => {
-        callback(null, 'ok');
+    const blobServiceCreateBlockBlobFromLocalFileStub = sandbox.stub(blobService, 'createBlockBlobFromLocalFile').callsFake((containerName, blobName, filePath, callback) => {
+        return callback(null, 'ok');
     });
 
     const container = await service.getContainer('newcontainer');
 
     await container.uploadFile('blobName.ext', 'pathToFile');
 
-    t.true(t.context.blobService.createBlockBlobFromLocalFile.calledOnce);
-    const args = t.context.blobService.createBlockBlobFromLocalFile.args[0];
+    t.true(blobServiceCreateBlockBlobFromLocalFileStub.calledOnce);
+    const args = blobServiceCreateBlockBlobFromLocalFileStub.args[0];
 
     t.is(args[0], 'newcontainer');
     t.is(args[1], 'blobName.ext');
     t.is(args[2], 'pathToFile');
 });
 
-test.serial('container.getBlobs should call to listBlobsSegmented with the right data', async (t) => {
+test.serial('container.getBlobs should call to listBlobsSegmented with the right data', async (t: TestContext) => {
     const sandbox = t.context.sandbox;
 
-    sandbox.stub(blobService, 'listBlobsSegmented')
+    const blobServiceListBlobsSegmentedStub = sandbox.stub(blobService, 'listBlobsSegmented')
         .onFirstCall()
         .callsFake((containerName, token, callback) => {
-            callback(null, {
+            return callback(null, {
                 continuationToken: 'asdf',
                 entries: [
                     'item1',
@@ -101,7 +108,7 @@ test.serial('container.getBlobs should call to listBlobsSegmented with the right
         })
         .onSecondCall()
         .callsFake((containerName, token, callback) => {
-            callback(null, {
+            return callback(null, {
                 entries: [
                     'item3'
                 ]
@@ -112,9 +119,9 @@ test.serial('container.getBlobs should call to listBlobsSegmented with the right
 
     const blobs = await container.getBlobs();
 
-    t.true(t.context.blobService.listBlobsSegmented.calledTwice);
-    const args1 = t.context.blobService.listBlobsSegmented.args[0];
-    const args2 = t.context.blobService.listBlobsSegmented.args[1];
+    t.true(blobServiceListBlobsSegmentedStub.calledTwice);
+    const args1 = blobServiceListBlobsSegmentedStub.args[0];
+    const args2 = blobServiceListBlobsSegmentedStub.args[1];
 
     t.is(args1[0], 'newcontainer');
     t.is(args1[1], null);
@@ -123,11 +130,11 @@ test.serial('container.getBlobs should call to listBlobsSegmented with the right
     t.is(blobs.length, 3);
 });
 
-test.serial('container.copyBlob should call to startCopyBlob with the right data', async (t) => {
+test.serial('container.copyBlob should call to startCopyBlob with the right data', async (t: TestContext) => {
     const sandbox = t.context.sandbox;
 
-    sandbox.stub(blobService, 'startCopyBlob').callsFake((blobUri, targetContainerName, targetName, callback) => {
-        callback(null, 'ok');
+    const blobServiceStartCopyBlobStub = sandbox.stub(blobService, 'startCopyBlob').callsFake((blobUri, targetContainerName, targetName, callback) => {
+        return callback(null, 'ok');
     });
 
     const container = await service.getContainer('newcontainer');
@@ -135,27 +142,27 @@ test.serial('container.copyBlob should call to startCopyBlob with the right data
 
     await container.copyBlob('blobName.ext', targetContainer, 'targetName.ext');
 
-    t.true(t.context.blobService.startCopyBlob.calledOnce);
-    const args = t.context.blobService.startCopyBlob.args[0];
+    t.true(blobServiceStartCopyBlobStub.calledOnce);
+    const args = blobServiceStartCopyBlobStub.args[0];
 
     t.is(args[0], 'https://storageAccount.blob.core.windows.net/newcontainer/blobName.ext');
     t.is(args[1], 'targetContainer');
     t.is(args[2], 'targetName.ext');
 });
 
-test.serial('container.deleteBlob should call to deleteBlobIfExists with the right data', async (t) => {
+test.serial('container.deleteBlob should call to deleteBlobIfExists with the right data', async (t: TestContext) => {
     const sandbox = t.context.sandbox;
 
-    sandbox.stub(blobService, 'deleteBlobIfExists').callsFake((containerName, blobName, callback) => {
-        callback(null, 'ok');
+    const blobServiceDeleteBlobIfExistsStub = sandbox.stub(blobService, 'deleteBlobIfExists').callsFake((containerName, blobName, callback) => {
+        return callback(null, 'ok');
     });
 
     const container = await service.getContainer('newcontainer');
 
     await container.deleteBlob('blobName.ext');
 
-    t.true(t.context.blobService.deleteBlobIfExists.calledOnce);
-    const args = t.context.blobService.deleteBlobIfExists.args[0];
+    t.true(blobServiceDeleteBlobIfExistsStub.calledOnce);
+    const args = blobServiceDeleteBlobIfExistsStub.args[0];
 
     t.is(args[0], 'newcontainer');
     t.is(args[1], 'blobName.ext');

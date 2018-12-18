@@ -1,6 +1,6 @@
 import * as path from 'path';
 
-import test from 'ava';
+import test, { ExecutionContext } from 'ava';
 import * as sinon from 'sinon';
 import * as proxyquire from 'proxyquire';
 import * as moment from 'moment';
@@ -79,13 +79,13 @@ const activeConfig = {
     }]
 };
 
-const validatedJobCreatedInDatabase = (t, jobInput) => {
-    t.true(t.context.database.lock.calledOnce);
-    t.true(t.context.database.unlock.calledOnce);
-    t.true(t.context.database.job.add.calledOnce);
-    t.true(t.context.queueMethods.sendMessage.calledTwice);
+const validatedJobCreatedInDatabase = (t: TestContext, jobInput) => {
+    t.true(t.context.databaseLockStub.calledOnce);
+    t.true(t.context.databaseUnlockStub.calledOnce);
+    t.true(t.context.databaseJobAddStub.calledOnce);
+    t.true(t.context.queueMethodsSendMessageStub.calledTwice);
 
-    const args = t.context.database.job.add.args[0];
+    const args = t.context.databaseJobAddStub.args[0];
 
     t.is(args[0], jobInput.url);
     t.is(args[1], JobStatus.pending);
@@ -124,42 +124,45 @@ const validatedJobCreatedInDatabase = (t, jobInput) => {
     }]);
 };
 
-test.beforeEach(async (t) => {
-    sinon.stub(database.job, 'get').resolves({});
-    sinon.stub(database, 'lock').resolves({});
-    sinon.stub(database, 'unlock').resolves({});
-    sinon.spy(database.job, 'update');
-    sinon.stub(configManager, 'active').resolves(activeConfig);
-    sinon.spy(queueMethods, 'getMessagesCount');
-    sinon.stub(resourceLoader, 'loadHint').returns(hint);
+type JobTestContext = {
+    sandbox: sinon.SinonSandbox;
+    jobs: any;
+    configManagerActiveStub: sinon.SinonStub;
+    databaseLockStub: sinon.SinonStub;
+    databaseUnlockStub: sinon.SinonStub;
+    databaseJobAddStub: sinon.SinonStub | sinon.SinonSpy;
+    databaseJobGetByUrlStub: sinon.SinonStub;
+    databaseJobGetStub: sinon.SinonStub;
+    databaseJobUpdateSpy: sinon.SinonSpy;
+    queueMethodsGetMessagesCountSpy: sinon.SinonSpy;
+    queueMethodsSendMessageStub: sinon.SinonStub | sinon.SinonSpy;
+    resourceLoaderLoadHintStub: sinon.SinonStub;
+};
+
+type TestContext = ExecutionContext<JobTestContext>;
+
+test.beforeEach(async (t: TestContext) => {
+    const sandbox = sinon.createSandbox();
+
+    t.context.databaseJobGetStub = sandbox.stub(database.job, 'get').resolves({});
+    t.context.databaseLockStub = sandbox.stub(database, 'lock').resolves({});
+    t.context.databaseUnlockStub = sandbox.stub(database, 'unlock').resolves({});
+    t.context.databaseJobUpdateSpy = sandbox.spy(database.job, 'update');
+    t.context.configManagerActiveStub = sandbox.stub(configManager, 'active').resolves(activeConfig);
+    t.context.queueMethodsGetMessagesCountSpy = sandbox.spy(queueMethods, 'getMessagesCount');
+    t.context.resourceLoaderLoadHintStub = sandbox.stub(resourceLoader, 'loadHint').returns(hint);
 
     t.context.jobs = JSON.parse(await readFileAsync(path.join(__dirname, 'fixtures', 'jobs.json')));
-    t.context.database = database;
-    t.context.queueMethods = queueMethods;
-    t.context.configManager = configManager;
-    t.context.resourceLoader = resourceLoader;
+
+    t.context.sandbox = sandbox;
 });
 
-test.afterEach.always((t) => {
-    t.context.database.job.get.restore();
-    t.context.database.lock.restore();
-    t.context.database.unlock.restore();
-    t.context.database.job.update.restore();
-    if (t.context.database.job.add.restore) {
-        t.context.database.job.add.restore();
-    }
-    if (t.context.queueMethods.sendMessage.restore) {
-        t.context.queueMethods.sendMessage.restore();
-    }
-    if (t.context.database.job.getByUrl.restore) {
-        t.context.database.job.getByUrl.restore();
-    }
-    t.context.queueMethods.getMessagesCount.restore();
-    t.context.configManager.active.restore();
-    t.context.resourceLoader.loadHint.restore();
+test.afterEach.always((t: TestContext) => {
+    t.context.sandbox.restore();
 });
 
-test.serial(`if there is no url, it should return an error`, async (t) => {
+test.serial(`if there is no url, it should return an error`, async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const jobInput = {
         fields: {
             config: activeConfig.webhintConfigs,
@@ -170,7 +173,7 @@ test.serial(`if there is no url, it should return an error`, async (t) => {
         files: {}
     };
 
-    sinon.stub(database.job, 'add').resolves(jobInput);
+    t.context.databaseJobAddStub = sandbox.stub(database.job, 'add').resolves(jobInput);
 
     try {
         await jobManager.startJob(jobInput);
@@ -179,9 +182,11 @@ test.serial(`if there is no url, it should return an error`, async (t) => {
     }
 });
 
-test.serial(`if the job doesn't exist, it should create a new job and add it to the queue`, async (t) => {
-    sinon.spy(queueMethods, 'sendMessage');
-    sinon.stub(database.job, 'getByUrl').resolves([]);
+test.serial(`if the job doesn't exist, it should create a new job and add it to the queue`, async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    t.context.queueMethodsSendMessageStub = sandbox.spy(queueMethods, 'sendMessage');
+    t.context.databaseJobGetByUrlStub = sandbox.stub(database.job, 'getByUrl').resolves([]);
     const jobInput = {
         fields: {
             config: null,
@@ -198,16 +203,18 @@ test.serial(`if the job doesn't exist, it should create a new job and add it to 
         url: 'http://webhint.io'
     };
 
-    sinon.stub(database.job, 'add').resolves(jobResult);
+    t.context.databaseJobAddStub = sandbox.stub(database.job, 'add').resolves(jobResult);
 
     await jobManager.startJob(jobInput);
 
     validatedJobCreatedInDatabase(t, jobResult);
 });
 
-test.serial(`if the job doesn't exist, but there is an error in Service Bus, it should set the status or the job to error`, async (t) => {
-    sinon.stub(queueMethods, 'sendMessage').rejects();
-    sinon.stub(database.job, 'getByUrl').resolves([]);
+test.serial(`if the job doesn't exist, but there is an error in Service Bus, it should set the status or the job to error`, async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    t.context.queueMethodsSendMessageStub = sandbox.stub(queueMethods, 'sendMessage').rejects();
+    t.context.databaseJobGetByUrlStub = sandbox.stub(database.job, 'getByUrl').resolves([]);
     const jobInput = {
         fields: {
             config: null,
@@ -224,16 +231,18 @@ test.serial(`if the job doesn't exist, but there is an error in Service Bus, it 
         url: 'http://webhint.io'
     };
 
-    sinon.stub(database.job, 'add').resolves(jobResult);
+    t.context.databaseJobAddStub = sandbox.stub(database.job, 'add').resolves(jobResult);
 
     await jobManager.startJob(jobInput);
 
-    t.true(t.context.database.job.update.calledOnce);
+    t.true(t.context.databaseJobUpdateSpy.calledOnce);
 });
 
-test.serial(`if the job doesn't exist, it should use the defaul configuration if source is not set`, async (t) => {
-    sinon.spy(queueMethods, 'sendMessage');
-    sinon.stub(database.job, 'getByUrl').resolves([]);
+test.serial(`if the job doesn't exist, it should use the defaul configuration if source is not set`, async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    t.context.queueMethodsSendMessageStub = sandbox.spy(queueMethods, 'sendMessage');
+    t.context.databaseJobGetByUrlStub = sandbox.stub(database.job, 'getByUrl').resolves([]);
     const jobInput = {
         fields: {
             config: null,
@@ -250,7 +259,7 @@ test.serial(`if the job doesn't exist, it should use the defaul configuration if
         url: 'http://webhint.io'
     };
 
-    sinon.stub(database.job, 'add').resolves(jobResult);
+    t.context.databaseJobAddStub = sandbox.stub(database.job, 'add').resolves(jobResult);
 
     await jobManager.startJob(jobInput);
 
@@ -268,13 +277,14 @@ const setNoExpired = (job: IJob) => {
     job.status = JobStatus.finished;
 };
 
-test.serial(`if the job exists, but it is expired, it should create a new job and add it to the queue`, async (t) => {
+test.serial(`if the job exists, but it is expired, it should create a new job and add it to the queue`, async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const jobs = t.context.jobs;
 
     setExpired(jobs[0]);
 
-    sinon.spy(queueMethods, 'sendMessage');
-    sinon.stub(database.job, 'getByUrl').resolves(jobs);
+    t.context.queueMethodsSendMessageStub = sandbox.spy(queueMethods, 'sendMessage');
+    t.context.databaseJobGetByUrlStub = sandbox.stub(database.job, 'getByUrl').resolves(jobs);
     const jobInput = {
         fields: {
             config: null,
@@ -291,14 +301,15 @@ test.serial(`if the job exists, but it is expired, it should create a new job an
         url: 'http://webhint.io'
     };
 
-    sinon.stub(database.job, 'add').resolves(jobResult);
+    t.context.databaseJobAddStub = sandbox.stub(database.job, 'add').resolves(jobResult);
 
     await jobManager.startJob(jobInput);
 
     validatedJobCreatedInDatabase(t, jobResult);
 });
 
-test.serial(`if the job exists, but config is different, it should create a new job and add it to the queue`, async (t) => {
+test.serial(`if the job exists, but config is different, it should create a new job and add it to the queue`, async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const jobs = t.context.jobs;
 
     jobs[0].config = [{
@@ -308,8 +319,8 @@ test.serial(`if the job exists, but config is different, it should create a new 
         }
     }];
 
-    sinon.spy(queueMethods, 'sendMessage');
-    sinon.stub(database.job, 'getByUrl').resolves(jobs);
+    t.context.queueMethodsSendMessageStub = sandbox.spy(queueMethods, 'sendMessage');
+    t.context.databaseJobGetByUrlStub = sandbox.stub(database.job, 'getByUrl').resolves(jobs);
     const jobInput = {
         fields: {
             config: null,
@@ -326,16 +337,18 @@ test.serial(`if the job exists, but config is different, it should create a new 
         url: 'http://webhint.io'
     };
 
-    sinon.stub(database.job, 'add').resolves(jobResult);
+    t.context.databaseJobAddStub = sandbox.stub(database.job, 'add').resolves(jobResult);
 
     await jobManager.startJob(jobInput);
 
     validatedJobCreatedInDatabase(t, jobResult);
 });
 
-test.serial(`if the source is a file and the config is not valid, it should return an error`, async (t) => {
-    sinon.spy(queueMethods, 'sendMessage');
-    sinon.stub(database.job, 'getByUrl').resolves([]);
+test.serial(`if the source is a file and the config is not valid, it should return an error`, async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    t.context.queueMethodsSendMessageStub = sandbox.spy(queueMethods, 'sendMessage');
+    t.context.databaseJobGetByUrlStub = sandbox.stub(database.job, 'getByUrl').resolves([]);
     const jobInput = {
         fields: {
             hints: null,
@@ -350,19 +363,21 @@ test.serial(`if the source is a file and the config is not valid, it should retu
         }
     };
 
-    sinon.spy(database.job, 'add');
+    t.context.databaseJobAddStub = sandbox.spy(database.job, 'add');
     t.plan(2);
     try {
         await jobManager.startJob(jobInput);
     } catch (err) {
-        t.false(t.context.database.job.add.called);
+        t.false(t.context.databaseJobAddStub.called);
         t.true(err.message.startsWith('Invalid Configuration'));
     }
 });
 
-test.serial(`if the source is a file and the config has duplicated hints, it should return an error`, async (t) => {
-    sinon.spy(queueMethods, 'sendMessage');
-    sinon.stub(database.job, 'getByUrl').resolves([]);
+test.serial(`if the source is a file and the config has duplicated hints, it should return an error`, async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    t.context.queueMethodsSendMessageStub = sandbox.spy(queueMethods, 'sendMessage');
+    t.context.databaseJobGetByUrlStub = sandbox.stub(database.job, 'getByUrl').resolves([]);
     const jobInput = {
         fields: {
             hints: null,
@@ -377,19 +392,21 @@ test.serial(`if the source is a file and the config has duplicated hints, it sho
         }
     };
 
-    sinon.spy(database.job, 'add');
+    t.context.databaseJobAddStub = sandbox.spy(database.job, 'add');
     t.plan(2);
     try {
         await jobManager.startJob(jobInput);
     } catch (err) {
-        t.false(t.context.database.job.add.called);
+        t.false(t.context.databaseJobAddStub.called);
         t.is(err.message, 'Hint manifest-is-valid repeated');
     }
 });
 
-test.serial(`if the source is a file and the config is valid, it should create a new job`, async (t) => {
-    sinon.spy(queueMethods, 'sendMessage');
-    sinon.stub(database.job, 'getByUrl').resolves([]);
+test.serial(`if the source is a file and the config is valid, it should create a new job`, async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    t.context.queueMethodsSendMessageStub = sandbox.spy(queueMethods, 'sendMessage');
+    t.context.databaseJobGetByUrlStub = sandbox.stub(database.job, 'getByUrl').resolves([]);
     const jobInput = {
         fields: {
             hints: null,
@@ -411,16 +428,16 @@ test.serial(`if the source is a file and the config is valid, it should create a
         url: 'http://webhint.io'
     };
 
-    sinon.stub(database.job, 'add').resolves(jobResult);
+    t.context.databaseJobAddStub = sandbox.stub(database.job, 'add').resolves(jobResult);
 
     await jobManager.startJob(jobInput);
 
-    t.true(t.context.database.lock.calledOnce);
-    t.true(t.context.database.unlock.calledOnce);
-    t.true(t.context.database.job.add.calledOnce);
-    t.is(t.context.queueMethods.sendMessage.callCount, 7);
+    t.true(t.context.databaseLockStub.calledOnce);
+    t.true(t.context.databaseUnlockStub.calledOnce);
+    t.true(t.context.databaseJobAddStub.calledOnce);
+    t.is(t.context.queueMethodsSendMessageStub.callCount, 7);
 
-    const args = t.context.database.job.add.args[0];
+    const args = t.context.databaseJobAddStub.args[0];
 
     t.is(args[0], jobResult.url);
     t.is(args[1], JobStatus.pending);
@@ -428,13 +445,14 @@ test.serial(`if the source is a file and the config is valid, it should create a
     t.deepEqual(args[3].length, 7);
 });
 
-test.serial(`if the job exists and it isn't expired, it shouldn't create a new job`, async (t) => {
+test.serial(`if the job exists and it isn't expired, it shouldn't create a new job`, async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const jobs = t.context.jobs;
 
     setNoExpired(jobs[0]);
 
-    sinon.spy(queueMethods, 'sendMessage');
-    sinon.stub(database.job, 'getByUrl').resolves(jobs);
+    t.context.queueMethodsSendMessageStub = sandbox.spy(queueMethods, 'sendMessage');
+    t.context.databaseJobGetByUrlStub = sandbox.stub(database.job, 'getByUrl').resolves(jobs);
     const jobInput = {
         fields: {
             config: null,
@@ -445,24 +463,25 @@ test.serial(`if the job exists and it isn't expired, it shouldn't create a new j
         files: {}
     };
 
-    sinon.spy(database.job, 'add');
+    t.context.databaseJobAddStub = sandbox.spy(database.job, 'add');
 
     const result = await jobManager.startJob(jobInput);
 
-    t.true(t.context.database.lock.calledOnce);
-    t.true(t.context.database.unlock.calledOnce);
-    t.false(t.context.database.job.add.called);
-    t.false(t.context.queueMethods.sendMessage.called);
+    t.true(t.context.databaseLockStub.calledOnce);
+    t.true(t.context.databaseUnlockStub.calledOnce);
+    t.false(t.context.databaseJobAddStub.called);
+    t.false(t.context.queueMethodsSendMessageStub.called);
     t.is(result, jobs[0]);
 });
 
-test.serial(`if the job exists, the status is neither finish or error, but finished is set, it shouldn't create a new job`, async (t) => {
+test.serial(`if the job exists, the status is neither finish or error, but finished is set, it shouldn't create a new job`, async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const jobs = t.context.jobs;
 
     jobs[0].finished = new Date();
 
-    sinon.spy(queueMethods, 'sendMessage');
-    sinon.stub(database.job, 'getByUrl').resolves(jobs);
+    t.context.queueMethodsSendMessageStub = sandbox.spy(queueMethods, 'sendMessage');
+    t.context.databaseJobGetByUrlStub = sandbox.stub(database.job, 'getByUrl').resolves(jobs);
     const jobInput = {
         fields: {
             config: null,
@@ -473,22 +492,23 @@ test.serial(`if the job exists, the status is neither finish or error, but finis
         files: {}
     };
 
-    sinon.spy(database.job, 'add');
+    t.context.databaseJobAddStub = sandbox.spy(database.job, 'add');
 
     const result = await jobManager.startJob(jobInput);
 
-    t.true(t.context.database.lock.calledOnce);
-    t.true(t.context.database.unlock.calledOnce);
-    t.false(t.context.database.job.add.called);
-    t.false(t.context.queueMethods.sendMessage.called);
+    t.true(t.context.databaseLockStub.calledOnce);
+    t.true(t.context.databaseUnlockStub.calledOnce);
+    t.false(t.context.databaseJobAddStub.called);
+    t.false(t.context.queueMethodsSendMessageStub.called);
     t.is(result, jobs[0]);
 });
 
-test.serial(`if the job is still running, it shouldn't create a new job`, async (t) => {
+test.serial(`if the job is still running, it shouldn't create a new job`, async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const jobs = t.context.jobs;
 
-    sinon.spy(queueMethods, 'sendMessage');
-    sinon.stub(database.job, 'getByUrl').resolves(jobs);
+    t.context.queueMethodsSendMessageStub = sandbox.spy(queueMethods, 'sendMessage');
+    t.context.databaseJobGetByUrlStub = sandbox.stub(database.job, 'getByUrl').resolves(jobs);
     const jobInput = {
         fields: {
             config: null,
@@ -499,21 +519,21 @@ test.serial(`if the job is still running, it shouldn't create a new job`, async 
         files: {}
     };
 
-    sinon.spy(database.job, 'add');
+    t.context.databaseJobAddStub = sandbox.spy(database.job, 'add');
 
     const result = await jobManager.startJob(jobInput);
 
-    t.true(t.context.database.lock.calledOnce);
-    t.true(t.context.database.unlock.calledOnce);
-    t.false(t.context.database.job.add.called);
-    t.false(t.context.queueMethods.sendMessage.called);
+    t.true(t.context.databaseLockStub.calledOnce);
+    t.true(t.context.databaseUnlockStub.calledOnce);
+    t.false(t.context.databaseJobAddStub.called);
+    t.false(t.context.queueMethodsSendMessageStub.called);
     t.is(result, jobs[0]);
 
 
 });
 
-test.serial('jobManager.getJob should call to the database to get the job', async (t) => {
+test.serial('jobManager.getJob should call to the database to get the job', async (t: TestContext) => {
     await jobManager.getJob('jobId');
 
-    t.true(t.context.database.job.get.calledOnce);
+    t.true(t.context.databaseJobGetStub.calledOnce);
 });

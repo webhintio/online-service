@@ -1,4 +1,4 @@
-import test from 'ava';
+import test, { ExecutionContext } from 'ava';
 import * as sinon from 'sinon';
 import * as proxyquire from 'proxyquire';
 import { UserConfig } from 'hint/dist/src/lib/types';
@@ -36,6 +36,15 @@ const serviceConfigModels = { ServiceConfig };
 
 const error = new Error('Database not connected');
 
+type DBServiceConfigTestContext = {
+    sandbox: sinon.SinonSandbox;
+    serviceConfigFindStub: sinon.SinonStub;
+    serviceConfigFindOneStub: sinon.SinonStub;
+    queryRemoveStub: sinon.SinonStub;
+};
+
+type TestContext = ExecutionContext<DBServiceConfigTestContext>;
+
 proxyquire('../../../../src/lib/common/database/methods/serviceconfig', {
     '../models/serviceconfig': serviceConfigModels,
     './common': common
@@ -43,29 +52,25 @@ proxyquire('../../../../src/lib/common/database/methods/serviceconfig', {
 
 import * as serviceConfig from '../../../../src/lib/common/database/methods/serviceconfig';
 
-test.beforeEach((t) => {
-    sinon.stub(ServiceConfig, 'find').returns(query);
-    sinon.stub(ServiceConfig, 'findOne').returns(query);
+test.beforeEach((t: TestContext) => {
+    const sandbox = sinon.createSandbox();
 
-    sinon.stub(query, 'remove').returns(query);
+    t.context.serviceConfigFindStub = sandbox.stub(ServiceConfig, 'find').returns(query);
+    t.context.serviceConfigFindOneStub = sandbox.stub(ServiceConfig, 'findOne').returns(query);
 
-    t.context.ServiceConfig = ServiceConfig;
-    t.context.query = query;
-    t.context.common = common;
+    t.context.queryRemoveStub = sandbox.stub(query, 'remove').returns(query);
+
+    t.context.sandbox = sandbox;
 });
 
-test.afterEach.always((t) => {
-    t.context.query.remove.restore();
-    t.context.ServiceConfig.find.restore();
-    t.context.ServiceConfig.findOne.restore();
-
-    if (t.context.common.validateConnection.restore) {
-        t.context.common.validateConnection.restore();
-    }
+test.afterEach.always((t: TestContext) => {
+    t.context.sandbox.restore();
 });
 
-test.serial('serviceConfig.add should fail if database is not connected', async (t) => {
-    sinon.stub(common, 'validateConnection').throws(error);
+test.serial('serviceConfig.add should fail if database is not connected', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    sandbox.stub(common, 'validateConnection').throws(error);
     t.plan(1);
     try {
         await serviceConfig.add('configName', 120, 180, [{}] as Array<UserConfig>);
@@ -74,8 +79,10 @@ test.serial('serviceConfig.add should fail if database is not connected', async 
     }
 });
 
-test.serial('serviceConfig.activate should fail if database is not connected', async (t) => {
-    sinon.stub(common, 'validateConnection').throws(error);
+test.serial('serviceConfig.activate should fail if database is not connected', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    sandbox.stub(common, 'validateConnection').throws(error);
     t.plan(1);
     try {
         await serviceConfig.activate('configName');
@@ -84,8 +91,10 @@ test.serial('serviceConfig.activate should fail if database is not connected', a
     }
 });
 
-test.serial('serviceConfig.getAll  should fail if database is not connected', async (t) => {
-    sinon.stub(common, 'validateConnection').throws(error);
+test.serial('serviceConfig.getAll  should fail if database is not connected', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    sandbox.stub(common, 'validateConnection').throws(error);
     t.plan(1);
     try {
         await serviceConfig.getAll();
@@ -94,8 +103,10 @@ test.serial('serviceConfig.getAll  should fail if database is not connected', as
     }
 });
 
-test.serial('serviceConfig.getActive should fail if database is not connected', async (t) => {
-    sinon.stub(common, 'validateConnection').throws(error);
+test.serial('serviceConfig.getActive should fail if database is not connected', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    sandbox.stub(common, 'validateConnection').throws(error);
     t.plan(1);
     try {
         await serviceConfig.getActive();
@@ -104,8 +115,10 @@ test.serial('serviceConfig.getActive should fail if database is not connected', 
     }
 });
 
-test.serial('serviceConfig.get should fail if database is not connected', async (t) => {
-    sinon.stub(common, 'validateConnection').throws(error);
+test.serial('serviceConfig.get should fail if database is not connected', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    sandbox.stub(common, 'validateConnection').throws(error);
     t.plan(1);
     try {
         await serviceConfig.get('name');
@@ -114,8 +127,10 @@ test.serial('serviceConfig.get should fail if database is not connected', async 
     }
 });
 
-test.serial('serviceConfig.remove should fail if database is not connected', async (t) => {
-    sinon.stub(common, 'validateConnection').throws(error);
+test.serial('serviceConfig.remove should fail if database is not connected', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    sandbox.stub(common, 'validateConnection').throws(error);
     t.plan(1);
     try {
         await serviceConfig.remove('name');
@@ -124,8 +139,10 @@ test.serial('serviceConfig.remove should fail if database is not connected', asy
     }
 });
 
-test.serial('serviceConfig.edit should fail if database is not connected', async (t) => {
-    sinon.stub(common, 'validateConnection').throws(error);
+test.serial('serviceConfig.edit should fail if database is not connected', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    sandbox.stub(common, 'validateConnection').throws(error);
     t.plan(1);
     try {
         await serviceConfig.edit('name', 'newName', 100, 100, null);
@@ -134,22 +151,21 @@ test.serial('serviceConfig.edit should fail if database is not connected', async
     }
 });
 
-test.serial('serviceConfig.add should save a new configuration in database', async (t) => {
-    sinon.stub(modelObject, 'save').resolves();
+test.serial('serviceConfig.add should save a new configuration in database', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
 
-    t.context.modelObject = modelObject;
+    const modelObjectSaveStub = sandbox.stub(modelObject, 'save').resolves();
 
     await serviceConfig.add('configName', 120, 180, [{}] as Array<UserConfig>);
 
-    t.true(t.context.modelObject.save.calledOnce);
-
-    t.context.modelObject.save.restore();
+    t.true(modelObjectSaveStub.calledOnce);
 });
 
-test.serial('serviceConfig.activate should return an error if there is no data in the database', async (t) => {
+test.serial('serviceConfig.activate should return an error if there is no data in the database', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const name = 'configName';
 
-    sinon.stub(query, 'exec').resolves([]);
+    sandbox.stub(query, 'exec').resolves([]);
 
     t.plan(1);
     try {
@@ -157,14 +173,13 @@ test.serial('serviceConfig.activate should return an error if there is no data i
     } catch (err) {
         t.is(err.message, `Configuration '${name}' doesn't exist`);
     }
-
-    t.context.query.exec.restore();
 });
 
-test.serial('serviceConfig.activate should return an error if there is no configuration with the given name', async (t) => {
+test.serial('serviceConfig.activate should return an error if there is no configuration with the given name', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const name = 'configName';
 
-    sinon.stub(query, 'exec').resolves([{ name: 'otherName' }]);
+    sandbox.stub(query, 'exec').resolves([{ name: 'otherName' }]);
 
     t.plan(1);
     try {
@@ -172,15 +187,14 @@ test.serial('serviceConfig.activate should return an error if there is no config
     } catch (err) {
         t.is(err.message, `Configuration '${name}' doesn't exist`);
     }
-
-    t.context.query.exec.restore();
 });
 
-test.serial('serviceConfig.activate should activate the configuration with the given name', async (t) => {
+test.serial('serviceConfig.activate should activate the configuration with the given name', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const name = 'configName';
     const modelFunctions = { save() { } };
 
-    sinon.stub(modelFunctions, 'save').resolves();
+    const modelFunctionsSaveStub = sandbox.stub(modelFunctions, 'save').resolves();
 
     const configurations = [{
         active: null,
@@ -197,76 +211,68 @@ test.serial('serviceConfig.activate should activate the configuration with the g
         save: modelFunctions.save
     }];
 
-    t.context.modelFunctions = modelFunctions;
-
-    sinon.stub(query, 'exec').resolves(configurations);
+    sandbox.stub(query, 'exec').resolves(configurations);
 
     await serviceConfig.activate(name);
 
-    t.is(t.context.modelFunctions.save.callCount, 3);
+    t.is(modelFunctionsSaveStub.callCount, 3);
     t.true(configurations[0].active);
     t.false(configurations[1].active);
     t.false(configurations[2].active);
-
-    t.context.modelFunctions.save.restore();
-    t.context.query.exec.restore();
 });
 
-test.serial('serviceConfig.getAll should returns a list of configurations', async (t) => {
+test.serial('serviceConfig.getAll should returns a list of configurations', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const configurations = [
         { name: 'config0' },
         { name: 'config1' },
         { name: 'config2' }
     ];
 
-    sinon.stub(query, 'exec').resolves(configurations);
+    sandbox.stub(query, 'exec').resolves(configurations);
 
     const list = await serviceConfig.getAll();
 
     t.is(list, configurations);
-
-    t.context.query.exec.restore();
 });
 
-test.serial('serviceConfig.get should return a configuration', async (t) => {
+test.serial('serviceConfig.get should return a configuration', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const config = { name: 'config' };
 
-    sinon.stub(query, 'exec').resolves(config);
+    const queryExecStub = sandbox.stub(query, 'exec').resolves(config);
 
     const result = await serviceConfig.get('config');
 
-    t.true(t.context.query.exec.calledOnce);
-    t.true(t.context.ServiceConfig.findOne.calledOnce);
+    t.true(queryExecStub.calledOnce);
+    t.true(t.context.serviceConfigFindOneStub.calledOnce);
     t.is(result, config);
-
-    t.context.query.exec.restore();
 });
 
-test.serial('serviceConfig.remove should remove a configuration', async (t) => {
-    sinon.stub(query, 'exec').resolves();
+test.serial('serviceConfig.remove should remove a configuration', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+    const queryExecStub = sandbox.stub(query, 'exec').resolves();
 
     await serviceConfig.remove('config');
 
-    t.true(t.context.query.exec.calledOnce);
-    t.true(t.context.query.remove.calledOnce);
-    t.true(t.context.ServiceConfig.findOne.calledOnce);
-
-    t.context.query.exec.restore();
+    t.true(queryExecStub.calledOnce);
+    t.true(t.context.queryRemoveStub.calledOnce);
+    t.true(t.context.serviceConfigFindOneStub.calledOnce);
 });
 
-test.serial('serviceConfig.getActive should return the active configuration', async (t) => {
-    sinon.stub(query, 'exec').resolves();
+test.serial('serviceConfig.getActive should return the active configuration', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+    const queryExecStub = sandbox.stub(query, 'exec').resolves();
 
     await serviceConfig.getActive();
 
-    t.true(t.context.query.exec.calledOnce);
-    t.true(t.context.ServiceConfig.findOne.calledOnce);
-    t.true(t.context.ServiceConfig.findOne.args[0][0].active);
-
-    t.context.query.exec.restore();
+    t.true(queryExecStub.calledOnce);
+    t.true(t.context.serviceConfigFindOneStub.calledOnce);
+    t.true(t.context.serviceConfigFindOneStub.args[0][0].active);
 });
 
-test.serial(`serviceConfig.edit shouldn't modify the webhintConfigs property if config is null`, async (t) => {
+test.serial(`serviceConfig.edit shouldn't modify the webhintConfigs property if config is null`, async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const config = {
         jobCacheTime: 1,
         jobRunTime: 1,
@@ -275,11 +281,9 @@ test.serial(`serviceConfig.edit shouldn't modify the webhintConfigs property if 
         save() { },
         webhintConfigs: {}
     };
+    const configMarkModifiedSpy = sandbox.spy(config, 'markModified');
 
-    t.context.config = config;
-
-    sinon.spy(config, 'markModified');
-    sinon.stub(query, 'exec').resolves(config);
+    sandbox.stub(query, 'exec').resolves(config);
 
     const result = await serviceConfig.edit('oldName', 'newName', 100, 200);
 
@@ -287,33 +291,28 @@ test.serial(`serviceConfig.edit shouldn't modify the webhintConfigs property if 
     t.is(result.jobCacheTime, 100);
     t.is(result.jobRunTime, 200);
     t.is(result.webhintConfigs, config.webhintConfigs);
-    t.false(t.context.config.markModified.called);
-
-    t.context.config.markModified.restore();
-    t.context.query.exec.restore();
+    t.false(configMarkModifiedSpy.called);
 });
 
-test.serial(`serviceConfig.edit should modify the webhintConfigs property if config isn't null`, async (t) => {
+test.serial(`serviceConfig.edit should modify the webhintConfigs property if config isn't null`, async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const config = {
         jobCacheTime: 1,
         jobRunTime: 1,
-        markModified() { },
+        markModified(param: string) { },
         name: 'oldName',
         save() { },
         webhintConfigs: {}
     };
-
     const webhintConfigs: Array<UserConfig> = [{
         connector: {
             name: 'jsdom',
             options: {}
         }
     }];
+    const configMarkModifiedSpy = sandbox.spy(config, 'markModified');
 
-    t.context.config = config;
-
-    sinon.spy(config, 'markModified');
-    sinon.stub(query, 'exec').resolves(config);
+    sandbox.stub(query, 'exec').resolves(config);
 
     const result = await serviceConfig.edit('oldName', 'newName', 100, 200, webhintConfigs);
 
@@ -321,9 +320,6 @@ test.serial(`serviceConfig.edit should modify the webhintConfigs property if con
     t.is(result.jobCacheTime, 100);
     t.is(result.jobRunTime, 200);
     t.is(result.webhintConfigs, webhintConfigs);
-    t.true(t.context.config.markModified.calledOnce);
-    t.is(t.context.config.markModified.args[0][0], 'webhintConfigs');
-
-    t.context.config.markModified.restore();
-    t.context.query.exec.restore();
+    t.true(configMarkModifiedSpy.calledOnce);
+    t.is(configMarkModifiedSpy.args[0][0], 'webhintConfigs');
 });

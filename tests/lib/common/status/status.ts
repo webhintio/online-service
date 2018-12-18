@@ -1,4 +1,4 @@
-import test from 'ava';
+import test, { ExecutionContext } from 'ava';
 import * as sinon from 'sinon';
 import * as proxyquire from 'proxyquire';
 import * as moment from 'moment';
@@ -27,10 +27,10 @@ const validStatus: IStatus = {
 
 const database = {
     connect() { },
-    job: { getByDate() { } },
+    job: { getByDate(field: string, fromDate: Date, toDate: Date) { } },
     status: {
         add() { },
-        getByDate() { },
+        getByDate(fromQuarter: moment.Moment, toQuarter: moment.Moment) { },
         getMostRecent() { },
         update() { }
     }
@@ -47,6 +47,14 @@ const queueObject = { Queue };
 process.env.database = 'Database connection string'; // eslint-disable-line no-process-env
 process.env.queue = 'Queue connection string'; // eslint-disable-line no-process-env
 
+type StatusTestContext = {
+    sandbox: sinon.SinonSandbox;
+    databaseStatusAddStub: sinon.SinonStub;
+    databaseStatusUpdateStub: sinon.SinonStub;
+};
+
+type TestContext = ExecutionContext<StatusTestContext>;
+
 proxyquire('../../../../src/lib/common/status/status', {
     '../database/database': database,
     '../queue/queue': queueObject
@@ -54,105 +62,102 @@ proxyquire('../../../../src/lib/common/status/status', {
 
 import * as status from '../../../../src/lib/common/status/status';
 
-test.beforeEach((t) => {
-    sinon.stub(database, 'connect').resolves();
-    sinon.stub(database.status, 'add').resolves(validStatus);
-    sinon.stub(database.status, 'update').resolves();
-    sinon.stub(queueMethods, 'getMessagesCount').resolves();
-    t.context.database = database;
-    t.context.queueMethods = queueMethods;
+test.beforeEach((t: TestContext) => {
+    const sandbox = sinon.createSandbox();
+
+    sandbox.stub(database, 'connect').resolves();
+    t.context.databaseStatusAddStub = sandbox.stub(database.status, 'add').resolves(validStatus);
+    t.context.databaseStatusUpdateStub = sandbox.stub(database.status, 'update').resolves();
+    sandbox.stub(queueMethods, 'getMessagesCount').resolves();
+
+    t.context.sandbox = sandbox;
 });
 
-test.afterEach.always((t) => {
-    t.context.database.connect.restore();
-    t.context.database.status.add.restore();
-    t.context.database.status.update.restore();
-    t.context.queueMethods.getMessagesCount.restore();
-
-    if (t.context.database.status.getByDate.restore) {
-        t.context.database.status.getByDate.restore();
-    }
-    if (t.context.database.status.getMostRecent.restore) {
-        t.context.database.status.getMostRecent.restore();
-    }
-    if (t.context.database.job.getByDate.restore) {
-        t.context.database.job.getByDate.restore();
-    }
+test.afterEach.always((t: TestContext) => {
+    t.context.sandbox.restore();
 });
 
-test.serial('getStatus should return the items in the database between the dates (1/3)', async (t) => {
-    sinon.stub(database.status, 'getByDate').resolves([validStatus]);
+test.serial('getStatus should return the items in the database between the dates (1/3)', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    const databaseStatusGetByDateStub = sandbox.stub(database.status, 'getByDate').resolves([validStatus]);
 
     await status.getStatus(new Date('2017-10-15T08:29:59.999Z'), new Date('2017-10-15T08:30:00.000Z'));
 
-    t.is(t.context.database.status.getByDate.callCount, 1);
+    t.is(databaseStatusGetByDateStub.callCount, 1);
 
-    const args = t.context.database.status.getByDate.args;
+    const args = databaseStatusGetByDateStub.args;
 
     t.true(moment(args[0][0]).isSame(moment('2017-10-15T08:15:00.000Z')));
     t.true(moment(args[0][1]).isSame(moment('2017-10-15T08:30:00.000Z')));
 });
 
-test.serial('getStatus should return the items in the database between the dates (2/3)', async (t) => {
-    sinon.stub(database.status, 'getByDate').resolves([validStatus]);
+test.serial('getStatus should return the items in the database between the dates (2/3)', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    const databaseStatusGetByDateStub = sandbox.stub(database.status, 'getByDate').resolves([validStatus]);
 
     await status.getStatus(new Date('2017-10-15T09:15:00.000Z'), new Date('2017-10-15T09:38:00.000Z'));
 
-    t.is(t.context.database.status.getByDate.callCount, 1);
+    t.is(databaseStatusGetByDateStub.callCount, 1);
 
-    const args = t.context.database.status.getByDate.args;
+    const args = databaseStatusGetByDateStub.args;
 
     t.true(moment(args[0][0]).isSame(moment('2017-10-15T09:15:00.000Z')));
     t.true(moment(args[0][1]).isSame(moment('2017-10-15T09:30:00.000Z')));
 });
 
-test.serial('getStatus should return the items in the database between the dates (3/3)', async (t) => {
-    sinon.stub(database.status, 'getByDate').resolves([validStatus]);
+test.serial('getStatus should return the items in the database between the dates (3/3)', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    const databaseStatusGetByDateStub = sandbox.stub(database.status, 'getByDate').resolves([validStatus]);
 
     await status.getStatus(new Date('2017-10-15T10:00:00.000Z'), new Date('2017-10-15T10:59:59.999Z'));
 
-    t.is(t.context.database.status.getByDate.callCount, 1);
+    t.is(databaseStatusGetByDateStub.callCount, 1);
 
-    const args = t.context.database.status.getByDate.args;
+    const args = databaseStatusGetByDateStub.args;
 
     t.true(moment(args[0][0]).isSame(moment('2017-10-15T10:00:00.000Z')));
     t.true(moment(args[0][1]).isSame(moment('2017-10-15T10:45:00.000Z')));
 });
 
-test.serial('updateStatuses should get results every 15 minutes', async (t) => {
+test.serial('updateStatuses should get results every 15 minutes', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const recentDate = moment()
         .subtract(16, 'm')
         .startOf('minute');
 
-    sinon.stub(database.status, 'getMostRecent').resolves({ date: recentDate });
-    sinon.stub(database.job, 'getByDate').resolves([]);
+    sandbox.stub(database.status, 'getMostRecent').resolves({ date: recentDate });
+    const databaseJobGetByDate = sandbox.stub(database.job, 'getByDate').resolves([]);
 
     await status.updateStatuses();
 
-    t.is(t.context.database.job.getByDate.callCount, 3);
-    t.true(t.context.database.status.add.calledOnce);
-    t.true(t.context.database.status.update.calledOnce);
+    t.is(databaseJobGetByDate.callCount, 3);
+    t.true(t.context.databaseStatusAddStub.calledOnce);
+    t.true(t.context.databaseStatusUpdateStub.calledOnce);
 
-    const args = t.context.database.job.getByDate.args;
+    const args = databaseJobGetByDate.args;
 
     t.is(args[0][0], 'queued');
     t.is(args[1][0], 'started');
     t.is(args[2][0], 'finished');
 });
 
-test.serial('updateStatuses should just update the queue status for the last period of time', async (t) => {
+test.serial('updateStatuses should just update the queue status for the last period of time', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const recentDate = moment()
         .subtract(31, 'm')
         .startOf('minute');
 
-    sinon.stub(database.status, 'getMostRecent').resolves({ date: recentDate });
-    sinon.stub(database.job, 'getByDate').resolves([]);
+    sandbox.stub(database.status, 'getMostRecent').resolves({ date: recentDate });
+    const databaseJobGetByDate = sandbox.stub(database.job, 'getByDate').resolves([]);
 
     await status.updateStatuses();
 
-    t.is(t.context.database.job.getByDate.callCount, 6);
-    t.true(t.context.database.status.add.calledTwice);
-    t.true(t.context.database.status.update.calledOnce);
+    t.is(databaseJobGetByDate.callCount, 6);
+    t.true(t.context.databaseStatusAddStub.calledTwice);
+    t.true(t.context.databaseStatusUpdateStub.calledOnce);
 });
 
 const getValidTestData = () => {
@@ -195,82 +200,86 @@ const getValidTestData = () => {
     return [validJob, validJob2, validJob3];
 };
 
-test.serial('updateStatuses should calculate the averages', async (t) => {
+test.serial('updateStatuses should calculate the averages', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const recentDate = moment()
         .subtract(16, 'm')
         .startOf('minute');
 
-    sinon.stub(database.status, 'getMostRecent').resolves({ date: recentDate });
-    sinon.stub(database.job, 'getByDate').resolves(getValidTestData());
+    sandbox.stub(database.status, 'getMostRecent').resolves({ date: recentDate });
+    const databaseJobGetByDate = sandbox.stub(database.job, 'getByDate').resolves(getValidTestData());
 
     await status.updateStatuses();
 
-    t.is(t.context.database.job.getByDate.callCount, 3);
-    t.true(t.context.database.status.add.calledOnce);
-    t.true(t.context.database.status.update.calledOnce);
+    t.is(databaseJobGetByDate.callCount, 3);
+    t.true(t.context.databaseStatusAddStub.calledOnce);
+    t.true(t.context.databaseStatusUpdateStub.calledOnce);
 
-    const args = t.context.database.status.add.args[0][0];
+    const args = t.context.databaseStatusAddStub.args[0][0];
 
     t.is(args.average.start, 3000);
     t.is(args.average.finish, 90000);
 });
 
-test.serial('updateStatuses should calculate the averages if some time is missed', async (t) => {
+test.serial('updateStatuses should calculate the averages if some time is missed', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const recentDate = moment()
         .subtract(16, 'm')
         .startOf('minute');
 
-    sinon.stub(database.status, 'getMostRecent').resolves({ date: recentDate });
+    sandbox.stub(database.status, 'getMostRecent').resolves({ date: recentDate });
 
     const data = getValidTestData();
 
     data[1].started = null;
 
-    sinon.stub(database.job, 'getByDate').resolves(data);
+    const databaseJobGetByDate = sandbox.stub(database.job, 'getByDate').resolves(data);
 
     await status.updateStatuses();
 
-    t.is(t.context.database.job.getByDate.callCount, 3);
-    t.true(t.context.database.status.add.calledOnce);
-    t.true(t.context.database.status.update.calledOnce);
+    t.is(databaseJobGetByDate.callCount, 3);
+    t.true(t.context.databaseStatusAddStub.calledOnce);
+    t.true(t.context.databaseStatusUpdateStub.calledOnce);
 
-    const args = t.context.database.status.add.args[0][0];
+    const args = t.context.databaseStatusAddStub.args[0][0];
 
     t.is(args.average.start, 3000);
     t.is(args.average.finish, 90000);
 });
 
-test.serial('updateStatuses should calculate the averages if some times are equal', async (t) => {
+test.serial('updateStatuses should calculate the averages if some times are equal', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const recentDate = moment()
         .subtract(16, 'm')
         .startOf('minute');
 
-    sinon.stub(database.status, 'getMostRecent').resolves({ date: recentDate });
+    sandbox.stub(database.status, 'getMostRecent').resolves({ date: recentDate });
 
     const data = getValidTestData();
 
     data[1].queued = data[1].started;
 
-    sinon.stub(database.job, 'getByDate').resolves(data);
+    const databaseJobGetByDate = sandbox.stub(database.job, 'getByDate').resolves(data);
 
     await status.updateStatuses();
 
-    t.is(t.context.database.job.getByDate.callCount, 3);
-    t.true(t.context.database.status.add.calledOnce);
-    t.true(t.context.database.status.update.calledOnce);
+    t.is(databaseJobGetByDate.callCount, 3);
+    t.true(t.context.databaseStatusAddStub.calledOnce);
+    t.true(t.context.databaseStatusUpdateStub.calledOnce);
 
-    const args = t.context.database.status.add.args[0][0];
+    const args = t.context.databaseStatusAddStub.args[0][0];
 
     t.is(args.average.start, 3000);
     t.is(args.average.finish, 90000);
 });
 
-test.serial('updateStatuses should calculate the averages if all times are equal', async (t) => {
+test.serial('updateStatuses should calculate the averages if all times are equal', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const recentDate = moment()
         .subtract(16, 'm')
         .startOf('minute');
 
-    sinon.stub(database.status, 'getMostRecent').resolves({ date: recentDate });
+    sandbox.stub(database.status, 'getMostRecent').resolves({ date: recentDate });
 
     const data = getValidTestData();
 
@@ -281,35 +290,36 @@ test.serial('updateStatuses should calculate the averages if all times are equal
     data[2].started = data[2].queued;
     data[2].finished = data[2].queued;
 
-    sinon.stub(database.job, 'getByDate').resolves(data);
+    const databaseJobGetByDate = sandbox.stub(database.job, 'getByDate').resolves(data);
 
     await status.updateStatuses();
 
-    t.is(t.context.database.job.getByDate.callCount, 3);
-    t.true(t.context.database.status.add.calledOnce);
-    t.true(t.context.database.status.update.calledOnce);
+    t.is(databaseJobGetByDate.callCount, 3);
+    t.true(t.context.databaseStatusAddStub.calledOnce);
+    t.true(t.context.databaseStatusUpdateStub.calledOnce);
 
-    const args = t.context.database.status.add.args[0][0];
+    const args = t.context.databaseStatusAddStub.args[0][0];
 
     t.is(args.average.start, Number.MAX_SAFE_INTEGER);
     t.is(args.average.finish, Number.MAX_SAFE_INTEGER);
 });
 
-test.serial('updateStatuses should calculate hints status', async (t) => {
+test.serial('updateStatuses should calculate hints status', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const recentDate = moment()
         .subtract(16, 'm')
         .startOf('minute');
 
-    sinon.stub(database.status, 'getMostRecent').resolves({ date: recentDate });
-    sinon.stub(database.job, 'getByDate').resolves(getValidTestData());
+    sandbox.stub(database.status, 'getMostRecent').resolves({ date: recentDate });
+    const databaseJobGetByDate = sandbox.stub(database.job, 'getByDate').resolves(getValidTestData());
 
     await status.updateStatuses();
 
-    t.is(t.context.database.job.getByDate.callCount, 3);
-    t.true(t.context.database.status.add.calledOnce);
-    t.true(t.context.database.status.update.calledOnce);
+    t.is(databaseJobGetByDate.callCount, 3);
+    t.true(t.context.databaseStatusAddStub.calledOnce);
+    t.true(t.context.databaseStatusUpdateStub.calledOnce);
 
-    const args = t.context.database.status.add.args[0][0];
+    const args = t.context.databaseStatusAddStub.args[0][0];
 
     t.is(args.hints.errors, 2);
     t.is(args.hints.warnings, 1);
