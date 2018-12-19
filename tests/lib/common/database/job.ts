@@ -1,4 +1,4 @@
-import test from 'ava';
+import test, { ExecutionContext } from 'ava';
 import * as sinon from 'sinon';
 import * as proxyquire from 'proxyquire';
 import { UserConfig } from 'hint/dist/src/lib/types';
@@ -73,32 +73,37 @@ const jobResult: Array<IJob> = [{
 }];
 const error = new Error('Database not connected');
 
-test.beforeEach((t) => {
-    sinon.stub(Job, 'find').returns(query);
-    sinon.stub(Job, 'findOne').returns(query);
-    sinon.stub(query, 'remove').returns(query);
-    sinon.stub(query, 'count').returns(query);
-    sinon.stub(query, 'sort').returns(query);
+type DBJobTestContext = {
+    sandbox: sinon.SinonSandbox;
+    jobFindStub: sinon.SinonStub;
+    jobFindOneStub: sinon.SinonStub;
+    queryCountStub: sinon.SinonStub;
+    queryRemoveStub: sinon.SinonStub;
+    querySortStub: sinon.SinonStub;
+};
 
-    t.context.Job = Job;
-    t.context.query = query;
-    t.context.common = common;
+type TestContext = ExecutionContext<DBJobTestContext>;
+
+test.beforeEach((t: TestContext) => {
+    const sandbox = sinon.createSandbox();
+
+    t.context.jobFindStub = sandbox.stub(Job, 'find').returns(query);
+    t.context.jobFindOneStub = sandbox.stub(Job, 'findOne').returns(query);
+    t.context.queryCountStub = sandbox.stub(query, 'count').returns(query);
+    t.context.queryRemoveStub = sandbox.stub(query, 'remove').returns(query);
+    t.context.querySortStub = sandbox.stub(query, 'sort').returns(query);
+
+    t.context.sandbox = sandbox;
 });
 
-test.afterEach.always((t) => {
-    t.context.query.remove.restore();
-    t.context.query.count.restore();
-    t.context.query.sort.restore();
-    t.context.Job.find.restore();
-    t.context.Job.findOne.restore();
-
-    if (t.context.common.validateConnection.restore) {
-        t.context.common.validateConnection.restore();
-    }
+test.afterEach.always((t: TestContext) => {
+    t.context.sandbox.restore();
 });
 
-test.serial('job.getByUrl should fail if database is not connected', async (t) => {
-    sinon.stub(common, 'validateConnection').throws(error);
+test.serial('job.getByUrl should fail if database is not connected', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    sandbox.stub(common, 'validateConnection').throws(error);
     t.plan(1);
     try {
         await job.getByUrl('url');
@@ -107,8 +112,10 @@ test.serial('job.getByUrl should fail if database is not connected', async (t) =
     }
 });
 
-test.serial('job.get should fail if database is not connected', async (t) => {
-    sinon.stub(common, 'validateConnection').throws(error);
+test.serial('job.get should fail if database is not connected', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    sandbox.stub(common, 'validateConnection').throws(error);
     t.plan(1);
     try {
         await job.get('url');
@@ -117,8 +124,10 @@ test.serial('job.get should fail if database is not connected', async (t) => {
     }
 });
 
-test.serial('job.getByDate should fail if database is not connected', async (t) => {
-    sinon.stub(common, 'validateConnection').throws(error);
+test.serial('job.getByDate should fail if database is not connected', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    sandbox.stub(common, 'validateConnection').throws(error);
     t.plan(1);
     try {
         await job.getByDate('started', new Date(), new Date());
@@ -127,8 +136,10 @@ test.serial('job.getByDate should fail if database is not connected', async (t) 
     }
 });
 
-test.serial('job.add should fail if database is not connected', async (t) => {
-    sinon.stub(common, 'validateConnection').throws(error);
+test.serial('job.add should fail if database is not connected', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    sandbox.stub(common, 'validateConnection').throws(error);
     t.plan(1);
     try {
         await job.add('url', JobStatus.pending, [], [{}] as Array<UserConfig>, 180);
@@ -137,8 +148,10 @@ test.serial('job.add should fail if database is not connected', async (t) => {
     }
 });
 
-test.serial('job.getStatusCount should fail if database is not connected', async (t) => {
-    sinon.stub(common, 'validateConnection').throws(error);
+test.serial('job.getStatusCount should fail if database is not connected', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    sandbox.stub(common, 'validateConnection').throws(error);
     t.plan(1);
     try {
         await job.getStatusCount(JobStatus.error);
@@ -147,8 +160,10 @@ test.serial('job.getStatusCount should fail if database is not connected', async
     }
 });
 
-test.serial('job.getCount should fail if database is not connected', async (t) => {
-    sinon.stub(common, 'validateConnection').throws(error);
+test.serial('job.getCount should fail if database is not connected', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    sandbox.stub(common, 'validateConnection').throws(error);
     t.plan(1);
     try {
         await job.getCount();
@@ -157,52 +172,56 @@ test.serial('job.getCount should fail if database is not connected', async (t) =
     }
 });
 
-test.serial('job.getByUrl should return a job', async (t) => {
-    sinon.stub(common, 'validateConnection').returns(true);
+test.serial('job.getByUrl should return a job', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
 
-    sinon.stub(query, 'exec').resolves(jobResult);
+    sandbox.stub(common, 'validateConnection').returns(true);
+
+    const queryExecStub = sandbox.stub(query, 'exec').resolves(jobResult);
 
     const result = await job.getByUrl('url');
 
-    t.true(t.context.query.exec.calledOnce);
-    t.true(t.context.Job.find.calledOnce);
+    t.true(queryExecStub.calledOnce);
+    t.true(t.context.jobFindStub.calledOnce);
     t.is(result, jobResult);
 
-    t.context.query.exec.restore();
+    queryExecStub.restore();
 });
 
-test.serial('job.get should return a job', async (t) => {
-    sinon.stub(common, 'validateConnection').returns(true);
+test.serial('job.get should return a job', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
 
-    sinon.stub(query, 'exec').resolves(jobResult[0]);
+    sandbox.stub(common, 'validateConnection').returns(true);
+
+    const queryExecStub = sandbox.stub(query, 'exec').resolves(jobResult[0]);
 
     const result = await job.get('url');
 
-    t.true(t.context.query.exec.calledOnce);
-    t.true(t.context.Job.findOne.calledOnce);
+    t.true(queryExecStub.calledOnce);
+    t.true(t.context.jobFindOneStub.calledOnce);
     t.is(result, jobResult[0]);
 
-    t.context.query.exec.restore();
+    queryExecStub.restore();
 });
 
-test.serial('job.add should save a new job in database', async (t) => {
-    sinon.stub(common, 'validateConnection').returns(true);
+test.serial('job.add should save a new job in database', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
 
-    sinon.stub(modelObject, 'save').resolves();
+    sandbox.stub(common, 'validateConnection').returns(true);
 
-    t.context.modelObject = modelObject;
+    const modelObjectSaveStub = sandbox.stub(modelObject, 'save').resolves();
 
     await job.add('url', JobStatus.pending, null, null, 180);
 
-    t.true(t.context.modelObject.save.calledOnce);
-
-    t.context.modelObject.save.restore();
+    t.true(modelObjectSaveStub.calledOnce);
 });
 
-test.serial('job.getByDate should return the jobs between both dates', async (t) => {
-    sinon.stub(common, 'validateConnection').returns(true);
+test.serial('job.getByDate should return the jobs between both dates', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
 
-    sinon.stub(query, 'exec').resolves(jobResult);
+    sandbox.stub(common, 'validateConnection').returns(true);
+
+    const queryExecStub = sandbox.stub(query, 'exec').resolves(jobResult);
 
     const field = 'started';
     const from = moment();
@@ -210,36 +229,40 @@ test.serial('job.getByDate should return the jobs between both dates', async (t)
 
     const result = await job.getByDate(field, from.toDate(), to.toDate());
 
-    t.true(t.context.query.exec.calledOnce);
-    t.true(t.context.Job.find.calledOnce);
+    t.true(queryExecStub.calledOnce);
+    t.true(t.context.jobFindStub.calledOnce);
 
-    const args = t.context.Job.find.args[0][0];
+    const args = t.context.jobFindStub.args[0][0];
 
     t.true(from.isSame(moment(args[field].$gte)));
     t.true(to.isSame(moment(args[field].$lt)));
     t.is(result, jobResult);
 
-    t.context.query.exec.restore();
+    queryExecStub.restore();
 });
 
-test.serial('job.getStatusCount should return the number of jobs with that status', async (t) => {
-    sinon.stub(common, 'validateConnection').returns(true);
-    sinon.stub(query, 'exec').resolves();
+test.serial('job.getStatusCount should return the number of jobs with that status', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    sandbox.stub(common, 'validateConnection').returns(true);
+    const queryExecStub = sandbox.stub(query, 'exec').resolves();
 
     await job.getStatusCount(JobStatus.error);
 
-    t.true(t.context.query.count.calledOnce);
-    t.true(t.context.query.exec.calledOnce);
-    t.true(t.context.Job.find.calledOnce);
-    t.is(t.context.Job.find.args[0][0].status, JobStatus.error);
+    t.true(t.context.queryCountStub.calledOnce);
+    t.true(queryExecStub.calledOnce);
+    t.true(t.context.jobFindStub.calledOnce);
+    t.is(t.context.jobFindStub.args[0][0].status, JobStatus.error);
 
-    t.context.query.exec.restore();
+    queryExecStub.restore();
 });
 
-test.serial('job.getStatusCount with a since parameter should return the number of jobs since that date with that status', async (t) => {
-    sinon.stub(common, 'validateConnection').returns(true);
+test.serial('job.getStatusCount with a since parameter should return the number of jobs since that date with that status', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
 
-    sinon.stub(query, 'exec').resolves();
+    sandbox.stub(common, 'validateConnection').returns(true);
+
+    const queryExecStub = sandbox.stub(query, 'exec').resolves();
 
     const since = new Date();
 
@@ -248,41 +271,45 @@ test.serial('job.getStatusCount with a since parameter should return the number 
         since
     });
 
-    t.true(t.context.query.count.calledOnce);
-    t.true(t.context.query.exec.calledOnce);
-    t.true(t.context.Job.find.calledOnce);
-    t.is(t.context.Job.find.args[0][0].status, JobStatus.error);
-    t.is(t.context.Job.find.args[0][0].finished.$gte, since);
+    t.true(t.context.queryCountStub.calledOnce);
+    t.true(queryExecStub.calledOnce);
+    t.true(t.context.jobFindStub.calledOnce);
+    t.is(t.context.jobFindStub.args[0][0].status, JobStatus.error);
+    t.is(t.context.jobFindStub.args[0][0].finished.$gte, since);
 
-    t.context.query.exec.restore();
+    queryExecStub.restore();
 });
 
-test.serial('job.getCount should return the number of jobs in the database', async (t) => {
-    sinon.stub(common, 'validateConnection').returns(true);
-    sinon.stub(query, 'exec').resolves();
+test.serial('job.getCount should return the number of jobs in the database', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    sandbox.stub(common, 'validateConnection').returns(true);
+    const queryExecStub = sandbox.stub(query, 'exec').resolves();
 
     await job.getCount();
 
-    t.true(t.context.query.count.calledOnce);
-    t.true(t.context.query.exec.calledOnce);
-    t.true(t.context.Job.find.calledOnce);
-    t.deepEqual(t.context.Job.find.args[0][0], {});
+    t.true(t.context.queryCountStub.calledOnce);
+    t.true(queryExecStub.calledOnce);
+    t.true(t.context.jobFindStub.calledOnce);
+    t.deepEqual(t.context.jobFindStub.args[0][0], {});
 
-    t.context.query.exec.restore();
+    queryExecStub.restore();
 });
 
-test.serial('job.getCount with a since parameter should return the number of jobs since that date', async (t) => {
-    sinon.stub(common, 'validateConnection').returns(true);
-    sinon.stub(query, 'exec').resolves();
+test.serial('job.getCount with a since parameter should return the number of jobs since that date', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    sandbox.stub(common, 'validateConnection').returns(true);
+    const queryExecStub = sandbox.stub(query, 'exec').resolves();
 
     const since = new Date();
 
     await job.getCount({ since });
 
-    t.true(t.context.query.count.calledOnce);
-    t.true(t.context.query.exec.calledOnce);
-    t.true(t.context.Job.find.calledOnce);
-    t.is(t.context.Job.find.args[0][0].finished.$gte, since);
+    t.true(t.context.queryCountStub.calledOnce);
+    t.true(queryExecStub.calledOnce);
+    t.true(t.context.jobFindStub.calledOnce);
+    t.is(t.context.jobFindStub.args[0][0].finished.$gte, since);
 
-    t.context.query.exec.restore();
+    queryExecStub.restore();
 });

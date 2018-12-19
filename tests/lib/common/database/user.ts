@@ -1,4 +1,4 @@
-import test from 'ava';
+import test, { ExecutionContext } from 'ava';
 import * as sinon from 'sinon';
 import * as proxyquire from 'proxyquire';
 
@@ -31,6 +31,15 @@ User.findOne = () => { };
 const userModels = { User };
 const error = new Error('Database not connected');
 
+type DBUserTestContext = {
+    sandbox: sinon.SinonSandbox;
+    userFindStub: sinon.SinonStub;
+    userFindOneStub: sinon.SinonStub;
+    queryRemoveStub: sinon.SinonStub;
+};
+
+type TestContext = ExecutionContext<DBUserTestContext>;
+
 proxyquire('../../../../src/lib/common/database/methods/user', {
     '../models/user': userModels,
     './common': common
@@ -38,28 +47,24 @@ proxyquire('../../../../src/lib/common/database/methods/user', {
 
 import * as user from '../../../../src/lib/common/database/methods/user';
 
-test.beforeEach((t) => {
-    sinon.stub(User, 'find').returns(query);
-    sinon.stub(User, 'findOne').returns(query);
-    sinon.stub(query, 'remove').returns(query);
+test.beforeEach((t: TestContext) => {
+    const sandbox = sinon.createSandbox();
 
-    t.context.query = query;
-    t.context.User = User;
-    t.context.common = common;
+    t.context.userFindStub = sandbox.stub(User, 'find').returns(query);
+    t.context.userFindOneStub = sandbox.stub(User, 'findOne').returns(query);
+    t.context.queryRemoveStub = sandbox.stub(query, 'remove').returns(query);
+
+    t.context.sandbox = sandbox;
 });
 
-test.afterEach.always((t) => {
-    t.context.query.remove.restore();
-    t.context.User.find.restore();
-    t.context.User.findOne.restore();
-
-    if (t.context.common.validateConnection.restore) {
-        t.context.common.validateConnection.restore();
-    }
+test.afterEach.always((t: TestContext) => {
+    t.context.sandbox.restore();
 });
 
-test.serial('user.add should fail if database is not connected', async (t) => {
-    sinon.stub(common, 'validateConnection').throws(error);
+test.serial('user.add should fail if database is not connected', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    sandbox.stub(common, 'validateConnection').throws(error);
     t.plan(1);
     try {
         await user.add('name');
@@ -68,8 +73,10 @@ test.serial('user.add should fail if database is not connected', async (t) => {
     }
 });
 
-test.serial('user.get should fail if database is not connected', async (t) => {
-    sinon.stub(common, 'validateConnection').throws(error);
+test.serial('user.get should fail if database is not connected', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    sandbox.stub(common, 'validateConnection').throws(error);
     t.plan(1);
     try {
         await user.get('name');
@@ -78,8 +85,10 @@ test.serial('user.get should fail if database is not connected', async (t) => {
     }
 });
 
-test.serial('user.remove should fail if database is not connected', async (t) => {
-    sinon.stub(common, 'validateConnection').throws(error);
+test.serial('user.remove should fail if database is not connected', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    sandbox.stub(common, 'validateConnection').throws(error);
     t.plan(1);
     try {
         await user.remove('name');
@@ -88,53 +97,51 @@ test.serial('user.remove should fail if database is not connected', async (t) =>
     }
 });
 
-test.serial('user.add should save a new user in database', async (t) => {
-    sinon.stub(modelObject, 'save').resolves();
+test.serial('user.add should save a new user in database', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
 
-    t.context.modelObject = modelObject;
+    const modelObjectSaveStub = sandbox.stub(modelObject, 'save').resolves();
 
     await user.add('userName');
 
-    t.true(t.context.modelObject.save.calledOnce);
-
-    t.context.modelObject.save.restore();
+    t.true(modelObjectSaveStub.calledOnce);
 });
 
-test.serial('user.getAll should return all users in the database', async (t) => {
-    sinon.stub(query, 'exec').resolves();
+test.serial('user.getAll should return all users in the database', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    sandbox.stub(query, 'exec').resolves();
 
     await user.getAll();
 
-    t.deepEqual(t.context.User.find.args[0][0], {});
-    t.true(t.context.User.find.calledOnce);
-
-    t.context.query.exec.restore();
+    t.deepEqual(t.context.userFindStub.args[0][0], {});
+    t.true(t.context.userFindStub.calledOnce);
 });
 
-test.serial('user.get should return an user', async (t) => {
+test.serial('user.get should return an user', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
     const name = 'userName';
 
-    sinon.stub(query, 'exec').resolves();
+    sandbox.stub(query, 'exec').resolves();
 
     await user.get(name);
 
-    t.deepEqual(t.context.User.findOne.args[0][0].name, name);
-    t.true(t.context.User.findOne.calledOnce);
-
-    t.context.query.exec.restore();
+    t.deepEqual(t.context.userFindOneStub.args[0][0].name, name);
+    t.true(t.context.userFindOneStub.calledOnce);
 });
 
-test.serial('user.remove should remove an user from the database', async (t) => {
+test.serial('user.remove should remove an user from the database', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
     const name = 'userName';
 
-    sinon.stub(query, 'exec').resolves();
+    const queryExecStub = sandbox.stub(query, 'exec').resolves();
 
     await user.remove(name);
 
-    t.true(t.context.query.exec.calledOnce);
-    t.true(t.context.query.remove.calledOnce);
-    t.true(t.context.User.findOne.calledOnce);
-    t.is(t.context.User.findOne.args[0][0].name, name);
-
-    t.context.query.exec.restore();
+    t.true(queryExecStub.calledOnce);
+    t.true(t.context.queryRemoveStub.calledOnce);
+    t.true(t.context.userFindOneStub.calledOnce);
+    t.is(t.context.userFindOneStub.args[0][0].name, name);
 });

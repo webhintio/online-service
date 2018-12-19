@@ -1,4 +1,4 @@
-import test from 'ava';
+import test, { ExecutionContext } from 'ava';
 import * as sinon from 'sinon';
 import * as proxyquire from 'proxyquire';
 
@@ -40,28 +40,33 @@ proxyquire('../../../../src/lib/common/database/methods/status', {
     './common': common
 });
 
+type DBStatusTestContext = {
+    sandbox: sinon.SinonSandbox;
+    statusFindOneStub: sinon.SinonStub;
+    querySortStub: sinon.SinonStub;
+};
+
+type TestContext = ExecutionContext<DBStatusTestContext>;
+
 import * as status from '../../../../src/lib/common/database/methods/status';
 
-test.beforeEach((t) => {
-    sinon.stub(Status, 'findOne').returns(query);
-    sinon.stub(query, 'sort').returns(query);
+test.beforeEach((t: TestContext) => {
+    const sandbox = sinon.createSandbox();
 
-    t.context.query = query;
-    t.context.Status = Status;
-    t.context.common = common;
+    t.context.statusFindOneStub = sandbox.stub(Status, 'findOne').returns(query);
+    t.context.querySortStub = sandbox.stub(query, 'sort').returns(query);
+
+    t.context.sandbox = sandbox;
 });
 
-test.afterEach.always((t) => {
-    t.context.Status.findOne.restore();
-    t.context.query.sort.restore();
-
-    if (t.context.common.validateConnection.restore) {
-        t.context.common.validateConnection.restore();
-    }
+test.afterEach.always((t: TestContext) => {
+    t.context.sandbox.restore();
 });
 
-test.serial('status.add should fail if database is not connected', async (t) => {
-    sinon.stub(common, 'validateConnection').throws(error);
+test.serial('status.add should fail if database is not connected', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    sandbox.stub(common, 'validateConnection').throws(error);
     t.plan(1);
     try {
         await status.add(null);
@@ -70,8 +75,10 @@ test.serial('status.add should fail if database is not connected', async (t) => 
     }
 });
 
-test.serial('status.update should fail if database is not connected', async (t) => {
-    sinon.stub(common, 'validateConnection').throws(error);
+test.serial('status.update should fail if database is not connected', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    sandbox.stub(common, 'validateConnection').throws(error);
     t.plan(1);
     try {
         await status.update(null, null);
@@ -80,8 +87,10 @@ test.serial('status.update should fail if database is not connected', async (t) 
     }
 });
 
-test.serial('status.getMostRecent should fail if database is not connected', async (t) => {
-    sinon.stub(common, 'validateConnection').throws(error);
+test.serial('status.getMostRecent should fail if database is not connected', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    sandbox.stub(common, 'validateConnection').throws(error);
     t.plan(1);
     try {
         await status.getMostRecent();
@@ -90,8 +99,10 @@ test.serial('status.getMostRecent should fail if database is not connected', asy
     }
 });
 
-test.serial('status.getByDate should fail if database is not connected', async (t) => {
-    sinon.stub(common, 'validateConnection').throws(error);
+test.serial('status.getByDate should fail if database is not connected', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    sandbox.stub(common, 'validateConnection').throws(error);
     t.plan(1);
     try {
         await status.getByDate(null, null);
@@ -100,32 +111,30 @@ test.serial('status.getByDate should fail if database is not connected', async (
     }
 });
 
-test.serial('status.add should create a new status in database', async (t) => {
-    sinon.stub(common, 'validateConnection').returns(true);
+test.serial('status.add should create a new status in database', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
 
-    sinon.stub(modelObject, 'save').resolves();
+    sandbox.stub(common, 'validateConnection').returns(true);
 
-    t.context.modelObject = modelObject;
+    const modelObjectSaveStub = sandbox.stub(modelObject, 'save').resolves();
 
     await status.add({ date: new Date() } as IStatus);
 
-    t.true(t.context.modelObject.save.calledOnce);
-
-    t.context.modelObject.save.restore();
+    t.true(modelObjectSaveStub.calledOnce);
 });
 
-test.serial('status.getMostRecent should return the newest item in the database', async (t) => {
-    sinon.stub(common, 'validateConnection').returns(true);
+test.serial('status.getMostRecent should return the newest item in the database', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
 
-    sinon.stub(query, 'exec').resolves();
+    sandbox.stub(common, 'validateConnection').returns(true);
+
+    const queryExecStub = sandbox.stub(query, 'exec').resolves();
 
     await status.getMostRecent();
 
-    t.true(t.context.query.sort.calledOnce);
-    t.true(t.context.query.exec.calledOnce);
-    t.true(t.context.Status.findOne.calledOnce);
-    t.is(t.context.Status.findOne.args[0][0], void 0);
-    t.is(t.context.query.sort.args[0][0].date, -1);
-
-    t.context.query.exec.restore();
+    t.true(t.context.querySortStub.calledOnce);
+    t.is(t.context.querySortStub.args[0][0].date, -1);
+    t.true(queryExecStub.calledOnce);
+    t.true(t.context.statusFindOneStub.calledOnce);
+    t.is(t.context.statusFindOneStub.args[0][0], void 0);
 });

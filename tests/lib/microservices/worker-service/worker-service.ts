@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 
-import test from 'ava';
+import test, { ExecutionContext } from 'ava';
 import { EventEmitter2 as EventEmitter } from 'eventemitter2';
 import * as sinon from 'sinon';
 import * as proxyquire from 'proxyquire';
@@ -37,39 +37,40 @@ import * as worker from '../../../../src/lib/microservices/worker-service/worker
 import { JobStatus, HintStatus } from '../../../../src/lib/enums/status';
 import { delay } from '../../../../src/lib/utils/misc';
 
-test.beforeEach((t) => {
-    sinon.stub(queueObject, 'Queue')
+type WorkerTestContext = {
+    sandbox: sinon.SinonSandbox;
+    queueObjectQueueStub: sinon.SinonStub;
+    resultsQueueSendMessageStub: sinon.SinonStub;
+    jobsQueueListenStub: sinon.SinonStub;
+    childProcessForkStub: sinon.SinonStub;
+};
+
+type TestContext = ExecutionContext<WorkerTestContext>;
+
+test.beforeEach((t: TestContext) => {
+    const sandbox = sinon.createSandbox();
+    const queueObjectQueueStub = sandbox.stub(queueObject, 'Queue')
         .onFirstCall()
         .returns(jobsQueue)
         .onSecondCall()
         .returns(resultsQueue);
 
-    t.context.queueObject = queueObject;
-    t.context.resultsQueue = resultsQueue;
-    t.context.jobsQueue = jobsQueue;
-    t.context.childProcess = childProcess;
+    t.context.queueObjectQueueStub = queueObjectQueueStub;
+    t.context.sandbox = sandbox;
 });
 
-test.afterEach.always((t) => {
-    t.context.queueObject.Queue.restore();
-    t.context.resultsQueue.sendMessage.restore();
-
-    if (t.context.jobsQueue.listen.restore) {
-        t.context.jobsQueue.listen.restore();
-    }
-
-    if (t.context.childProcess.fork.restore) {
-        t.context.childProcess.fork.restore();
-    }
+test.afterEach.always((t: TestContext) => {
+    t.context.sandbox.restore();
 });
 
-test.serial('Worker has to listen the jobs queue', async (t) => {
-    sinon.spy(resultsQueue, 'sendMessage');
-    sinon.stub(jobsQueue, 'listen').resolves();
+test.serial('Worker has to listen the jobs queue', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
+
+    t.context.jobsQueueListenStub = sandbox.stub(jobsQueue, 'listen').resolves();
 
     await worker.run();
 
-    t.true(t.context.jobsQueue.listen.calledOnce);
+    t.true(t.context.jobsQueueListenStub.calledOnce);
 });
 
 const getEmitter = () => {
@@ -83,10 +84,11 @@ const getEmitter = () => {
     return emitter;
 };
 
-const commonStub = (emitter) => {
-    sinon.stub(childProcess, 'fork').returns(emitter);
+const commonStub = (emitter, t: TestContext) => {
+    const sandbox = t.context.sandbox;
 
-    sinon.stub(jobsQueue, 'listen');
+    t.context.childProcessForkStub = sandbox.stub(childProcess, 'fork').returns(emitter);
+    t.context.jobsQueueListenStub = sandbox.stub(jobsQueue, 'listen');
 };
 
 const getHint = (name: string, hints) => {
@@ -95,7 +97,8 @@ const getHint = (name: string, hints) => {
     });
 };
 
-test.serial(`If there is no problem running webhint, it should send a couple of messages with the current status`, async (t) => {
+test.serial(`If there is no problem running webhint, it should send a couple of messages with the current status`, async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const job = {
         config: [{ hints: { 'content-type': 'error' } }],
         hints: [{
@@ -111,13 +114,13 @@ test.serial(`If there is no problem running webhint, it should send a couple of 
     };
     const emitter = getEmitter();
 
-    sinon.spy(resultsQueue, 'sendMessage');
+    t.context.resultsQueueSendMessageStub = sandbox.stub(resultsQueue, 'sendMessage');
 
-    commonStub(emitter);
+    commonStub(emitter, t);
 
     await worker.run();
 
-    const promise = t.context.jobsQueue.listen.args[0][0]([{ data: job }]);
+    const promise = t.context.jobsQueueListenStub.args[0][0]([{ data: job }]);
 
     // Wait a little bit to ensure that 'runWebhint' was launched
     await delay(500);
@@ -128,11 +131,12 @@ test.serial(`If there is no problem running webhint, it should send a couple of 
 
     await promise;
 
-    t.true(t.context.resultsQueue.sendMessage.calledTwice);
-    t.is(t.context.resultsQueue.sendMessage.args[1][0].status, JobStatus.finished);
+    t.true(t.context.resultsQueueSendMessageStub.calledTwice);
+    t.is(t.context.resultsQueueSendMessageStub.args[1][0].status, JobStatus.finished);
 });
 
-test.serial(`If there is a problem running webhint, it should send a couple of messages with the current status`, async (t) => {
+test.serial(`If there is a problem running webhint, it should send a couple of messages with the current status`, async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const job = {
         config: [{}],
         hints: [],
@@ -144,13 +148,13 @@ test.serial(`If there is a problem running webhint, it should send a couple of m
     };
     const emitter = getEmitter();
 
-    sinon.spy(resultsQueue, 'sendMessage');
+    t.context.resultsQueueSendMessageStub = sandbox.stub(resultsQueue, 'sendMessage');
 
-    commonStub(emitter);
+    commonStub(emitter, t);
 
     await worker.run();
 
-    const promise = t.context.jobsQueue.listen.args[0][0]([{ data: job }]);
+    const promise = t.context.jobsQueueListenStub.args[0][0]([{ data: job }]);
 
     // Wait a little bit to ensure that 'runWebhint' was launched
     await delay(500);
@@ -161,11 +165,12 @@ test.serial(`If there is a problem running webhint, it should send a couple of m
 
     await promise;
 
-    t.true(t.context.resultsQueue.sendMessage.calledTwice);
-    t.is(t.context.resultsQueue.sendMessage.args[1][0].status, JobStatus.error);
+    t.true(t.context.resultsQueueSendMessageStub.calledTwice);
+    t.is(t.context.resultsQueueSendMessageStub.args[1][0].status, JobStatus.error);
 });
 
-test.serial(`If there is a problem running webhint, the job sent to the queue has all hints in the configuration set as error`, async (t) => {
+test.serial(`If there is a problem running webhint, the job sent to the queue has all hints in the configuration set as error`, async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const job = {
         config: [{
             hints: {
@@ -200,13 +205,13 @@ test.serial(`If there is a problem running webhint, the job sent to the queue ha
     };
     const emitter = getEmitter();
 
-    sinon.spy(resultsQueue, 'sendMessage');
+    t.context.resultsQueueSendMessageStub = sandbox.stub(resultsQueue, 'sendMessage');
 
-    commonStub(emitter);
+    commonStub(emitter, t);
 
     await worker.run();
 
-    const promise = t.context.jobsQueue.listen.args[0][0]([{ data: job }]);
+    const promise = t.context.jobsQueueListenStub.args[0][0]([{ data: job }]);
 
     // Wait a little bit to ensure that 'runWebhint' was launched
     await delay(500);
@@ -217,14 +222,14 @@ test.serial(`If there is a problem running webhint, the job sent to the queue ha
 
     await promise;
 
-    const jobSent = t.context.resultsQueue.sendMessage.args[1][0];
+    const jobSent = t.context.resultsQueueSendMessageStub.args[1][0];
     const hints = jobSent.hints;
     const axe = getHint('axe', hints);
     const contentType = getHint('content-type', hints);
     const disown = getHint('disown-opener', hints);
     const manifest = getHint('manifest-exists', hints);
 
-    t.true(t.context.resultsQueue.sendMessage.calledTwice);
+    t.true(t.context.resultsQueueSendMessageStub.calledTwice);
     t.is(jobSent.status, JobStatus.error);
     t.is(axe.status, HintStatus.error);
     t.is(contentType.status, HintStatus.error);
@@ -232,7 +237,8 @@ test.serial(`If there is a problem running webhint, the job sent to the queue ha
     t.is(manifest.status, HintStatus.pending);
 });
 
-test.serial(`If a message is too big for Service Bus, we should send the hint with just one common error message`, async (t) => {
+test.serial(`If a message is too big for Service Bus, we should send the hint with just one common error message`, async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const job = {
         config: [{
             hints: [
@@ -259,7 +265,7 @@ test.serial(`If a message is too big for Service Bus, we should send the hint wi
 
     t.plan(3);
 
-    sinon.stub(resultsQueue, 'sendMessage')
+    t.context.resultsQueueSendMessageStub = sandbox.stub(resultsQueue, 'sendMessage')
         .onFirstCall()
         .resolves()
         .onSecondCall()
@@ -274,11 +280,11 @@ test.serial(`If a message is too big for Service Bus, we should send the hint wi
         .onThirdCall()
         .resolves();
 
-    commonStub(emitter);
+    commonStub(emitter, t);
 
     await worker.run();
 
-    const promise = t.context.jobsQueue.listen.args[0][0]([{ data: job }]);
+    const promise = t.context.jobsQueueListenStub.args[0][0]([{ data: job }]);
 
     // Wait a little bit to ensure that 'runWebhint' was launched
     await delay(500);
@@ -295,13 +301,14 @@ test.serial(`If a message is too big for Service Bus, we should send the hint wi
 
     await promise;
 
-    const jobSent = t.context.resultsQueue.sendMessage.args[2][0];
+    const jobSent = t.context.resultsQueueSendMessageStub.args[2][0];
 
-    t.is(t.context.resultsQueue.sendMessage.callCount, 3);
+    t.is(t.context.resultsQueueSendMessageStub.callCount, 3);
     t.is(jobSent.hints[0].messages.length, 1);
 });
 
-test.serial(`If there is no problem running webhint, it should send to the queue one message if the size is smaller than MAX_MESSAGE_SIZE`, async (t) => {
+test.serial(`If there is no problem running webhint, it should send to the queue one message if the size is smaller than MAX_MESSAGE_SIZE`, async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const job = {
         config: [{
             hints: [
@@ -331,17 +338,17 @@ test.serial(`If there is no problem running webhint, it should send to the queue
     };
     const emitter = getEmitter();
 
-    sinon.stub(resultsQueue, 'sendMessage')
+    t.context.resultsQueueSendMessageStub = sandbox.stub(resultsQueue, 'sendMessage')
         .onFirstCall()
         .resolves()
         .onSecondCall()
         .resolves();
 
-    commonStub(emitter);
+    commonStub(emitter, t);
 
     await worker.run();
 
-    const promise = t.context.jobsQueue.listen.args[0][0]([{ data: job }]);
+    const promise = t.context.jobsQueueListenStub.args[0][0]([{ data: job }]);
 
     // Wait a little bit to ensure that 'runWebhint' was launched
     await delay(500);
@@ -359,15 +366,16 @@ test.serial(`If there is no problem running webhint, it should send to the queue
 
     await promise;
 
-    const axe = getHint('axe', t.context.resultsQueue.sendMessage.args[1][0].hints);
-    const contentType = getHint('content-type', t.context.resultsQueue.sendMessage.args[1][0].hints);
+    const axe = getHint('axe', t.context.resultsQueueSendMessageStub.args[1][0].hints);
+    const contentType = getHint('content-type', t.context.resultsQueueSendMessageStub.args[1][0].hints);
 
-    t.is(t.context.resultsQueue.sendMessage.callCount, 2);
+    t.is(t.context.resultsQueueSendMessageStub.callCount, 2);
     t.is(axe.status, HintStatus.warning);
     t.is(contentType.status, HintStatus.pass);
 });
 
-test.serial(`If there is no problem running webhint, it should send to the queue 2 messages if the total size is bigger than MAX_MESSAGE_SIZE`, async (t) => {
+test.serial(`If there is no problem running webhint, it should send to the queue 2 messages if the total size is bigger than MAX_MESSAGE_SIZE`, async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const lipsum = fs.readFileSync(`${__dirname}/../fixtures/lipsum.txt`, 'utf-8'); // eslint-disable-line no-sync
 
     const job = {
@@ -395,17 +403,17 @@ test.serial(`If there is no problem running webhint, it should send to the queue
     };
     const emitter = getEmitter();
 
-    sinon.stub(resultsQueue, 'sendMessage')
+    t.context.resultsQueueSendMessageStub = sandbox.stub(resultsQueue, 'sendMessage')
         .onFirstCall()
         .resolves()
         .onSecondCall()
         .resolves();
 
-    commonStub(emitter);
+    commonStub(emitter, t);
 
     await worker.run();
 
-    const promise = t.context.jobsQueue.listen.args[0][0]([{ data: job }]);
+    const promise = t.context.jobsQueueListenStub.args[0][0]([{ data: job }]);
 
     // Wait a little bit to ensure that 'runWebhint' was launched
     await delay(500);
@@ -423,11 +431,12 @@ test.serial(`If there is no problem running webhint, it should send to the queue
 
     await promise;
 
-    t.is(t.context.resultsQueue.sendMessage.callCount, 3);
+    t.is(t.context.resultsQueueSendMessageStub.callCount, 3);
 });
 
 
-test.serial(`If there is no problem running webhint, it should send a "Too many errors" message if the messages are bigger than MAX_MESSAGE_SIZE`, async (t) => {
+test.serial(`If there is no problem running webhint, it should send a "Too many errors" message if the messages are bigger than MAX_MESSAGE_SIZE`, async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const lipsum = fs.readFileSync(`${__dirname}/../fixtures/lipsum.txt`, 'utf-8'); // eslint-disable-line no-sync
 
     const job = {
@@ -455,15 +464,15 @@ test.serial(`If there is no problem running webhint, it should send a "Too many 
     };
     const emitter = getEmitter();
 
-    sinon.stub(resultsQueue, 'sendMessage')
+    t.context.resultsQueueSendMessageStub = sandbox.stub(resultsQueue, 'sendMessage')
         .onFirstCall()
         .resolves();
 
-    commonStub(emitter);
+    commonStub(emitter, t);
 
     await worker.run();
 
-    const promise = t.context.jobsQueue.listen.args[0][0]([{ data: job }]);
+    const promise = t.context.jobsQueueListenStub.args[0][0]([{ data: job }]);
 
     // Wait a little bit to ensure that 'runWebhint' was launched
     await delay(500);
@@ -477,16 +486,17 @@ test.serial(`If there is no problem running webhint, it should send a "Too many 
 
     await promise;
 
-    const axe = getHint('axe', t.context.resultsQueue.sendMessage.args[1][0].hints);
+    const axe = getHint('axe', t.context.resultsQueueSendMessageStub.args[1][0].hints);
 
-    t.is(t.context.resultsQueue.sendMessage.callCount, 2);
+    t.is(t.context.resultsQueueSendMessageStub.callCount, 2);
     t.is(axe.status, HintStatus.warning);
     t.is(axe.messages.length, 1);
     t.is(axe.messages[0].message, 'This hint has too many errors, please use webhint locally for more details');
 });
 
 
-test.serial(`If webhint doesn't finish before the job.maxRunTime, it should report an error message to the queue, but the job status is finished`, async (t) => {
+test.serial(`If webhint doesn't finish before the job.maxRunTime, it should report an error message to the queue, but the job status is finished`, async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const job = {
         config: [{}],
         hints: [],
@@ -499,16 +509,16 @@ test.serial(`If webhint doesn't finish before the job.maxRunTime, it should repo
     };
     const emitter = getEmitter();
 
-    sinon.spy(resultsQueue, 'sendMessage');
+    t.context.resultsQueueSendMessageStub = sandbox.stub(resultsQueue, 'sendMessage');
 
-    commonStub(emitter);
+    commonStub(emitter, t);
 
     await worker.run();
-    await t.context.jobsQueue.listen.args[0][0]([{ data: job }]);
+    await t.context.jobsQueueListenStub.args[0][0]([{ data: job }]);
 
-    t.true(t.context.resultsQueue.sendMessage.calledTwice);
+    t.true(t.context.resultsQueueSendMessageStub.calledTwice);
 
-    const queueArgs = t.context.resultsQueue.sendMessage.args[1][0];
+    const queueArgs = t.context.resultsQueueSendMessageStub.args[1][0];
 
     t.is(queueArgs.status, JobStatus.finished);
     t.is(queueArgs.error.message, 'TIMEOUT');

@@ -1,4 +1,4 @@
-import test from 'ava';
+import test, { ExecutionContext } from 'ava';
 import * as sinon from 'sinon';
 import * as proxyquire from 'proxyquire';
 
@@ -18,38 +18,49 @@ const multiparty: Multipoarty = {
     }
 };
 
+type MiscTestContext = {
+    sandbox: sinon.SinonSandbox;
+    multipartyFormStub: sinon.SinonStub;
+};
+
+type TestContext = ExecutionContext<MiscTestContext>;
+
 proxyquire('../../../src/lib/utils/misc', { multiparty });
 
 import { getDataFromRequest } from '../../../src/lib/utils/misc';
 
-test.beforeEach((t) => {
-    sinon.stub(multiparty, 'Form').returns(multipartyObject);
+test.beforeEach((t: TestContext) => {
+    const sandbox = sinon.createSandbox();
+    const stub = sandbox.stub(multiparty, 'Form').returns(multipartyObject);
 
-    t.context.multiparty = multiparty;
-    t.context.multipartyObject = multipartyObject;
+    t.context.multipartyFormStub = stub;
+    t.context.sandbox = sandbox;
 });
 
-test.afterEach.always((t) => {
-    t.context.multiparty.Form.restore();
-    t.context.multipartyObject.parse.restore();
+test.afterEach.always((t: TestContext) => {
+    t.context.sandbox.restore();
 });
 
-test.serial('getDataFromRequest should fail if there is an error parsing', async (t) => {
+test.serial('getDataFromRequest should fail if there is an error parsing', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const errorMessage = 'error parsing data';
 
-    sinon.stub(multipartyObject, 'parse').callsArgWith(1, errorMessage);
+    const multipartyObjectParseStub = sandbox.stub(multipartyObject, 'parse').callsArgWith(1, errorMessage);
 
     t.plan(3);
     try {
         await getDataFromRequest({} as any);
     } catch (err) {
-        t.true(t.context.multiparty.Form.calledOnce);
-        t.true(t.context.multipartyObject.parse.calledOnce);
+        t.true(t.context.multipartyFormStub.calledOnce);
+        t.true(multipartyObjectParseStub.calledOnce);
         t.is(err, errorMessage);
     }
+
+    multipartyObjectParseStub.restore();
 });
 
-test.serial('getDataFromRequest should return and object with the properties fields and files', async (t) => {
+test.serial('getDataFromRequest should return and object with the properties fields and files', async (t: TestContext) => {
+    const sandbox = t.context.sandbox;
     const fields = {
         hints: [],
         source: ['manual'],
@@ -63,10 +74,14 @@ test.serial('getDataFromRequest should return and object with the properties fie
         }
     };
 
-    sinon.stub(multipartyObject, 'parse').callsArgWith(1, null, fields, files);
+    const errorMessage = 'error parsing data';
+
+    const multipartyObjectParseStub = sandbox.stub(multipartyObject, 'parse').callsArgWith(1, null, fields, files);
 
     const data = await getDataFromRequest({} as any);
 
     t.deepEqual(data.fields, fields);
     t.deepEqual(data.files, files);
+
+    multipartyObjectParseStub.restore();
 });

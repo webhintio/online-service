@@ -21,20 +21,16 @@ import { IssueReporter } from '../../../../src/lib/common/github/issuereporter';
 test.serial('If no error and no issue, nothing happens', async (t) => {
     const sandbox = sinon.createSandbox();
 
-    sandbox.stub(Octokit.prototype.search, 'issues').resolves({ data: { items: [] } });
-    sandbox.spy(Octokit.prototype.issues, 'update');
-    sandbox.spy(Octokit.prototype.issues, 'create');
-
-    t.context.search = Octokit.prototype.search;
-    t.context.issues = Octokit.prototype.issues;
-
+    const octokitSearchIssuesStub = sandbox.stub(Octokit.prototype.search, 'issues').resolves({ data: { items: [] } });
+    const octokitIssuesUpdateSpy = sandbox.spy(Octokit.prototype.issues, 'update');
+    const octokitIssuesCreateSpy = sandbox.spy(Octokit.prototype.issues, 'create');
     const issueReporter = new IssueReporter();
 
     await issueReporter.report({ configs: [], scan: moment().format('YYYY-MM-DD'), url: 'http://example.com' });
 
-    t.true(t.context.search.issues.called);
-    t.false(t.context.issues.update.called);
-    t.false(t.context.issues.create.called);
+    t.true(octokitSearchIssuesStub.called);
+    t.false(octokitIssuesUpdateSpy.called);
+    t.false(octokitIssuesCreateSpy.called);
 
     sandbox.restore();
 });
@@ -42,22 +38,18 @@ test.serial('If no error and no issue, nothing happens', async (t) => {
 test.serial('If no error but issue exists, it should close the issue', async (t) => {
     const sandbox = sinon.createSandbox();
 
-    sandbox.stub(Octokit.prototype.search, 'issues').resolves({ data: { items: [{ number: 1 }] } });
-    sandbox.stub(Octokit.prototype.issues, 'update').resolves();
-    sandbox.spy(Octokit.prototype.issues, 'create');
-
-    t.context.search = Octokit.prototype.search;
-    t.context.issues = Octokit.prototype.issues;
-
+    const octokitSearchIssuesStub = sandbox.stub(Octokit.prototype.search, 'issues').resolves({ data: { items: [{ number: 1 }] } });
+    const octokitIssuesUpdateStub = sandbox.stub(Octokit.prototype.issues, 'update').resolves();
+    const octokitIssuesCreateSpy = sandbox.spy(Octokit.prototype.issues, 'create');
     const issueReporter = new IssueReporter();
 
     await issueReporter.report({ configs: [], scan: moment().format('YYYY-MM-DD'), url: 'http://example.com' });
 
-    t.true(t.context.search.issues.called);
-    t.true(t.context.issues.update.calledOnce);
-    t.false(t.context.issues.create.called);
+    t.true(octokitSearchIssuesStub.called);
+    t.true(octokitIssuesUpdateStub.calledOnce);
+    t.false(octokitIssuesCreateSpy.called);
 
-    const args = t.context.issues.update.args[0][0];
+    const args = octokitIssuesUpdateStub.args[0][0];
 
     t.is(args.state, 'closed');
     t.is(args.number, 1);
@@ -68,13 +60,9 @@ test.serial('If no error but issue exists, it should close the issue', async (t)
 test.serial(`If there is an error and issue doesn't exists yet, it should create issue`, async (t) => {
     const sandbox = sinon.createSandbox();
 
-    sandbox.stub(Octokit.prototype.search, 'issues').resolves({ data: { items: [] } });
-    sandbox.spy(Octokit.prototype.issues, 'update');
-    sandbox.stub(Octokit.prototype.issues, 'create').resolves();
-
-    t.context.search = Octokit.prototype.search;
-    t.context.issues = Octokit.prototype.issues;
-
+    const octokitSearchIssuesStub = sandbox.stub(Octokit.prototype.search, 'issues').resolves({ data: { items: [] } });
+    const octokitIssuesUpdateSpy = sandbox.spy(Octokit.prototype.issues, 'update');
+    const octokitIssuesCreateStub = sandbox.stub(Octokit.prototype.issues, 'create').resolves();
     const issueReporter = new IssueReporter();
     const errorMessage = 'Error running webhint';
 
@@ -89,11 +77,11 @@ test.serial(`If there is an error and issue doesn't exists yet, it should create
         url: 'http://example.com'
     });
 
-    t.true(t.context.search.issues.called);
-    t.false(t.context.issues.update.called);
-    t.true(t.context.issues.create.calledOnce);
+    t.true(octokitSearchIssuesStub.called);
+    t.false(octokitIssuesUpdateSpy.called);
+    t.true(octokitIssuesCreateStub.calledOnce);
 
-    const args = t.context.issues.create.args[0][0];
+    const args = octokitIssuesCreateStub.args[0][0];
 
     t.true(args.body.includes(errorMessage));
     t.true(args.body.includes('"axe": "error"'));
@@ -104,7 +92,7 @@ test.serial(`If there is an error and issue doesn't exists yet, it should create
 test.serial(`If there is an error and issue exists, it should create a comment`, async (t) => {
     const sandbox = sinon.createSandbox();
 
-    sandbox.stub(Octokit.prototype.search, 'issues').resolves({
+    const octokitSearchIssuesStub = sandbox.stub(Octokit.prototype.search, 'issues').resolves({
         data: {
             items: [{
                 labels: [{ name: 'error:crash' }],
@@ -112,12 +100,9 @@ test.serial(`If there is an error and issue exists, it should create a comment`,
             }]
         }
     });
-    sandbox.spy(Octokit.prototype.issues, 'update');
-    sandbox.spy(Octokit.prototype.issues, 'create');
-    sandbox.stub(Octokit.prototype.issues, 'createComment').resolves();
-
-    t.context.search = Octokit.prototype.search;
-    t.context.issues = Octokit.prototype.issues;
+    const octokitIssuesUpdateSpy = sandbox.spy(Octokit.prototype.issues, 'update');
+    const octokitIssuesCreateSpy = sandbox.spy(Octokit.prototype.issues, 'create');
+    const octokitIssuesCreateCommentStub = sandbox.stub(Octokit.prototype.issues, 'createComment').resolves();
 
     const issueReporter = new IssueReporter();
     const errorMessage = 'Error running webhint';
@@ -134,18 +119,18 @@ test.serial(`If there is an error and issue exists, it should create a comment`,
         url: 'http://example.com'
     });
 
-    t.true(t.context.search.issues.called);
-    t.true(t.context.issues.update.calledOnce);
-    t.false(t.context.issues.create.called);
-    t.true(t.context.issues.createComment.calledOnce);
+    t.true(octokitSearchIssuesStub.called);
+    t.true(octokitIssuesUpdateSpy.calledOnce);
+    t.false(octokitIssuesCreateSpy.called);
+    t.true(octokitIssuesCreateCommentStub.calledOnce);
 
-    const args = t.context.issues.createComment.args[0][0];
+    const args = octokitIssuesCreateCommentStub.args[0][0];
 
     t.true(args.body.includes(errorMessage));
     t.true(args.body.includes('"hint2": "warning"'));
     t.is(args.number, 1);
 
-    const editArgs = t.context.issues.update.args[0][0];
+    const editArgs = octokitIssuesUpdateSpy.args[0][0];
 
     t.true(editArgs.labels.includes(`scan:${scan}`));
     t.true(editArgs.labels.includes('error:crash'));
@@ -157,7 +142,7 @@ test.serial(`If there is an error and issue exists, it should create a comment`,
 test.serial(`If there is an error and the issue exists but the error label is different, it should create a new issue`, async (t) => {
     const sandbox = sinon.createSandbox();
 
-    sandbox.stub(Octokit.prototype.search, 'issues').resolves({
+    const octokitSearchIssues = sandbox.stub(Octokit.prototype.search, 'issues').resolves({
         data: {
             items: [{
                 labels: [{ name: 'error:crash' }],
@@ -165,13 +150,9 @@ test.serial(`If there is an error and the issue exists but the error label is di
             }]
         }
     });
-    sandbox.spy(Octokit.prototype.issues, 'update');
-    sandbox.stub(Octokit.prototype.issues, 'create').resolves();
-    sandbox.spy(Octokit.prototype.issues, 'createComment');
-
-    t.context.search = Octokit.prototype.search;
-    t.context.issues = Octokit.prototype.issues;
-
+    const octokitIssuesUpdateSpy = sandbox.spy(Octokit.prototype.issues, 'update');
+    const octokitIssuesCreateSpy = sandbox.stub(Octokit.prototype.issues, 'create').resolves();
+    const octokitIssuesCreateCommentStub = sandbox.spy(Octokit.prototype.issues, 'createComment');
     const issueReporter = new IssueReporter();
     const errorMessage = 'Error running webhint';
     const scan = moment().format('YYYY-MM-DD');
@@ -187,12 +168,12 @@ test.serial(`If there is an error and the issue exists but the error label is di
         url: 'http://example.com'
     });
 
-    t.true(t.context.search.issues.called);
-    t.false(t.context.issues.update.called);
-    t.true(t.context.issues.create.calledOnce);
-    t.false(t.context.issues.createComment.called);
+    t.true(octokitSearchIssues.called);
+    t.false(octokitIssuesUpdateSpy.called);
+    t.true(octokitIssuesCreateSpy.calledOnce);
+    t.false(octokitIssuesCreateCommentStub.called);
 
-    const args = t.context.issues.create.args[0][0];
+    const args = octokitIssuesCreateSpy.args[0][0];
 
     t.true(args.body.includes(errorMessage));
     t.true(args.body.includes('"axe": "error"'));
