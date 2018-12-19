@@ -16,11 +16,13 @@ RUN echo "deb https://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/so
 RUN apt-get update
 RUN apt-get install -y google-chrome-unstable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst
 
-# Install git (just for browser extension tests)
+# Install git (for browser extension)
 RUN apt-get install software-properties-common -y
+RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
+RUN echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
 RUN add-apt-repository ppa:git-core/ppa
 RUN apt-get update
-RUN apt-get install git -y
+RUN apt-get install git yarn -y
 
 WORKDIR /app
 
@@ -44,6 +46,14 @@ COPY . /app
 RUN npm run build
 
 # Install hint manually (just for browser extension tests)
-RUN npm run steps
+RUN rm -rf node_modules/hint && rm -rf gitrepos/ 
+RUN mkdir gitrepos && cd gitrepos && git clone https://github.com/webhintio/hint.git && cd hint/packages/hint && npm install && npm install @types/is-ci @types/proxyquire && npm run build
+RUN mkdir node_modules/hint
+RUN cp -a gitrepos/hint/packages/hint node_modules/
+
+# Create webhint bundle for browser extension.
+RUN rm -rf gitrepos/hint/pacakges/hint/node_modules/ && cd gitrepos/hint && yarn && yarn build
+RUN cd gitrepos/hint/packages/extension-browser && yarn build
+RUN cp gitrepos/hint/packages/extension-browser/dist/bundle/content-script/webhint.js dist/src/lib/microservices/worker-service/webhint.js
 
 CMD node dist/src/bin/online-service.js --microservice worker
