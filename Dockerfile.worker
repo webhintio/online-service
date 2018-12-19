@@ -16,7 +16,7 @@ RUN echo "deb https://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/so
 RUN apt-get update
 RUN apt-get install -y google-chrome-unstable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst
 
-# Install git (for browser extension)
+# Install git and yarn (for browser extension)
 RUN apt-get install software-properties-common -y
 RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
 RUN echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
