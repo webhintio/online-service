@@ -112,7 +112,7 @@ const setHintsToError = (job: IJob, normalizedHints, error) => {
  */
 const killProcess = (runner: ChildProcess) => {
     try {
-        runner.kill('SIGKILL');
+        runner.kill('SIGTERM');
     } catch (err) {
         logger.error('Error closing webhint process', moduleName);
     }
