@@ -10,6 +10,7 @@ import { IJob, JobResult } from '../../types';
 import * as logger from '../../utils/logging';
 
 const moduleName: string = 'Webhint Runner';
+let engine: Engine;
 
 const createErrorResult = (err): JobResult => {
     const jobResult: JobResult = {
@@ -48,6 +49,18 @@ process.once('unhandledRejection', (reason) => {
     process.exit(1);
 });
 
+const closeEngine = async () => {
+    if (engine) {
+        await engine.close();
+    }
+
+    process.exit();
+};
+
+process.on('SIGTERM', closeEngine);
+
+process.on('SIGINT', closeEngine);
+
 /**
  * Run a Job in webhint.
  * @param {IJob} job - Job to run in webhint.
@@ -63,7 +76,8 @@ const run = async (job: IJob) => {
     try {
         const config = Configuration.fromConfig(job.config[0]);
         const resources = resourceLoader.loadResources(config);
-        const engine = new Engine(config, resources);
+
+        engine = new Engine(config, resources);
 
         result.messages = await engine.executeOn(new URL(job.url));
 

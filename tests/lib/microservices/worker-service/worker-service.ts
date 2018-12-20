@@ -494,7 +494,6 @@ test.serial(`If there is no problem running webhint, it should send a "Too many 
     t.is(axe.messages[0].message, 'This hint has too many errors, please use webhint locally for more details');
 });
 
-
 test.serial(`If webhint doesn't finish before the job.maxRunTime, it should report an error message to the queue, but the job status is finished`, async (t: TestContext) => {
     const sandbox = t.context.sandbox;
     const job = {
