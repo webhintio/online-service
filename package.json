@@ -51,7 +51,7 @@
     "@types/lodash": "^4.14.117",
     "@types/multiparty": "^0.0.31",
     "@types/node": "^10.12.12",
-    "@types/passport": "^0.4.6",
+    "@types/passport": "^1.0.0",
     "@types/proxyquire": "^1.3.28",
     "@types/sinon": "^7.0.0",
     "ava": "^1.0.1",
