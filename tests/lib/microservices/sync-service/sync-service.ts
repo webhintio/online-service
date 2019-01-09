@@ -31,10 +31,14 @@ const queueObject = { Queue };
 const database = {
     connect() { },
     job: {
-        get() { },
+        get(): Promise<any> {
+            return null;
+        },
         update() { }
     },
-    lock() { },
+    lock(): Promise<string> {
+        return null;
+    },
     unlock() { }
 };
 

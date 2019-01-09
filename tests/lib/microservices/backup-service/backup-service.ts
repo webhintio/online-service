@@ -37,14 +37,26 @@ const child_process = { // eslint-disable-line camelcase
     }
 };
 
-const container = {
+type Container = {
+    copyBlob: (blob: string, container: any) => void;
+    deleteBlob: (blob: string) => void;
+    getBlobs: () => any;
+    name: string;
+    uploadFile: () => void;
+};
+
+const container: Container = {
     copyBlob(blob: string, container: any) { },
     deleteBlob(blob: string) { },
     getBlobs() { },
     name: 'name',
     uploadFile() { }
 };
-const storage = { getContainer() { } };
+const storage = {
+    getContainer(): Promise<Container> {
+        return null;
+    }
+};
 
 type BackupTestContext = {
     sandbox: sinon.SinonSandbox;

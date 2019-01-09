@@ -12,7 +12,7 @@ const common = {
 
 type Query = {
     count: () => Query;
-    exec: () => Query;
+    exec: () => Promise<any>;
     remove: () => Query;
     sort: () => Query;
 };
@@ -21,8 +21,8 @@ const query: Query = {
     count() {
         return query;
     },
-    exec() {
-        return query;
+    exec(): Promise<any> {
+        return null;
     },
     remove() {
         return query;

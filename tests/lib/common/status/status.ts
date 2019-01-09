@@ -27,11 +27,21 @@ const validStatus: IStatus = {
 
 const database = {
     connect() { },
-    job: { getByDate(field: string, fromDate: Date, toDate: Date) { } },
+    job: {
+        getByDate(field: string, fromDate: Date, toDate: Date): Promise<any> {
+            return null;
+        }
+    },
     status: {
-        add() { },
-        getByDate(fromQuarter: moment.Moment, toQuarter: moment.Moment) { },
-        getMostRecent() { },
+        add(): Promise<IStatus> {
+            return null;
+        },
+        getByDate(fromQuarter: moment.Moment, toQuarter: moment.Moment): Promise<IStatus[]> {
+            return null;
+        },
+        getMostRecent(): Promise<IStatus> {
+            return null;
+        },
         update() { }
     }
 };
@@ -128,7 +138,7 @@ test.serial('updateStatuses should get results every 15 minutes', async (t: Test
         .subtract(16, 'm')
         .startOf('minute');
 
-    sandbox.stub(database.status, 'getMostRecent').resolves({ date: recentDate });
+    sandbox.stub(database.status, 'getMostRecent').resolves({ date: recentDate.toDate() } as IStatus);
     const databaseJobGetByDate = sandbox.stub(database.job, 'getByDate').resolves([]);
 
     await status.updateStatuses();
@@ -150,7 +160,7 @@ test.serial('updateStatuses should just update the queue status for the last per
         .subtract(31, 'm')
         .startOf('minute');
 
-    sandbox.stub(database.status, 'getMostRecent').resolves({ date: recentDate });
+    sandbox.stub(database.status, 'getMostRecent').resolves({ date: recentDate.toDate() } as IStatus);
     const databaseJobGetByDate = sandbox.stub(database.job, 'getByDate').resolves([]);
 
     await status.updateStatuses();
@@ -206,7 +216,7 @@ test.serial('updateStatuses should calculate the averages', async (t: TestContex
         .subtract(16, 'm')
         .startOf('minute');
 
-    sandbox.stub(database.status, 'getMostRecent').resolves({ date: recentDate });
+    sandbox.stub(database.status, 'getMostRecent').resolves({ date: recentDate.toDate() } as IStatus);
     const databaseJobGetByDate = sandbox.stub(database.job, 'getByDate').resolves(getValidTestData());
 
     await status.updateStatuses();
@@ -227,7 +237,7 @@ test.serial('updateStatuses should calculate the averages if some time is missed
         .subtract(16, 'm')
         .startOf('minute');
 
-    sandbox.stub(database.status, 'getMostRecent').resolves({ date: recentDate });
+    sandbox.stub(database.status, 'getMostRecent').resolves({ date: recentDate.toDate() } as IStatus);
 
     const data = getValidTestData();
 
@@ -253,7 +263,7 @@ test.serial('updateStatuses should calculate the averages if some times are equa
         .subtract(16, 'm')
         .startOf('minute');
 
-    sandbox.stub(database.status, 'getMostRecent').resolves({ date: recentDate });
+    sandbox.stub(database.status, 'getMostRecent').resolves({ date: recentDate.toDate() } as IStatus);
 
     const data = getValidTestData();
 
@@ -279,7 +289,7 @@ test.serial('updateStatuses should calculate the averages if all times are equal
         .subtract(16, 'm')
         .startOf('minute');
 
-    sandbox.stub(database.status, 'getMostRecent').resolves({ date: recentDate });
+    sandbox.stub(database.status, 'getMostRecent').resolves({ date: recentDate.toDate() } as IStatus);
 
     const data = getValidTestData();
 
@@ -310,7 +320,7 @@ test.serial('updateStatuses should calculate hints status', async (t: TestContex
         .subtract(16, 'm')
         .startOf('minute');
 
-    sandbox.stub(database.status, 'getMostRecent').resolves({ date: recentDate });
+    sandbox.stub(database.status, 'getMostRecent').resolves({ date: recentDate.toDate() } as IStatus);
     const databaseJobGetByDate = sandbox.stub(database.job, 'getByDate').resolves(getValidTestData());
 
     await status.updateStatuses();

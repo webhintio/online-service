@@ -7,16 +7,30 @@ import * as moment from 'moment';
 
 const database = {
     job: {
-        add() { },
-        get() { },
-        getByUrl() { },
+        add(): Promise<any> {
+            return null;
+        },
+        get(): Promise<any> {
+            return null;
+        },
+        getByUrl(): Promise<IJob[]> {
+            return null;
+        },
         update() { }
     },
-    lock() { },
-    unlock() { }
+    lock(): Promise<any> {
+        return null;
+    },
+    unlock(): Promise<any> {
+        return null;
+    }
 };
 
-const configManager = { active() { } };
+const configManager = {
+    active(): Promise<IServiceConfig> {
+        return null;
+    }
+};
 
 const queueMethods = {
     getMessagesCount() { },
@@ -61,10 +75,13 @@ import * as jobManager from '../../../../src/lib/microservices/job-manager/job-m
 import { ConfigSource } from '../../../../src/lib/enums/configsource';
 import { JobStatus, HintStatus } from '../../../../src/lib/enums/status';
 import { readFileAsync } from '../../../../src/lib/utils/misc';
-import { IJob } from '../../../../src/lib/types';
+import { IJob, IServiceConfig } from '../../../../src/lib/types';
 
-const activeConfig = {
+const activeConfig: IServiceConfig = {
+    active: true,
     jobCacheTime: 120,
+    jobRunTime: 100,
+    name: 'test',
     webhintConfigs: [{
         hints: {
             hint1: 'error',

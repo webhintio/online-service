@@ -12,7 +12,16 @@ Octokit.prototype.issues = {
     createComment() { },
     update() { }
 };
-Octokit.prototype.search = { issues() { } };
+
+type OctokitSearch = {
+    issues: () => Promise<any>;
+};
+
+Octokit.prototype.search = {
+    issues(): Promise<any> {
+        return null;
+    }
+};
 
 proxyquire('../../../../src/lib/common/github/issuereporter', { '@octokit/rest': Octokit });
 
@@ -21,7 +30,7 @@ import { IssueReporter } from '../../../../src/lib/common/github/issuereporter';
 test.serial('If no error and no issue, nothing happens', async (t) => {
     const sandbox = sinon.createSandbox();
 
-    const octokitSearchIssuesStub = sandbox.stub(Octokit.prototype.search, 'issues').resolves({ data: { items: [] } });
+    const octokitSearchIssuesStub = sandbox.stub<OctokitSearch, 'issues'>(Octokit.prototype.search, 'issues').resolves({ data: { items: [] } });
     const octokitIssuesUpdateSpy = sandbox.spy(Octokit.prototype.issues, 'update');
     const octokitIssuesCreateSpy = sandbox.spy(Octokit.prototype.issues, 'create');
     const issueReporter = new IssueReporter();
@@ -38,7 +47,7 @@ test.serial('If no error and no issue, nothing happens', async (t) => {
 test.serial('If no error but issue exists, it should close the issue', async (t) => {
     const sandbox = sinon.createSandbox();
 
-    const octokitSearchIssuesStub = sandbox.stub(Octokit.prototype.search, 'issues').resolves({ data: { items: [{ number: 1 }] } });
+    const octokitSearchIssuesStub = sandbox.stub<OctokitSearch, 'issues'>(Octokit.prototype.search, 'issues').resolves({ data: { items: [{ number: 1 }] } });
     const octokitIssuesUpdateStub = sandbox.stub(Octokit.prototype.issues, 'update').resolves();
     const octokitIssuesCreateSpy = sandbox.spy(Octokit.prototype.issues, 'create');
     const issueReporter = new IssueReporter();
@@ -60,7 +69,7 @@ test.serial('If no error but issue exists, it should close the issue', async (t)
 test.serial(`If there is an error and issue doesn't exists yet, it should create issue`, async (t) => {
     const sandbox = sinon.createSandbox();
 
-    const octokitSearchIssuesStub = sandbox.stub(Octokit.prototype.search, 'issues').resolves({ data: { items: [] } });
+    const octokitSearchIssuesStub = sandbox.stub<OctokitSearch, 'issues'>(Octokit.prototype.search, 'issues').resolves({ data: { items: [] } });
     const octokitIssuesUpdateSpy = sandbox.spy(Octokit.prototype.issues, 'update');
     const octokitIssuesCreateStub = sandbox.stub(Octokit.prototype.issues, 'create').resolves();
     const issueReporter = new IssueReporter();
@@ -92,7 +101,7 @@ test.serial(`If there is an error and issue doesn't exists yet, it should create
 test.serial(`If there is an error and issue exists, it should create a comment`, async (t) => {
     const sandbox = sinon.createSandbox();
 
-    const octokitSearchIssuesStub = sandbox.stub(Octokit.prototype.search, 'issues').resolves({
+    const octokitSearchIssuesStub = sandbox.stub<OctokitSearch, 'issues'>(Octokit.prototype.search, 'issues').resolves({
         data: {
             items: [{
                 labels: [{ name: 'error:crash' }],
@@ -142,7 +151,7 @@ test.serial(`If there is an error and issue exists, it should create a comment`,
 test.serial(`If there is an error and the issue exists but the error label is different, it should create a new issue`, async (t) => {
     const sandbox = sinon.createSandbox();
 
-    const octokitSearchIssues = sandbox.stub(Octokit.prototype.search, 'issues').resolves({
+    const octokitSearchIssues = sandbox.stub<OctokitSearch, 'issues'>(Octokit.prototype.search, 'issues').resolves({
         data: {
             items: [{
                 labels: [{ name: 'error:crash' }],
