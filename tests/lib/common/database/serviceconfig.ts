@@ -10,13 +10,13 @@ const common = {
 };
 
 type Query = {
-    exec: () => Query;
+    exec: () => Promise<any>;
     remove: () => Query;
 };
 
 const query: Query = {
-    exec(): Query {
-        return query;
+    exec(): Promise<any> {
+        return null;
     },
     remove(): Query {
         return query;

@@ -4,13 +4,19 @@ import test, { ExecutionContext } from 'ava';
 import * as sinon from 'sinon';
 import * as proxyquire from 'proxyquire';
 
+import { ConfigData, IServiceConfig } from '../../../../src/lib/types';
+
 const database = {
     serviceConfig: {
         activate() { },
         add() { },
         edit() { },
-        get() { },
-        getActive() { },
+        get(): Promise<IServiceConfig> {
+            return null;
+        },
+        getActive(): Promise<IServiceConfig> {
+            return null;
+        },
         getAll() { },
         remove() { }
     }
@@ -32,7 +38,7 @@ proxyquire('../../../../src/lib/microservices/config-manager/config-manager', { 
 
 import * as configManager from '../../../../src/lib/microservices/config-manager/config-manager';
 import { readFileAsync } from '../../../../src/lib/utils/misc';
-import { ConfigData } from '../../../../src/lib/types';
+
 
 test.beforeEach((t: TestContext) => {
     const sandbox = sinon.createSandbox();
@@ -220,7 +226,6 @@ test.serial('active should return a IServiceConfig object', async (t: TestContex
     const sandbox = t.context.sandbox;
     const databaseServiceconfigGetActiveStub = sandbox.stub(database.serviceConfig, 'getActive').resolves({
         active: true,
-        field: 'value',
         jobCacheTime: 1,
         jobRunTime: 1,
         name: 'configName',
@@ -245,7 +250,7 @@ test.serial('active should return a IServiceConfig object', async (t: TestContex
 test.serial('remove should throw an error if the config is active', async (t: TestContext) => {
     const sandbox = t.context.sandbox;
 
-    t.context.databaseServiceConfigGetStub = sandbox.stub(database.serviceConfig, 'get').resolves({ active: true });
+    t.context.databaseServiceConfigGetStub = sandbox.stub(database.serviceConfig, 'get').resolves({ active: true } as IServiceConfig);
 
     t.plan(2);
     try {
@@ -259,7 +264,7 @@ test.serial('remove should throw an error if the config is active', async (t: Te
 test.serial('remove should remove a configuration from the database', async (t: TestContext) => {
     const sandbox = t.context.sandbox;
 
-    t.context.databaseServiceConfigGetStub = sandbox.stub(database.serviceConfig, 'get').resolves({ active: false });
+    t.context.databaseServiceConfigGetStub = sandbox.stub(database.serviceConfig, 'get').resolves({ active: false } as IServiceConfig);
 
     await configManager.remove('config name');
 
@@ -285,7 +290,7 @@ test.serial(`get should return a configuration`, async (t: TestContext) => {
     const sandbox = t.context.sandbox;
     const name = 'config name';
 
-    t.context.databaseServiceConfigGetStub = sandbox.stub(database.serviceConfig, 'get').resolves({ name });
+    t.context.databaseServiceConfigGetStub = sandbox.stub(database.serviceConfig, 'get').resolves({ name } as IServiceConfig);
 
     const config = await configManager.get(name);
 
@@ -318,7 +323,7 @@ test.serial(`edit should throw an error if the name doesn't exist`, async (t: Te
     const sandbox = t.context.sandbox;
     const name = 'oldName';
 
-    t.context.databaseServiceConfigGetStub = sandbox.stub(database.serviceConfig, 'get').resolves({ name });
+    t.context.databaseServiceConfigGetStub = sandbox.stub(database.serviceConfig, 'get').resolves({ name } as IServiceConfig);
     t.plan(1);
 
     const configData: ConfigData = {
@@ -339,7 +344,7 @@ test.serial(`edit should throw an error if the jobCacheTime doesn't exist`, asyn
     const sandbox = t.context.sandbox;
     const name = 'oldName';
 
-    t.context.databaseServiceConfigGetStub = sandbox.stub(database.serviceConfig, 'get').resolves({ name });
+    t.context.databaseServiceConfigGetStub = sandbox.stub(database.serviceConfig, 'get').resolves({ name } as IServiceConfig);
     t.plan(1);
 
     const configData: ConfigData = {
@@ -360,7 +365,7 @@ test.serial(`edit should throw an error if the jobRunTime doesn't exist`, async 
     const sandbox = t.context.sandbox;
     const name = 'oldName';
 
-    t.context.databaseServiceConfigGetStub = sandbox.stub(database.serviceConfig, 'get').resolves({ name });
+    t.context.databaseServiceConfigGetStub = sandbox.stub(database.serviceConfig, 'get').resolves({ name } as IServiceConfig);
     t.plan(1);
 
     const configData: ConfigData = {
@@ -381,7 +386,7 @@ test.serial(`edit should edit the configuration`, async (t: TestContext) => {
     const sandbox = t.context.sandbox;
     const name = 'oldName';
 
-    t.context.databaseServiceConfigGetStub = sandbox.stub(database.serviceConfig, 'get').resolves({ name });
+    t.context.databaseServiceConfigGetStub = sandbox.stub(database.serviceConfig, 'get').resolves({ name } as IServiceConfig);
 
     const configData: ConfigData = {
         filePath: 'dist/tests/lib/microservices/fixtures/config.json',
@@ -399,7 +404,7 @@ test.serial(`edit should edit the configuration even if there is no filePath`, a
     const sandbox = t.context.sandbox;
     const name = 'oldName';
 
-    t.context.databaseServiceConfigGetStub = sandbox.stub(database.serviceConfig, 'get').resolves({ name });
+    t.context.databaseServiceConfigGetStub = sandbox.stub(database.serviceConfig, 'get').resolves({ name } as IServiceConfig);
 
     const configData: ConfigData = {
         filePath: null,

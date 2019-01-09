@@ -2,8 +2,22 @@ import test, { ExecutionContext } from 'ava';
 import * as sinon from 'sinon';
 import * as proxyquire from 'proxyquire';
 
+type DatabaseConnectionDB = {
+    command: ({ replSetGetStatus: number }) => Promise<any>;
+};
+type DatabaseConnection = {
+    db: DatabaseConnectionDB;
+    host: string;
+    port: number;
+};
+type Database = {
+    connection: DatabaseConnection;
+};
+
 const mongoose = {
-    connect() { },
+    connect(): Promise<Database> {
+        return null;
+    },
     disconnect() { }
 };
 
@@ -19,9 +33,13 @@ const mongoDBLock = () => {
     return dbLock;
 };
 
-const db = {
+const db: Database = {
     connection: {
-        db: { command({ replSetGetStatus: number }) { } },
+        db: {
+            command({ replSetGetStatus: number }): Promise<any> {
+                return null;
+            }
+        },
         host: 'localhost',
         port: 27017
     }
@@ -113,7 +131,11 @@ test.serial('disconnect should do nothing if database is not connected', async (
 
 test.serial('unlock should call to releaseAsync', async (t: TestContext) => {
     const sandbox = t.context.sandbox;
-    const lock = { releaseAsync() { } };
+    const lock = {
+        releaseAsync(): Promise<any> {
+            return null;
+        }
+    };
 
     await connectDatabase(t);
 
@@ -152,7 +174,7 @@ test.serial('if ensureIndexes fail, it should throw an error', async (t: TestCon
     const sandbox = t.context.sandbox;
     const errorMessage = 'error connecting';
 
-    t.context.mongooseConnectStub = sandbox.stub(mongoose, 'connect').resolves({ connection: {} });
+    t.context.mongooseConnectStub = sandbox.stub(mongoose, 'connect').resolves({ connection: {} } as Database);
     t.context.dbLockEnsureIndexes = sandbox.stub(dbLock, 'ensureIndexes').callsArgWith(0, errorMessage);
 
     t.plan(3);
