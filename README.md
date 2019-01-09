@@ -1,4 +1,5 @@
 # online-service [![Build Status](https://travis-ci.org/webhintio/online-service.svg?branch=master)](https://travis-ci.org/webhintio/online-service) [![Greenkeeper badge](https://badges.greenkeeper.io/webhintio/online-service.svg)](https://greenkeeper.io/)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fwebhintio%2Fonline-service.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fwebhintio%2Fonline-service?ref=badge_shield)
 
 ## Requirements
 
@@ -289,3 +290,6 @@ By participating in this project you agree to abide by its terms.
 The code is available under the [Apache 2.0 license](LICENSE.txt).
 
 [docker-for-azure]: https://docs.docker.com/docker-for-azure/#docker-enterprise-edition-ee-for-azure
+
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fwebhintio%2Fonline-service.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fwebhintio%2Fonline-service?ref=badge_large)
