@@ -213,7 +213,9 @@ export const run = async () => {
                     dbJob.log = '';
                 }
 
-                dbJob.log += job.log;
+                if (job.log) {
+                    dbJob.log += `${job.log}\n`;
+                }
 
                 if (job.status === JobStatus.error) {
                     if (!dbJob.error) {
