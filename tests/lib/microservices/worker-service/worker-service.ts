@@ -102,7 +102,7 @@ test.serial(`If there is no problem running webhint, it should send a couple of 
     const job = {
         config: [{ hints: { 'content-type': 'error' } }],
         hints: [{
-            category: 'interoperability',
+            category: 'compatibility',
             name: 'content-type',
             status: 'pending'
         }],
