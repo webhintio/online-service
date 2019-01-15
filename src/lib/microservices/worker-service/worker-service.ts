@@ -396,6 +396,26 @@ const closeProcessByName = (name: string) => {
     });
 };
 
+/**
+ * Close chrome/chromium if there is any process alive.
+ * We need to try chrome and chromium because
+ * puppeteer can open chrome or chromium depending
+ * on the system.
+ */
+const closeRemainingProcesses = async () => {
+    try {
+        await closeProcessByName('chrome');
+    } catch (e) {
+        // do nothing.
+    }
+
+    try {
+        await closeProcessByName('chromium');
+    } catch (e) {
+        // do nothing.
+    }
+};
+
 export const run = async () => {
     const queue: Queue = new Queue('webhint-jobs', queueConnectionString);
     const queueResults: Queue = new Queue('webhint-results', queueConnectionString);
@@ -416,19 +436,7 @@ export const run = async () => {
             const webhintStart = Date.now();
             const result: Array<Problem> = await runWebhint(job);
 
-            // TODO: Check if it is necessary to have this in the try block.
-            try {
-                await closeProcessByName('chrome');
-            } catch (e) {
-                // do nothing.
-            }
-
-            // TODO: Check if it is necessary close 'chromium'
-            try {
-                await closeProcessByName('chromium');
-            } catch (e) {
-                // do nothing.
-            }
+            await closeRemainingProcesses();
 
             appInsightClient.trackMetric({
                 name: 'run-webhint',
@@ -451,19 +459,11 @@ export const run = async () => {
                 value: Date.now() - start
             });
         } catch (err) {
-            try {
-                await closeProcessByName('chrome');
-            } catch (e) {
-                // do nothing.
-            }
+            await closeRemainingProcesses();
 
-            try {
-                await closeProcessByName('chromium');
-            } catch (e) {
-                // do nothing.
-            }
             logger.error(generateLog('Error processing Job', job), moduleName, err);
             appInsightClient.trackException({ exception: err });
+
             debug(err);
 
             setHintsToError(job, normalizedHints, err);
