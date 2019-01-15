@@ -4,6 +4,8 @@ import { Problem, Severity } from 'hint/dist/src/lib/types';
 import normalizeHints from 'hint/dist/src/lib/config/normalize-hints';
 import * as path from 'path';
 
+import * as pkill from 'pkill';
+
 import * as appInsight from '../../utils/appinsights';
 import { debug as d } from '../../utils/debug';
 import { Queue } from '../../common/queue/queue';
@@ -13,11 +15,13 @@ import * as logger from '../../utils/logging';
 import { generateLog } from '../../utils/misc';
 import { getTime } from '../../common/ntp/ntp';
 
-const queueConnectionString = process.env.queue; // eslint-disable-line no-process-env
+const { queue: queueConnectionString, environment } = process.env; // eslint-disable-line no-process-env
 const appInsightClient = appInsight.getClient();
 const debug: debug.IDebugger = d(__filename);
 const moduleName: string = 'Worker Service';
 const MAX_MESSAGE_SIZE = 220 * 1024; // size in kB
+
+const runnerFile: string = `${environment === 'browser' ? 'browser' : 'webhint'}-runner`;
 
 /**
  * Parse the result returned for webhint.
@@ -141,7 +145,7 @@ const runWebhint = (job: IJob): Promise<Array<Problem>> => {
         // if we don't set execArgv to [], when the process is created, the execArgv
         // has the same parameters as his father so if we are debugging, the child
         // process try to debug in the same port, and that throws an error.
-        const runner: ChildProcess = fork(path.join(__dirname, 'webhint-runner'), ['--debug'], { execArgv: [], stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
+        const runner: ChildProcess = fork(path.join(__dirname, runnerFile), ['--debug'], { execArgv: [], stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
         let timeoutId: NodeJS.Timer;
 
         let log = '';
@@ -378,6 +382,40 @@ const sendErrorMessage = async (error, queue: Queue, job: IJob) => {
     await queue.sendMessage(job);
 };
 
+const closeProcessByName = (name: string) => {
+    return new Promise((resolve, reject) => {
+        pkill(name, (err) => {
+            if (err) {
+                logger.error(err, moduleName);
+
+                return reject(err);
+            }
+
+            return resolve();
+        });
+    });
+};
+
+/**
+ * Close chrome/chromium if there is any process alive.
+ * We need to try chrome and chromium because
+ * puppeteer can open chrome or chromium depending
+ * on the system.
+ */
+const closeRemainingProcesses = async () => {
+    try {
+        await closeProcessByName('chrome');
+    } catch (e) {
+        // do nothing.
+    }
+
+    try {
+        await closeProcessByName('chromium');
+    } catch (e) {
+        // do nothing.
+    }
+};
+
 export const run = async () => {
     const queue: Queue = new Queue('webhint-jobs', queueConnectionString);
     const queueResults: Queue = new Queue('webhint-results', queueConnectionString);
@@ -397,6 +435,8 @@ export const run = async () => {
 
             const webhintStart = Date.now();
             const result: Array<Problem> = await runWebhint(job);
+
+            await closeRemainingProcesses();
 
             appInsightClient.trackMetric({
                 name: 'run-webhint',
@@ -419,8 +459,11 @@ export const run = async () => {
                 value: Date.now() - start
             });
         } catch (err) {
+            await closeRemainingProcesses();
+
             logger.error(generateLog('Error processing Job', job), moduleName, err);
             appInsightClient.trackException({ exception: err });
+
             debug(err);
 
             setHintsToError(job, normalizedHints, err);

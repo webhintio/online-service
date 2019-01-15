@@ -3,13 +3,46 @@ const buildImages = require('./build-images');
 const uploadImages = require('./upload-images');
 const updateConfigFile = require('./update-config-file');
 const deployKubernetes = require('./deploy-kubernetes');
+const optionator = require('optionator');
+
+const options = optionator({
+    options: [
+        { heading: 'Basic configuration' },
+        {
+            alias: 'r',
+            description: 'Docker repository',
+            option: 'repository',
+            type: 'String'
+        }, {
+            alias: 'k',
+            description: 'Kubernetes config file',
+            option: 'kubernetes',
+            type: 'String'
+        }, {
+            alias: 't',
+            description: 'Create worker using the github hint repository instead of the hint npm package',
+            option: 'testMode',
+            type: 'Boolean'
+        },
+        { heading: 'Miscellaneous' },
+        {
+            alias: 'h',
+            description: 'Show help',
+            option: 'help',
+            type: 'Boolean'
+        }
+    ],
+    prepend: 'node build-and-deploy.js --repository <yourrepository> --kubernetes <yourkubernetesfile> --testMode'
+});
 
 const main = () => {
-    const repository = process.argv[2];
+    const userOptions = options.parse(process.argv);
+    const repository = userOptions.repository;
+    const kubernetesFile = userOptions.kubernetes;
+    const testMode = !!userOptions.testMode;
 
     if (!repository) {
-        console.error('Repository required');
-        console.log(`Please use ${process.argv[0]} ${process.argv[1]} REPOSITORY [kubernetes file path]`);
+        console.log(options.generateHelp());
 
         return;
     }
@@ -19,13 +52,13 @@ const main = () => {
 
     console.log(`New version: ${newVersion}`);
 
-    buildImages(repository, newVersion);
+    buildImages(repository, newVersion, testMode);
 
     uploadImages(repository, newVersion);
 
-    updateConfigFile(repository, newVersion, process.argv[3]);
+    updateConfigFile(repository, newVersion, kubernetesFile);
 
-    deployKubernetes(process.argv[3]);
+    deployKubernetes(kubernetesFile);
 };
 
 main();

@@ -1,6 +1,38 @@
 const path = require('path');
 const fs = require('fs');
 
+const optionator = require('optionator');
+
+const options = optionator({
+    options: [
+        { heading: 'Basic configuration' },
+        {
+            alias: 'r',
+            description: 'Docker repository',
+            option: 'repository',
+            type: 'String'
+        }, {
+            alias: 'k',
+            description: 'Kubernetes config file',
+            option: 'kubernetes',
+            type: 'String'
+        }, {
+            alias: 'v',
+            description: 'Docker image version',
+            option: 'version',
+            type: 'String'
+        },
+        { heading: 'Miscellaneous' },
+        {
+            alias: 'h',
+            description: 'Show help',
+            option: 'help',
+            type: 'Boolean'
+        }
+    ],
+    prepend: 'node update-config-file.js --repository <yourrepository> --version <version> --kubernetes <yourkubernetesfile>'
+});
+
 const getComposeFilePath = (file) => {
     if (file) {
         return path.join(process.cwd(), file);
@@ -10,13 +42,6 @@ const getComposeFilePath = (file) => {
 };
 
 const updateConfigFile = (repository, newVersion, file) => {
-    if (!repository) {
-        console.error('Repository required');
-        console.log(`Please use ${process.argv[0]} ${process.argv[1]} REPOSITORY [newVersion [[kubernetes file path]]`);
-
-        return;
-    }
-
     const version = newVersion || 'latest';
 
     const composeFilePath = getComposeFilePath(file);
@@ -35,5 +60,14 @@ const updateConfigFile = (repository, newVersion, file) => {
 module.exports = updateConfigFile;
 
 if (process.argv[1].indexOf('update-config-file.js') !== -1) {
-    updateConfigFile(process.argv[2], process.argv[3], process.argv[4]);
+    const userOptions = options.parse(process.argv);
+    const repository = userOptions.repository;
+
+    if (!repository) {
+        console.log(options.generateHelp());
+
+        return;
+    }
+
+    updateConfigFile(repository, userOptions.newVersion, userOptions.kubernetes);
 }

@@ -3,7 +3,9 @@ import { IssuesUpdateParams } from '@octokit/rest';
 
 import { IssueData } from '../../types/issuedata';
 
-const production = process.env.NODE_ENV !== 'development'; // eslint-disable-line no-process-env
+const { NODE_ENV, environment } = process.env; // eslint-disable-line no-process-env
+
+const production = NODE_ENV !== 'development';
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -133,13 +135,17 @@ ${issueData.log}
             labels.push('production');
         }
 
+        if (environment === 'browser') {
+            labels.push('browser');
+        }
+
         await this.octokit.issues.create(Object.assign(
             {},
             this.GITHUB_DATA,
             {
                 body: this.getErrorMessage(issueData),
                 labels,
-                title: `[${this.getEmoji(issueData.errorType)}] ${issueData.url}`
+                title: `[${this.getEmoji(issueData.errorType)}] [${environment}] ${issueData.url}`
             }
         ));
     }
