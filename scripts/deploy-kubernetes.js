@@ -1,9 +1,31 @@
 const path = require('path');
 
 const shell = require('shelljs');
+const optionator = require('optionator');
+
 const common = require('./common');
 
 common.setShellJSDefaultConfig(shell);
+
+const options = optionator({
+    options: [
+        { heading: 'Basic configuration' },
+        {
+            alias: 'k',
+            description: 'Kubernetes config file',
+            option: 'kubernetes',
+            type: 'String'
+        },
+        { heading: 'Miscellaneous' },
+        {
+            alias: 'h',
+            description: 'Show help',
+            option: 'help',
+            type: 'Boolean'
+        }
+    ],
+    prepend: 'node deploy-kubernetes.js --kubernetes <yourkubernetesfile>'
+});
 
 const getComposeFilePath = (file) => {
     if (file) {
@@ -33,5 +55,15 @@ const deployKubernetes = (file) => {
 module.exports = deployKubernetes;
 
 if (process.argv[1].indexOf('deploy-kubernetes.js') !== -1) {
-    deployKubernetes(process.argv[2]);
+    const userOptions = options.parse(process.argv);
+
+    const kubernetesFile = userOptions.kubernetes;
+
+    if (!kubernetesFile) {
+        console.log(options.generateHelp());
+
+        return;
+    }
+
+    deployKubernetes(kubernetesFile);
 }
