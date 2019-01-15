@@ -25,7 +25,7 @@ export const job = {
     finished: new Date('2017-10-30T17:54:36.859Z'),
     hints: [
         {
-            category: 'interoperability',
+            category: 'compatibility',
             messages: [],
             name: 'no-friendly-error-pages',
             status: 'pass'
