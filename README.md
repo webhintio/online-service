@@ -137,7 +137,7 @@ Run `build-images.js` with the name of your repository and the
 image version as parameters.
 
 ```bash
-node build-images.js webhint 1
+node build-images.js --repository webhint --version 1
 ```
 
 #### Upload the images to your Container Registry
@@ -155,7 +155,7 @@ Run `upload-images.js` with the name of your repository and the
 image version as parameters.
 
 ```bash
-node upload-images.js webhint 1
+node upload-images.js --repository webhint --version 1
 ```
 
 **NOTE:**
@@ -178,7 +178,7 @@ Run `update-config-file.js` with the name of your repository, the
 image version and the path to the configuration file as parameters.
 
 ```bash
-node update-config-file.js webhint 1 ../compose/kubernetes-azure.yml
+node update-config-file.js --repository webhint --version 1 --kubernetes ../compose/kubernetes-azure.yml
 ```
 
 **NOTE:**
@@ -201,7 +201,7 @@ Run `deploy-kubernetes.js` with the path to the configuration file as
 a parameter.
 
 ```bash
-node deploy-kubernetes.js ../compose/kubernetes-azure.yml
+node deploy-kubernetes.js --kubernetes ../compose/kubernetes-azure.yml
 ```
 
 **NOTE:**
@@ -222,7 +222,7 @@ Run `build-and-deploy.js` with the name of your repository and
 the path to the configuration file as parameters.
 
 ```bash
-node build-and-deploy.js webhint ../compose/kubernetes-azure.yml
+node build-and-deploy.js --repository webhint --kubernetes ../compose/kubernetes-azure.yml
 ```
 
 **NOTE:**
