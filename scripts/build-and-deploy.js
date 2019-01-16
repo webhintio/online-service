@@ -19,6 +19,11 @@ const options = optionator({
             option: 'kubernetes',
             type: 'String'
         }, {
+            alias: 'v',
+            description: 'New version for images',
+            option: 'version',
+            type: 'String'
+        }, {
             alias: 't',
             description: 'Create worker using the github hint repository instead of the hint npm package',
             option: 'testMode',
@@ -32,7 +37,7 @@ const options = optionator({
             type: 'Boolean'
         }
     ],
-    prepend: 'node build-and-deploy.js --repository <yourrepository> --kubernetes <yourkubernetesfile> --testMode'
+    prepend: 'node build-and-deploy.js --repository <yourrepository> --kubernetes <yourkubernetesfile> --version <newVersion> --testMode'
 });
 
 const main = () => {
@@ -47,8 +52,14 @@ const main = () => {
         return;
     }
 
-    const version = currentVersion(repository);
-    const newVersion = version + 1;
+    let newVersion = userOptions.version;
+
+    if (!newVersion) {
+        const version = currentVersion(repository);
+
+        newVersion = version + 1;
+    }
+
 
     console.log(`New version: ${newVersion}`);
 
