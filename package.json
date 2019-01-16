@@ -25,7 +25,7 @@
     "express": "^4.16.4",
     "express-handlebars": "^3.0.0",
     "express-session": "^1.15.6",
-    "globby": "^8.0.1",
+    "globby": "^9.0.0",
     "handlebars": "^4.0.12",
     "hint": "^4.3.0",
     "lodash": "^4.17.11",
