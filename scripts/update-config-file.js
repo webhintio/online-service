@@ -69,5 +69,5 @@ if (process.argv[1].indexOf('update-config-file.js') !== -1) {
         return;
     }
 
-    updateConfigFile(repository, userOptions.newVersion, userOptions.kubernetes);
+    updateConfigFile(repository, userOptions.version, userOptions.kubernetes);
 }
