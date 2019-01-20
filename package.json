@@ -16,7 +16,7 @@
     "@hint/hint-no-broken-links": "^2.1.1",
     "@hint/hint-no-p3p": "^3.0.0",
     "@hint/hint-performance-budget": "^2.1.1",
-    "@octokit/rest": "^16.10.0",
+    "@octokit/rest": "^16.11.0",
     "applicationinsights": "^1.0.7",
     "azure-sb": "^0.10.6",
     "azure-storage": "^2.10.2",
