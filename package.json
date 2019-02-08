@@ -10,7 +10,7 @@
   "dependencies": {
     "@destinationstransfers/ntp": "^1.2.0",
     "@hint/configuration-progressive-web-apps": "^5.0.0",
-    "@hint/configuration-web-recommended": "^5.0.0",
+    "@hint/configuration-web-recommended": "^6.0.0",
     "@hint/hint-image-optimization-cloudinary": "^2.1.1",
     "@hint/hint-minified-js": "^2.1.1",
     "@hint/hint-no-broken-links": "^3.0.0",
