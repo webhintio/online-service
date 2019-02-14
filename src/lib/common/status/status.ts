@@ -207,6 +207,7 @@ const getHintsStatus = (jobs: Array<IJob>) => {
                     detail.warnings++;
                     total.warnings++;
                     break;
+                /* istanbul ignore next */
                 default:
                     break;
             }
