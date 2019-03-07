@@ -28,7 +28,7 @@
     "express-session": "^1.15.6",
     "globby": "^9.0.0",
     "handlebars": "^4.1.0",
-    "hint": "^4.4.1",
+    "hint": "^4.5.0",
     "lodash": "^4.17.11",
     "method-override": "^3.0.0",
     "moment": "^2.24.0",
