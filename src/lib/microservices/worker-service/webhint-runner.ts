@@ -39,7 +39,7 @@ process.once('uncaughtException', (err) => {
     process.exit(1);
 });
 
-process.once('unhandledRejection', (reason) => {
+process.once('unhandledRejection', (reason: any) => {
     const source = reason.error ? reason.error : reason;
 
     console.log(source);
