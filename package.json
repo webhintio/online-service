@@ -74,7 +74,7 @@
     "shelljs": "^0.8.3",
     "sinon": "^7.3.1",
     "ts-node": "^8.0.3",
-    "typescript": "^3.3.4000",
+    "typescript": "^3.4.2",
     "typescript-eslint-parser": "^22.0.0"
   },
   "greenkeeper": {
