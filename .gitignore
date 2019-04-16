@@ -9,3 +9,9 @@ online-service-*.yml
 kubernetes-*.yaml
 az-init.sh
 scripts/deploy/**/parameters.json
+
+# Azure Functions artifacts
+bin
+obj
+appsettings.json
+local.settings.json
