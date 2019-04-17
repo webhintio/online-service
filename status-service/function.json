@@ -1,0 +1,11 @@
+{
+  "bindings": [
+    {
+      "name": "timer",
+      "type": "timerTrigger",
+      "direction": "in",
+      "connection": "AzureWebJobsStorage"
+    }
+  ],
+  "scriptFile": "..\\dist\\src\\lib\\microservices\\status-service\\index.js"
+}

@@ -5,7 +5,7 @@
       "type": "serviceBusTrigger",
       "direction": "in",
       "queueName": "webhint-results",
-      "connection": "AzureWebJobsStorage"
+      "connection": "AzureServiceBus"
     }
   ],
   "scriptFile": "..\\dist\\src\\lib\\microservices\\sync-service\\index.js"
