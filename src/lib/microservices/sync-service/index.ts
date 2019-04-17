@@ -4,7 +4,7 @@ import * as moment from 'moment';
 import * as database from '../../common/database/database';
 import { IJobModel } from '../../common/database/models/job';
 import { IssueReporter } from '../../common/github/issuereporter';
-import { IJob, Hint, ServiceBusMessage } from '../../types';
+import { IJob, Hint } from '../../types';
 import { JobStatus, HintStatus } from '../../enums/status';
 import * as logger from '../../utils/logging';
 import { generateLog } from '../../utils/misc';
@@ -139,11 +139,11 @@ const closeGithubIssues = async (dbJob: IJobModel) => {
     }
 };
 
-const run: AzureFunction = async function(context: Context, job: IJob): Promise<void> {
+const run: AzureFunction = async (context: Context, job: IJob): Promise<void> => {
     await database.connect(Database);
 
     const id = job.id;
-    let lock;
+    let lock: any;
 
     try {
         lock = await database.lock(id);
@@ -154,10 +154,10 @@ const run: AzureFunction = async function(context: Context, job: IJob): Promise<
 
     if (!lock) {
         /*
-            * If we are not able to lock the job in the database, keep
-            * the item locked in the queue until the timeout (in the queue)
-            * expire.
-            */
+        * If we are not able to lock the job in the database, keep
+        * the item locked in the queue until the timeout (in the queue)
+        * expire.
+        */
 
         return;
     }
@@ -170,7 +170,7 @@ const run: AzureFunction = async function(context: Context, job: IJob): Promise<
 
         appInsightClient.trackException({ exception: new Error(`Job ${id} not found in database`) });
 
-        return; // eslint-disable-line no-continue
+        return;
     }
 
     logger.log(generateLog(`Synchronizing Job`, job, { showHint: true }), moduleName);
@@ -224,12 +224,17 @@ const run: AzureFunction = async function(context: Context, job: IJob): Promise<
         }
     }
 
-    logger.log(generateLog(`Synchronized Job`, job, { showHint: true }), moduleName);
-    await database.job.update(dbJob);
-    logger.log(`Job ${id} updated in database`);
-    await database.unlock(lock);
-    await database.disconnect();
-    logger.log('Service finished\nExiting with status 0', moduleName);
+    try {
+        logger.log(generateLog(`Synchronized Job`, job, { showHint: true }), moduleName);
+        await database.job.update(dbJob);
+    } catch (err) {
+        logger.log(`Error updating database for Job ${id}: ${err.message}`);
+    } finally {
+        logger.log(`Job ${id} updated in database`);
+        await database.unlock(lock);
+        await database.disconnect();
+        logger.log('Service finished\nExiting with status 0', moduleName);
+    }
 };
 
 export default run;

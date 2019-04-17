@@ -8,5 +8,5 @@
       "connection": "AzureWebJobsStorage"
     }
   ],
-  "scriptFile": "..\\dist\\src\\lib\\microservices\\sync-service\\index.js"
+  "scriptFile": "..\\..\\..\\..\\dist\\src\\lib\\microservices\\sync-service\\index.js"
 }
