@@ -1,3 +1,4 @@
+import { AzureFunction, Context } from '@azure/functions';
 import * as _ from 'lodash';
 import * as moment from 'moment';
 
@@ -10,8 +11,6 @@ import * as logger from '../../utils/logging';
 import { generateLog } from '../../utils/misc';
 import * as appInsight from '../../utils/appinsights';
 import { IssueData } from '../../types/issuedata';
-
-import { AzureFunction, Context } from '@azure/functions';
 
 const moduleName: string = 'Sync Function';
 const { database: Database } = process.env; // eslint-disable-line no-process-env
@@ -162,78 +161,81 @@ const run: AzureFunction = async (context: Context, job: IJob): Promise<void> =>
         return;
     }
 
-    const dbJob: IJobModel = await database.job.get(id);
-
-    if (!dbJob) {
-        logger.error(`Job ${id} not found in database`, moduleName);
-        await database.unlock(lock);
-
-        appInsightClient.trackException({ exception: new Error(`Job ${id} not found in database`) });
-
-        return;
-    }
-
-    logger.log(generateLog(`Synchronizing Job`, job, { showHint: true }), moduleName);
-
-    if (job.status === JobStatus.started) {
-        // When a job is split we receive more than one messages for the status `started`
-        // but we only want to store in the database the first one.
-        if (dbJob.status !== JobStatus.started) {
-            dbJob.webhintVersion = job.webhintVersion;
-        }
-
-        if (!dbJob.started || dbJob.started > new Date(job.started)) {
-            dbJob.started = job.started;
-        }
-
-        // double check just in case the started message is not the first one we are processing.
-        if (dbJob.status === JobStatus.pending) {
-            dbJob.status = job.status;
-        }
-    } else {
-        setHints(dbJob, job);
-
-        if (!dbJob.log) {
-            dbJob.log = '';
-        }
-
-        if (job.log) {
-            dbJob.log += `${job.log}\n`;
-        }
-
-        if (job.status === JobStatus.error) {
-            if (!dbJob.error) {
-                dbJob.error = [];
-            }
-            dbJob.error.push(job.error);
-            await reportGithubIssues(job);
-        } else {
-            await reportGithubTimeoutIssues(job);
-        }
-
-        if (isJobFinished(dbJob)) {
-            dbJob.status = dbJob.error && dbJob.error.length > 0 ? JobStatus.error : job.status;
-
-            if (dbJob.status === JobStatus.finished) {
-                await closeGithubIssues(dbJob);
-            }
-        }
-
-        if (!dbJob.finished || dbJob.finished < new Date(job.finished)) {
-            dbJob.finished = job.finished;
-        }
-    }
+    let error = false;
 
     try {
+        const dbJob: IJobModel = await database.job.get(id);
+
+        if (!dbJob) {
+            logger.error(`Job ${id} not found in database`, moduleName);
+            await database.unlock(lock);
+
+            appInsightClient.trackException({ exception: new Error(`Job ${id} not found in database`) });
+
+            return;
+        }
+
+        logger.log(generateLog(`Synchronizing Job`, job, { showHint: true }), moduleName);
+
+        if (job.status === JobStatus.started) {
+            // When a job is split we receive more than one messages for the status `started`
+            // but we only want to store in the database the first one.
+            if (dbJob.status !== JobStatus.started) {
+                dbJob.webhintVersion = job.webhintVersion;
+            }
+
+            if (!dbJob.started || dbJob.started > new Date(job.started)) {
+                dbJob.started = job.started;
+            }
+
+            // double check just in case the started message is not the first one we are processing.
+            if (dbJob.status === JobStatus.pending) {
+                dbJob.status = job.status;
+            }
+        } else {
+            setHints(dbJob, job);
+
+            if (!dbJob.log) {
+                dbJob.log = '';
+            }
+
+            if (job.log) {
+                dbJob.log += `${job.log}\n`;
+            }
+
+            if (job.status === JobStatus.error) {
+                if (!dbJob.error) {
+                    dbJob.error = [];
+                }
+                dbJob.error.push(job.error);
+                await reportGithubIssues(job);
+            } else {
+                await reportGithubTimeoutIssues(job);
+            }
+
+            if (isJobFinished(dbJob)) {
+                dbJob.status = dbJob.error && dbJob.error.length > 0 ? JobStatus.error : job.status;
+
+                if (dbJob.status === JobStatus.finished) {
+                    await closeGithubIssues(dbJob);
+                }
+            }
+
+            if (!dbJob.finished || dbJob.finished < new Date(job.finished)) {
+                dbJob.finished = job.finished;
+            }
+        }
+
         logger.log(generateLog(`Synchronized Job`, job, { showHint: true }), moduleName);
         await database.job.update(dbJob);
-    } catch (err) {
-        logger.log(`Error updating database for Job ${id}: ${err.message}`);
-    } finally {
         logger.log(`Job ${id} updated in database`);
+    } catch (err) {
+        logger.log(`Error occurred when processing message for Job ${id}: ${err.message}`);
+        error = true;
+    } finally {
         await database.unlock(lock);
         await database.disconnect();
-        logger.log('Service finished\nExiting with status 0', moduleName);
+        logger.log(`Service finished with${(error ? '' : 'out')} error(s)`, moduleName);
     }
 };
 
