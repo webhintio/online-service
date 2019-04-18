@@ -1,3 +1,4 @@
+import { AzureFunction, Context } from '@azure/functions';
 import * as _ from 'lodash';
 import * as moment from 'moment';
 
@@ -10,8 +11,6 @@ import * as logger from '../../utils/logging';
 import { generateLog } from '../../utils/misc';
 import * as appInsight from '../../utils/appinsights';
 import { IssueData } from '../../types/issuedata';
-
-import { AzureFunction, Context } from '@azure/functions';
 
 const moduleName: string = 'Sync Function';
 const { database: Database } = process.env; // eslint-disable-line no-process-env
@@ -162,21 +161,22 @@ const run: AzureFunction = async (context: Context, job: IJob): Promise<void> =>
         return;
     }
 
-    const dbJob: IJobModel = await database.job.get(id);
-
-    if (!dbJob) {
-        logger.error(`Job ${id} not found in database`, moduleName);
-        await database.unlock(lock);
-
-        appInsightClient.trackException({ exception: new Error(`Job ${id} not found in database`) });
-
-        return;
-    }
-
-    logger.log(generateLog(`Synchronizing Job`, job, { showHint: true }), moduleName);
     let error = false;
 
     try {
+        const dbJob: IJobModel = await database.job.get(id);
+
+        if (!dbJob) {
+            logger.error(`Job ${id} not found in database`, moduleName);
+            await database.unlock(lock);
+
+            appInsightClient.trackException({ exception: new Error(`Job ${id} not found in database`) });
+
+            return;
+        }
+
+        logger.log(generateLog(`Synchronizing Job`, job, { showHint: true }), moduleName);
+
         if (job.status === JobStatus.started) {
             // When a job is split we receive more than one messages for the status `started`
             // but we only want to store in the database the first one.
@@ -236,6 +236,7 @@ const run: AzureFunction = async (context: Context, job: IJob): Promise<void> =>
         await database.unlock(lock);
         await database.disconnect();
         logger.log(`Service finished with${error ? '' : 'out'} error(s)`, moduleName);
+
     }
 };
 
