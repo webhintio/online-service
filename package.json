@@ -39,7 +39,7 @@
     "passport": "^0.4.0",
     "passport-github2": "^0.1.11",
     "pkill": "^2.0.0",
-    "puppeteer": "^1.14.0",
+    "puppeteer": "^1.15.0",
     "request": "^2.88.0",
     "shx": "^0.3.2",
     "strip-bom": "^3.0.0",
