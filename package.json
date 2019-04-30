@@ -43,7 +43,7 @@
     "request": "^2.88.0",
     "shx": "^0.3.2",
     "strip-bom": "^4.0.0",
-    "strip-json-comments": "^2.0.1",
+    "strip-json-comments": "^3.0.0",
     "tar": "^4.4.8",
     "tri": "^1.0.2",
     "uuid": "^3.3.2"
