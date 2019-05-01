@@ -87,7 +87,7 @@
         },
         "kubernetesVersion": {
             "type": "string",
-            "defaultValue": "1.7.7",
+            "defaultValue": "1.12.7",
             "metadata": {
                 "description": "The version of Kubernetes."
             }
@@ -311,7 +311,7 @@
             "apiVersion": "2018-08-01",
             "name": "[parameters('networkName')]",
             "type": "Microsoft.Network/virtualNetworks",
-            "location": "westus",
+            "location": "eastus",
             "properties": {
                 "subnets": [
                     {

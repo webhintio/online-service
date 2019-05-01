@@ -12,7 +12,7 @@
             "value": "%baseName%"
         },
         "location": {
-            "value": "westus"
+            "value": "eastus"
         },
         "dnsPrefix": {
             "value": "%baseName%"
@@ -30,7 +30,7 @@
             "value": "%spPassword%"
         },
         "kubernetesVersion": {
-            "value": "1.11.5"
+            "value": "1.12.7"
         },
         "workspaceName": {
             "value": "%baseName%-workspace"
@@ -42,7 +42,7 @@
             "value": "eastus"
         },
         "enableHttpApplicationRouting": {
-            "value": true
+            "value": false
         },
         "networkPlugin": {
             "value": "azure"

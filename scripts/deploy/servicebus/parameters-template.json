@@ -6,7 +6,7 @@
             "value": "%baseName%"
         },
         "location": {
-            "value": "westus"
+            "value": "eastus"
         },
         "skuName": {
             "value": "Standard"
