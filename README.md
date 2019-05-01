@@ -266,7 +266,7 @@ your NGINX machine:
     ```
 
 **NOTE:**
-If you get an error GPG error, loof for the instructions
+If you get an error GPG error, look for the instructions
 in `install-nginx.sh`.
 
 1. Configure NGINX
@@ -279,6 +279,37 @@ in `install-nginx.sh`.
 
 `jobsIPAndPort` is the IP and port where the `job-manager` is deployed.
 `configIpAndPort` is the IP and port where the `config-manager` is deployed.
+
+#### Configuring the scanner
+
+After everything is deployed, the next step is to configure the scanner.
+
+1. Authorize an user to have access to the config panel
+
+   Access the database the way you prefer and then create a `user` collection
+   if it doesn't exist already and create an item with the property `name` set
+   to the user (github user) you want to give access, manually.
+
+   ```json
+   {
+       "name": "githubusername"
+   }
+   ```
+
+1. Create the OAuth App in github.
+
+    Go to github => Settings => Developer settings
+
+    The `Authorization callback URL` will be something like: `https://yourip/admin/auth/github/callback`
+
+1. Add a configuration
+
+    Once you access to the configuration panel (https://youip/admin) the next step is to add the configuration
+    we want to use in the scanner.
+
+    The scanner configuration is an array of [`hint`][hintconfig] configuration.
+
+    To add the scanner configuration go to the admin panel => Configuration.
 
 ## Code of Conduct
 
@@ -296,3 +327,4 @@ The code is available under the [Apache 2.0 license](LICENSE.txt).
 <!-- Link labels -->
 
 [docker-for-azure]: https://docs.docker.com/docker-for-azure/#docker-enterprise-edition-ee-for-azure
+[hintconfig]: https://webhint.io/docs/user-guide/configuring-webhint/summary/
