@@ -1,13 +1,15 @@
-dist/
-node_modules/
+*.pem
+*.pem.pub
 .vscode/
 .nyc_output/
 coverage/
+dist/
+node_modules/
+az-init.sh
 docker-compose.override.yml
+kubernetes-*.yaml
 nginx-*.yml
 online-service-*.yml
-kubernetes-*.yaml
-az-init.sh
 scripts/deploy/**/parameters.json
 
 # Azure Functions artifacts

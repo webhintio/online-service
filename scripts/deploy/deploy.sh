@@ -14,7 +14,6 @@ declare resourceGroupLocation=""
 declare installDatabase=""
 declare sshPublicKey=""
 declare containerRegistryName=""
-declare dbPassword=""
 
 templateKubernetesPath="kubernetes-service/template.json"
 parametersKubernetesTemplatePath="kubernetes-service/parameters-template.json"
@@ -118,6 +117,7 @@ if [[ -z "$resourceGroupName" ]]; then
 fi
 
 networkName="$resourceGroupName-vnet"
+aksName="$resourceGroupName-k8s"
 
 if [[ -z "$resourceGroupLocation" ]]; then
 	echo "If you are creating a *new* resource group, you need to set a location."
@@ -155,42 +155,10 @@ installDatabase="$(echo $installDatabase | head -c 1)"
 # To lower case
 installDatabase=${installDatabase,,}
 
-# Get Current database information to make the peering
-if [ "$installDatabase" = "n" ]; then
-	echo "Enter current database resource group:"
-	read databaseResourceGroup
-	[[ "${databaseResourceGroup:?}" ]]
-	az group show --name $databaseResourceGroup 1> /dev/null
-
-	echo "Enter current database network name:"
-	read databaseNetworkName
-	[[ "${databaseNetworkName:?}" ]]
-
-	az network vnet show -n $databaseNetworkName -g $databaseResourceGroup 1> /dev/null
-else
-	databaseResourceGroup="$(cut -c 1-14 <<< ${resourceGroupName})-mongodb"
-	databaseNetworkName="$databaseResourceGroup-vnet"
-
-	set +e
-
-	az group show --name $databaseResourceGroup &> /dev/null
-
-	if [ $? == 0 ]; then
-		echo "The resource group " $databaseResourceGroup " already exits."
-		exit 1
-	fi
-
-	echo "Choose a password for the database (length from 12 to 32)"
-	read dbPassword
-
-	[[ "${dbPassword:?}" ]]
-
-	set -e
-fi
+publicKey=$(cat ${sshPublicKey/\~/$HOME})
 
 # Check if the user is login
 az account show 1> /dev/null
-
 
 if [ $? != 0 ];
 then
@@ -249,13 +217,13 @@ if [ $? != 0 ]; then
 	set -x
 
 	echo "Creating role assignment..."
-	roleAssignment=$(az role assignment create --assignee $spAppId --role Contributor)
+	roleAssignment=$(az role assignment create --assignee $spAppId --scope "/subscriptions/$subscriptionId/resourceGroups/$resourceGroupName" --role Contributor)
 
 	while [ $? != 0 -a $retries != 0 ]
 	do
 		((retries--))
 		sleep 10s
-		roleAssignment=$(az role assignment create --assignee $spAppId --role Contributor)
+		roleAssignment=$(az role assignment create --assignee $spAppId --scope "/subscriptions/$subscriptionId/resourceGroups/$resourceGroupName" --role Contributor)
 	done
 
 	set -e
@@ -263,15 +231,11 @@ if [ $? != 0 ]; then
 	principalId=$(jq -r '.principalId' <<< "$roleAssignment")
 	set +x
 
-	echo "Step 4: Generate kubernetes-service/parameters.json"
+	echo "Step 4: Create virtual network"
 	(
 		set -x
-		sed "s/%baseName%/${resourceGroupName}/g
-			s/%networkName%/${networkName}/g
-			s/%spAppId%/${spAppId}/g
-			s/%spPassword%/${spPassword}/g
-			s/%subscriptionId%/${subscriptionId}/g
-			s/%principalId%/${principalId}/g" $parametersKubernetesTemplatePath > $parametersKubernetesPath
+		az network vnet create -g $resourceGroupName -n $networkName --address-prefix 10.0.0.0/8 \
+            --subnet-name default --subnet-prefix 10.240.0.0/16
 	)
 
 	echo "Step 5: Deploy kubernetes service"
@@ -280,9 +244,21 @@ if [ $? != 0 ]; then
 		sleep 30s
 		echo "Deploying kubernetes service ..."
 		set -x
-		az group deployment create --name "$resourceGroupName-kubernetes" --resource-group "$resourceGroupName" --template-file "$templateKubernetesPath" --parameters "@${parametersKubernetesPath}"
+		az aks create \
+		   --resource-group $resourceGroupName \
+		   --location $resourceGroupLocation \
+		   --name $aksName \
+		   --node-count 5 \
+		   --node-vm-size Standard_DS2_v2 \
+		   --network-plugin azure \
+		   --service-principal $spAppId \
+		   --client-secret $spPassword \
+		   --dns-service-ip 10.0.0.10 \
+		   --dns-name-prefix $resourceGroupName \
+		   --vnet-subnet-id "/subscriptions/$subscriptionId/resourceGroups/$resourceGroupName/providers/Microsoft.Network/virtualNetworks/$networkName/subnets/default" \
+		   --ssh-key-value $publicKey
+
 		echo "Kubernetes has been successfully deployed"
-		rm $parametersKubernetesPath
 	)
 else
 	# Steps 3, 4 and 5 depens on the principal service
@@ -379,7 +355,7 @@ else
 fi
 
 set -e
-publicKey=$(cat ${sshPublicKey/\~/$HOME})
+
 echo "Step 10: Generate nginx/parameters.json"
 (
 	set -x
@@ -415,87 +391,15 @@ else
 	echo "Nginx already exists"
 fi
 
-# If database resource group doesn't exits
-# then we need to create it
-
 set +e
 
-az group show --name $databaseResourceGroup 1> /dev/null
+# Install database if needed.
 
-if [ $? != 0 ]; then
+if [ "$installDatabase" = "y" ]; then
 	set -e
-
-	echo "Step 12: Create database resource group"
-	(
-		echo "Creating resource group for database"
-		set -x
-		az group create --name $databaseResourceGroup --location $resourceGroupLocation 1> /dev/null
-	)
-
-	echo "Step 13: Generate mongodb/parameters.js"
+	echo "Step 12: Deploy Database"
 	(
 		set -x
-		sed "s/%baseName%/${databaseResourceGroup}/g
-			 s/%networkName%/${databaseNetworkName}/g
-			 s/%dbPassword%/${dbPassword}/g
-			 s~%publicKey%~${publicKey}~g" $parametersMongoDBTemplatePath > $parametersMongoDBPath
+		az cosmosdb create --resource-group $resourceGroupName --name "${resourceGroupName,,}-db" --locations "$resourceGroupLocation=0" --kind MongoDB
 	)
-
-	echo "Step 14: Deploy MongoDB"
-	(
-		echo "Deploying database..."
-		set -x
-		az group deployment create --name "$databaseResourceGroup-mongodb" --resource-group "$databaseResourceGroup" --template-file "$templateMongoDBPath" --parameters "@${parametersMongoDBPath}"
-		echo "MongoDB has been successfully deployed"
-		rm $parametersMongoDBPath
-	)
-else
-	echo "MongoDB already exits"
-	echo "Skipping step 12, 13 and 14"
-fi
-
-
-echo "Step 15: Create peerings if they don't exist"
-set +e
-
-peeringDBName="$databaseResourceGroup-$databaseNetworkName-peering"
-
-az network vnet peering show -g $databaseResourceGroup -n $peeringDBName --vnet-name $databaseNetworkName 1> /dev/null
-
-if [ $? != 0 ]; then
-	set -e
-
-	(
-		set -x
-		echo "Creating peering in database network..."
-		az network vnet peering create --name $peeringDBName \
-									   -g $databaseResourceGroup \
-									   --vnet-name $databaseNetworkName \
-									   --remote-vnet /subscriptions/$subscriptionId/resourceGroups/$resourceGroupName/providers/Microsoft.Network/virtualNetworks/$networkName \
-									   --allow-vnet-access
-	)
-else
-	echo "The peering with name" $peeringDBName "already exists"
-fi
-
-set +e
-
-peeringKubeName="$resourceGroupName-$networkName-peering"
-
-az network vnet peering show -g $resourceGroupName -n $peeringKubeName --vnet-name $networkName 1> /dev/null
-
-if [ $? != 0 ]; then
-	set -e
-
-	(
-		set -x
-		echo "Creating peering in kubernete network..."
-		az network vnet peering create --name $peeringKubeName \
-									   -g $resourceGroupName \
-									   --vnet-name $networkName \
-									   --remote-vnet /subscriptions/$subscriptionId/resourceGroups/$databaseResourceGroup/providers/Microsoft.Network/virtualNetworks/$databaseNetworkName \
-									   --allow-vnet-access
-	)
-else
-	echo "The peering with name" $peeringKubeName "already exists"
 fi
