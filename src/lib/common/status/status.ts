@@ -282,26 +282,36 @@ const updateStatusesSince = async (since: Date) => {
  * Update the scanner status.
  */
 export const updateStatuses = async () => {
-    await db.connect(dbConnectionString);
-    if (!queueJobs) {
-        queueJobs = new Queue('webhint-jobs', queueConnectionString);
+    let error = false;
+
+    try {
+        await db.connect(dbConnectionString);
+        if (!queueJobs) {
+            queueJobs = new Queue('webhint-jobs', queueConnectionString);
+        }
+
+        if (!queueResults) {
+            queueResults = new Queue('webhint-results', queueConnectionString);
+        }
+
+        const lastStatus: IStatus = await db.status.getMostRecent();
+        // Online scanner was published in this date, no results before.
+        let since: Date = moment('2017-10-15').toDate();
+
+        if (lastStatus) {
+            since = lastStatus.date;
+        }
+
+        logger.log(`Updating status since: ${since.toISOString()}`);
+        await updateStatusesSince(since);
+        logger.log(`Status database updated`);
+    } catch (err) {
+        error = true;
+        logger.log(`Error updating status database: ${err.message}`);
+    } finally {
+        await db.disconnect();
+        logger.log(`Service finished with${error ? '' : 'out'} error(s)`, moduleName);
     }
-
-    if (!queueResults) {
-        queueResults = new Queue('webhint-results', queueConnectionString);
-    }
-
-    const lastStatus: IStatus = await db.status.getMostRecent();
-    // Online scanner was published in this date, no results before.
-    let since: Date = moment('2017-10-15').toDate();
-
-    if (lastStatus) {
-        since = lastStatus.date;
-    }
-
-    logger.log(`Updating status since: ${since.toISOString()}`);
-    await updateStatusesSince(since);
-    logger.log(`Status database updated`);
 };
 
 /**

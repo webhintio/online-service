@@ -12,3 +12,8 @@ scripts/
 Dockerfile.*
 .gitattributes
 package-lock.json
+bin
+obj
+appsettings.json
+local.settings.json
+*.csproj
