@@ -56,7 +56,7 @@ export class IssueReporter {
 
     private async closeIssue(issue: IssuesUpdateParams) {
         await this.editIssue({
-            number: issue.issue_number,
+            number: issue.number,
             state: 'closed'
         });
     }
@@ -213,7 +213,7 @@ ${issueData.log}
     private async updateIssueLabels(issue: IssuesUpdateParams, labels: string[]) {
         await this.editIssue({
             labels,
-            number: issue.issue_number
+            number: issue.number
         });
     }
 }
