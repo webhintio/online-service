@@ -1,4 +1,3 @@
-import { AzureFunction, Context } from '@azure/functions';
 import * as _ from 'lodash';
 import * as moment from 'moment';
 

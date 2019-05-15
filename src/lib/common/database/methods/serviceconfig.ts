@@ -1,4 +1,4 @@
-import { UserConfig } from 'hint/dist/src/lib/types';
+import { UserConfig } from '../../../types';
 import { DocumentQuery } from 'mongoose';
 
 import { debug as d } from '../../../utils/debug';

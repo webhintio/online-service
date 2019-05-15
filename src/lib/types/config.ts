@@ -1,4 +1,4 @@
-import { UserConfig } from 'hint/dist/src/lib/types';
+import { UserConfig } from '../types';
 
 export interface IServiceConfig {
     /** List of webhint configurations to split the job in messages. */

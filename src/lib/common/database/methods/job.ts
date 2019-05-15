@@ -1,6 +1,6 @@
 import * as uuid from 'uuid/v4';
 
-import { UserConfig } from 'hint/dist/src/lib/types';
+import { UserConfig } from '../../../types';
 import { DocumentQuery } from 'mongoose';
 import * as moment from 'moment';
 

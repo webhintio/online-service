@@ -1,4 +1,4 @@
-import { UserConfig, Problem } from 'hint/dist/src/lib/types';
+import { UserConfig, Problem } from '../types';
 import { Category } from 'hint/dist/src/lib/enums/category';
 
 import { ConfigSource } from '../enums/configsource';

@@ -6,3 +6,4 @@ export * from './types/servicebus';
 export * from './types/stat';
 export * from './types/status';
 export * from './types/user';
+export * from './types/hints';

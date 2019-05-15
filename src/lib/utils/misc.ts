@@ -5,9 +5,6 @@ import { Request } from 'express';
 import * as multiparty from 'multiparty';
 import stripBom = require('strip-bom');
 import * as stripComments from 'strip-json-comments';
-import { validateConfig } from 'hint/dist/src/lib/config/config-validator';
-import normalizeHints from 'hint/dist/src/lib/config/normalize-hints';
-import { UserConfig } from 'hint/dist/src/lib/types';
 
 import { debug as d } from './debug';
 import { JobStatus } from '../enums/status';
@@ -64,31 +61,6 @@ export const delay = (millisecs: number): Promise<object> => {
     return new Promise((resolve) => {
         setTimeout(resolve, millisecs);
     });
-};
-
-/**
- * Check if an array of webhint configurations is valid.
- * @param {Array<UserConfig>} configs - Array of webhint configurations.
- */
-export const validateServiceConfig = (configs: Array<UserConfig>) => {
-    const hints: Set<string> = new Set();
-
-    for (const config of configs) {
-        if (!validateConfig(config)) {
-            throw new Error(`Invalid Configuration
-${JSON.stringify(config)}`);
-        }
-
-        const normalizedHints = normalizeHints(config.hints);
-
-        for (const [key] of Object.entries(normalizedHints)) {
-            if (hints.has(key)) {
-                throw new Error(`Hint ${key} repeated`);
-            }
-
-            hints.add(key);
-        }
-    }
 };
 
 /**
