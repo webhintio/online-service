@@ -9,12 +9,13 @@ plugins:
 
 package:
   exclude:
-    - compose/**
-    - scripts/**
-    - tests/**
-    - src/**
-    - .serverless/**
-    - .dependabot/**
+    - compose/**/*
+    - scripts/**/*
+    - tests/**/*
+    - src/**/*
+    - azure/**/*
+    - .serverless/**/*
+    - .dependabot/**/*
     - .yml
     - .md
 
