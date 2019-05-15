@@ -60,12 +60,6 @@ export const execute = async (args: string | Array<string> | object): Promise<nu
         if (microservice === Microservice.worker || microservice === Microservice.all) {
             microservices.push(worker.run());
         }
-        if (microservice === Microservice.sync || microservice === Microservice.all) {
-            microservices.push(sync.run());
-        }
-        if (microservice === Microservice.status || microservice === Microservice.all) {
-            microservices.push(statusService.run());
-        }
         if (microservice === Microservice.backup || microservice === Microservice.all) {
             microservices.push(backupService.run());
         }

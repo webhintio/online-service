@@ -16,3 +16,7 @@ obj
 appsettings.json
 local.settings.json
 *.csproj
+
+#Serverless
+.serverless
+*-function.json

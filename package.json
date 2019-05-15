@@ -73,6 +73,7 @@
     "proxyquire": "2.0.0",
     "rimraf": "^2.6.3",
     "shelljs": "^0.8.3",
+    "serverless-azure-functions": "*",
     "sinon": "^7.3.2",
     "ts-node": "^8.1.0",
     "typescript": "^3.4.5",
@@ -95,7 +96,8 @@
     "check-coverage": true,
     "functions": 80,
     "include": [
-      "dist/src/**/*.js"
+      "dist/src/**/*.js",
+      "dist/serverless/**/*.js"
     ],
     "instrument": true,
     "lines": 85,
@@ -110,7 +112,7 @@
   "scripts": {
     "ava": "ava",
     "build": "npm run clean && npm-run-all build:*",
-    "build:assets": "cpx \"./{src,tests}/**/{!(*.ts),.!(ts)}\" dist",
+    "build:assets": "cpx \"./{src,tests,serverless}/**/{!(*.ts),.!(ts)}\" dist",
     "build:ts": "tsc --outDir dist",
     "clean": "rimraf dist",
     "lint": "npm-run-all lint:*",

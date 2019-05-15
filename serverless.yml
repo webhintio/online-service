@@ -1,0 +1,36 @@
+service: online-service-functions # NOTE: update this with your service name
+
+provider:
+  name: azure
+  location: West US
+
+plugins:
+  - serverless-azure-functions
+
+package:
+  exclude:
+    - compose/**
+    - scripts/**
+    - tests/**
+    - src/**
+    - .serverless/**
+    - .dependabot/**
+    - .yml
+    - .md
+
+functions:
+  sync-service:
+    handler: dist/azure/sync-service.run
+    events:
+      - serviceBus: 
+        x-azure-settings:
+          queueName: webhint-results
+          name: message
+          connection : AzureServiceBus
+  status-service:
+    handler: dist/azure/status-service.run
+    events:
+      - timer:
+        x-azure-settings:
+          name: timer
+          schedule: 0 */15 * * * *

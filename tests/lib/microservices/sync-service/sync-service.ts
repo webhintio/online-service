@@ -110,7 +110,7 @@ test.serial(`if a job doesn't exists in database, it should report an error and 
     sandbox.stub(database.job, 'get').resolves();
     const loggerErrorSpy = sandbox.spy(logger, 'error');
 
-    await sync.run();
+    await sync.run(t.context.job);
 
     await t.context.resultsQueueListenStub.args[0][0]([{ data: data.started }]);
 
@@ -126,7 +126,7 @@ test.serial(`if the job in the database has the status 'error', it should work a
     t.context.job.status = JobStatus.error;
     sandbox.stub(database.job, 'get').resolves(t.context.job);
 
-    await sync.run();
+    await sync.run(t.context.job);
 
     await t.context.resultsQueueListenStub.args[0][0]([{ data: data.started }]);
 
@@ -140,7 +140,7 @@ test.serial(`if the job status is 'started' and the job status is database 'pend
 
     sandbox.stub(database.job, 'get').resolves(t.context.job);
 
-    await sync.run();
+    await sync.run(t.context.job);
 
     await t.context.resultsQueueListenStub.args[0][0]([{ data: data.started }]);
 
@@ -159,7 +159,7 @@ test.serial(`if the job status is 'started' and the job status in database is no
     t.context.job.status = JobStatus.finished;
     sandbox.stub(database.job, 'get').resolves(t.context.job);
 
-    await sync.run();
+    await sync.run(t.context.job);
 
     await t.context.resultsQueueListenStub.args[0][0]([{ data: data.started }]);
 
@@ -179,7 +179,7 @@ test.serial(`if the job status is 'started' and the property started in database
     t.context.job.started = new Date('2017-08-31T23:55:00.877Z');
     sandbox.stub(database.job, 'get').resolves(t.context.job);
 
-    await sync.run();
+    await sync.run(t.context.job);
 
     await t.context.resultsQueueListenStub.args[0][0]([{ data: data.started }]);
 
@@ -197,7 +197,7 @@ test.serial(`if the job status is 'error', it should update the job in database 
 
     sandbox.stub(database.job, 'get').resolves(t.context.job);
 
-    await sync.run();
+    await sync.run(t.context.job);
 
     await t.context.resultsQueueListenStub.args[0][0]([{ data: data.error }]);
 
@@ -218,7 +218,7 @@ test.serial(`if the job status is 'finished' and all hints are processed, it sho
 
     sandbox.stub(database.job, 'get').resolves(t.context.job);
 
-    await sync.run();
+    await sync.run(t.context.job);
 
     await t.context.resultsQueueListenStub.args[0][0]([{ data: data.finished }]);
 
@@ -244,7 +244,7 @@ test.serial(`if the job status is 'finished' and all hints are processed, it sho
     t.context.job.error = data.error.error;
     sandbox.stub(database.job, 'get').resolves(t.context.job);
 
-    await sync.run();
+    await sync.run(t.context.job);
 
     await t.context.resultsQueueListenStub.args[0][0]([{ data: data.finished }]);
 
@@ -267,7 +267,7 @@ test.serial(`if the job status is 'finished' and all hints are processed, it sho
 
     sandbox.stub(database.job, 'get').resolves(t.context.job);
 
-    await sync.run();
+    await sync.run(t.context.job);
 
     await t.context.resultsQueueListenStub.args[0][0]([{ data: data.finishedWithError }]);
 
@@ -290,7 +290,7 @@ test.serial(`if the job status is 'finished' but they are partial results, it sh
 
     sandbox.stub(database.job, 'get').resolves(t.context.job);
 
-    await sync.run();
+    await sync.run(t.context.job);
 
     await t.context.resultsQueueListenStub.args[0][0]([{ data: data.started }]);
 
@@ -322,7 +322,7 @@ test.serial(`if the job receive more than one message from the same id, it shoul
 
     sandbox.stub(database.job, 'get').resolves(t.context.job);
 
-    await sync.run();
+    await sync.run(t.context.job);
 
     await t.context.resultsQueueListenStub.args[0][0]([{ data: data.started }, { data: data.finishedPart1 }, { data: data.finishedPart2 }]);
 
@@ -336,7 +336,7 @@ test.serial(`if the job receive two messages with different id, it should lock t
 
     sandbox.stub(database.job, 'get').resolves(t.context.job);
 
-    await sync.run();
+    await sync.run(t.context.job);
 
     await t.context.resultsQueueListenStub.args[0][0]([{ data: data.started }, { data: data.startedNewId }]);
 
