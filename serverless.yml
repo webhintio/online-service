@@ -30,8 +30,6 @@ functions:
           queueName: webhint-results
           name: message
           connection : QueueConnection
-          subscriptionName: webhint
-          topicName: webhint-results-topic
   status-service:
     handler: dist/functions/azure/status-service.run
     events:
