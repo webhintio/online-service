@@ -12,7 +12,7 @@ import * as appInsight from '../../utils/appinsights';
 import { IssueData } from '../../types/issuedata';
 
 const moduleName: string = 'Sync Function';
-const { database: Database } = process.env; // eslint-disable-line no-process-env
+const { DatabaseConnection: dbConnectionString } = process.env; // eslint-disable-line no-process-env
 const appInsightClient = appInsight.getClient();
 
 /**
@@ -138,7 +138,7 @@ const closeGithubIssues = async (dbJob: IJobModel) => {
 };
 
 export const run = async (job: IJob): Promise<void> => {
-    await database.connect(Database);
+    await database.connect(dbConnectionString);
 
     const id = job.id;
     let lock: any;

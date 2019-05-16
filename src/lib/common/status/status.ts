@@ -1,6 +1,6 @@
 import * as moment from 'moment';
 import * as _ from 'lodash';
-import { Severity } from '../../types';
+import { Severity } from 'hint/dist/src/lib/types';
 
 import * as db from '../database/database';
 import { IStatusModel } from '../database/models/status';
@@ -10,7 +10,7 @@ import { Queue } from '../queue/queue';
 import * as logger from '../../utils/logging';
 
 const moduleName: string = 'Status service';
-const { database: dbConnectionString, queue: queueConnectionString } = process.env; // eslint-disable-line no-process-env
+const { DatabaseConnection: dbConnectionString, QueueConnection: queueConnectionString } = process.env; // eslint-disable-line no-process-env
 let queueJobs: Queue;
 let queueResults: Queue;
 

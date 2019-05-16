@@ -1,6 +1,5 @@
 dist/
 node_modules/
-.vscode/
 .nyc_output/
 coverage/
 docker-compose.override.yml
@@ -16,6 +15,8 @@ obj
 appsettings.json
 local.settings.json
 *.csproj
+status-service/**/*
+sync-service/**/*
 
 #Serverless
 .serverless

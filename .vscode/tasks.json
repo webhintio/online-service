@@ -1,0 +1,43 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "func",
+            "command": "host start",
+            "problemMatcher": "$func-watch",
+            "isBackground": true,
+            "dependsOn": "npm: build"
+        },
+        // {
+        //     "type": "shell",
+        //     "label": "create functions",
+        //     "command": "node ./scripts/createfunctions.js",
+        //     "windows": {
+        //         "command": "node scripts\\createfunctions.js"
+        //     },
+        //     "dependsOn": "serverless package"
+        // },
+        // {
+        //     "type": "shell",
+        //     "label": "serverless package",
+        //     "command": "serverless package",
+        //     "dependsOn": "npm: build"
+        // },
+        {
+            "type": "npm",
+            "script": "build",
+            "dependsOn": [
+              "func: extensions install",
+              "npm: install"
+            ],
+            "problemMatcher": "$tsc"
+          },
+          {
+            "type": "shell",
+            "label": "prune",
+            "command": "npm prune --production",
+            "dependsOn": "npm: build",
+            "problemMatcher": []
+          }
+    ]
+}

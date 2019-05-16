@@ -1,8 +1,9 @@
-service: online-service-functions # NOTE: update this with your service name
+service: webhint-staging-functions # NOTE: update this with your service name
 
 provider:
   name: azure
   location: West US
+  resourceGroup : webhint-staging-functions
 
 plugins:
   - serverless-azure-functions
@@ -28,7 +29,9 @@ functions:
         x-azure-settings:
           queueName: webhint-results
           name: message
-          connection : AzureServiceBus
+          connection : QueueConnection
+          subscriptionName: webhint
+          topicName: webhint-results-topic
   status-service:
     handler: dist/functions/azure/status-service.run
     events:
