@@ -17,10 +17,12 @@ package:
     - .dependabot/**/*
     - .yml
     - .md
-
+  include:
+    - ./*-function.json
+    
 functions:
   sync-service:
-    handler: dist/src/functions/azure/sync-service.run
+    handler: dist/functions/azure/sync-service.run
     events:
       - serviceBus: 
         x-azure-settings:
@@ -28,7 +30,7 @@ functions:
           name: message
           connection : AzureServiceBus
   status-service:
-    handler: dist/src/functions/azure/status-service.run
+    handler: dist/functions/azure/status-service.run
     events:
       - timer:
         x-azure-settings:
