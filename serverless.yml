@@ -13,7 +13,6 @@ package:
     - scripts/**/*
     - tests/**/*
     - src/**/*
-    - azure/**/*
     - .serverless/**/*
     - .dependabot/**/*
     - .yml
@@ -21,7 +20,7 @@ package:
 
 functions:
   sync-service:
-    handler: dist/azure/sync-service.run
+    handler: dist/src/functions/azure/sync-service.run
     events:
       - serviceBus: 
         x-azure-settings:
@@ -29,7 +28,7 @@ functions:
           name: message
           connection : AzureServiceBus
   status-service:
-    handler: dist/azure/status-service.run
+    handler: dist/src/functions/azure/status-service.run
     events:
       - timer:
         x-azure-settings:

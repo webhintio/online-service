@@ -59,4 +59,3 @@ export declare type UserConfig = {
     ignoredUrls?: IgnoredUrl[];
 };
 export declare const validateConfig: (config: UserConfig) => boolean;
-export function normalizeHints(hints: HintsConfigObject | (string | any[])[]): HintsConfigObject;

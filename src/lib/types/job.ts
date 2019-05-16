@@ -1,5 +1,5 @@
 import { UserConfig, Problem } from '../types';
-import { Category } from 'hint/dist/src/lib/enums/category';
+import { Category } from '../types';
 
 import { ConfigSource } from '../enums/configsource';
 import { JobStatus, HintStatus } from '../enums/status';
