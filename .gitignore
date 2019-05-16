@@ -11,10 +11,3 @@ kubernetes-*.yaml
 nginx-*.yml
 online-service-*.yml
 scripts/deploy/**/parameters.json
-
-# Azure Functions artifacts
-bin
-obj
-appsettings.json
-local.settings.json
-*.csproj
