@@ -186,6 +186,9 @@ node update-config-file.js --repository webhint --version 1 --kubernetes ../comp
 The file path is optional, by default the value is
 `../compose/kubernetes-azure.yml`
 
+You also need the config from your cluster
+`az aks get-credentials --resource-group ResourceGroupName --name ClusterName`
+
 #### Deploy
 
 To deploy the online scanner in kubernetes you need to run the
