@@ -16,7 +16,7 @@
     "azure-storage": "^2.10.3",
     "connect-mongo": "^2.0.3",
     "express": "^4.16.4",
-    "hint": "^4.5.0",
+    "hint": "^5.0.1",
     "lodash": "^4.17.11",
     "moment": "^2.24.0",
     "mongodb-lock": "^0.4.0",
