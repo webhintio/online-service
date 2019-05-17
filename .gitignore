@@ -13,6 +13,7 @@ scripts/deploy/**/parameters.json
 bin
 obj
 appsettings.json
+local.settings.json
 *.csproj
 status-service/**/*
 sync-service/**/*
