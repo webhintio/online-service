@@ -1,4 +1,4 @@
-service: webhint-staging-functions # NOTE: update this with your service name
+service: webhint-staging-functions
 
 provider:
   name: azure

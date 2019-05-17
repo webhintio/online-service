@@ -19,6 +19,5 @@
     "include": [
         "src/**/*.ts",
         "tests/**/*.ts",
-        "src/functions/azure/**/*.ts"
     ]
 }
