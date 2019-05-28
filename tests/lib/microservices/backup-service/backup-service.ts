@@ -45,6 +45,12 @@ type Container = {
     uploadFile: () => void;
 };
 
+const globbyObject = {
+    globby() {
+        return [];
+    }
+};
+
 const container: Container = {
     copyBlob(blob: string, container: any) { },
     deleteBlob(blob: string) { },
@@ -115,14 +121,15 @@ test.serial('"backup" a no replica set should run the right command', async (t: 
     sandbox.stub(storage, 'getContainer').resolves(container);
     sandbox.stub(container, 'getBlobs').resolves([]);
 
-    proxyquire('../../../../src/lib/microservices/backup-service/backup-service', {
+    const service = proxyquire('../../../../src/lib/microservices/backup-service/backup-service', {
         '../../common/database/database': db,
         '../../common/storage/storage': storage,
         child_process, // eslint-disable-line camelcase
+        globby: globbyObject.globby,
         tar
     });
 
-    const service = require('../../../../src/lib/microservices/backup-service/backup-service');
+    require('../../../../src/lib/microservices/backup-service/backup-service');
 
     const promise = service.backup();
 
@@ -153,14 +160,13 @@ test.serial(`"backup" shouldn't upload anything if the backup process fail`, asy
     sandbox.stub(child_process, 'spawn').returns(emitter);
     const storageGetContainerStub = sandbox.spy(storage, 'getContainer');
 
-    proxyquire('../../../../src/lib/microservices/backup-service/backup-service', {
+    const service = proxyquire('../../../../src/lib/microservices/backup-service/backup-service', {
         '../../common/database/database': db,
         '../../common/storage/storage': storage,
         child_process, // eslint-disable-line camelcase
+        globby: globbyObject.globby,
         tar
     });
-
-    const service = require('../../../../src/lib/microservices/backup-service/backup-service');
 
     const promise = service.backup();
 
@@ -187,14 +193,13 @@ test.serial('"backup" a no replica set with ssl should run the right command', a
     sandbox.stub(storage, 'getContainer').resolves(container);
     sandbox.stub(container, 'getBlobs').resolves([]);
 
-    proxyquire('../../../../src/lib/microservices/backup-service/backup-service', {
+    const service = proxyquire('../../../../src/lib/microservices/backup-service/backup-service', {
         '../../common/database/database': db,
         '../../common/storage/storage': storage,
         child_process, // eslint-disable-line camelcase
+        globby: globbyObject.globby,
         tar
     });
-
-    const service = require('../../../../src/lib/microservices/backup-service/backup-service');
 
     const promise = service.backup();
 
@@ -228,14 +233,13 @@ test.serial('"backup" with the var authDatabase should run the right command', a
     sandbox.stub(storage, 'getContainer').resolves(container);
     sandbox.stub(container, 'getBlobs').resolves([]);
 
-    proxyquire('../../../../src/lib/microservices/backup-service/backup-service', {
+    const service = proxyquire('../../../../src/lib/microservices/backup-service/backup-service', {
         '../../common/database/database': db,
         '../../common/storage/storage': storage,
         child_process, // eslint-disable-line camelcase
+        globby: globbyObject.globby,
         tar
     });
-
-    const service = require('../../../../src/lib/microservices/backup-service/backup-service');
 
     const promise = service.backup();
 
@@ -277,14 +281,13 @@ test.serial('"backup" a replica set should run the right command', async (t: Tes
     sandbox.stub(storage, 'getContainer').resolves(container);
     sandbox.stub(container, 'getBlobs').resolves([]);
 
-    proxyquire('../../../../src/lib/microservices/backup-service/backup-service', {
+    const service = proxyquire('../../../../src/lib/microservices/backup-service/backup-service', {
         '../../common/database/database': db,
         '../../common/storage/storage': storage,
         child_process, // eslint-disable-line camelcase
+        globby: globbyObject.globby,
         tar
     });
-
-    const service = require('../../../../src/lib/microservices/backup-service/backup-service');
 
     const promise = service.backup();
 
@@ -320,14 +323,13 @@ test.serial('"backup" should create a package and upload it to the storage', asy
     sandbox.stub(container, 'getBlobs').resolves([]);
     const containerUploadFileSpy = sandbox.spy(container, 'uploadFile');
 
-    proxyquire('../../../../src/lib/microservices/backup-service/backup-service', {
+    const service = proxyquire('../../../../src/lib/microservices/backup-service/backup-service', {
         '../../common/database/database': db,
         '../../common/storage/storage': storage,
         child_process, // eslint-disable-line camelcase
+        globby: globbyObject.globby,
         tar
     });
-
-    const service = require('../../../../src/lib/microservices/backup-service/backup-service');
 
     const promise = service.backup();
 
@@ -356,15 +358,14 @@ test.serial('"backup" should remove the local files created', async (t: TestCont
     sandbox.stub(container, 'getBlobs').resolves([]);
     sandbox.spy(container, 'uploadFile');
 
-    proxyquire('../../../../src/lib/microservices/backup-service/backup-service', {
+    const service = proxyquire('../../../../src/lib/microservices/backup-service/backup-service', {
         '../../common/database/database': db,
         '../../common/storage/storage': storage,
         child_process, // eslint-disable-line camelcase
+        globby: globbyObject.globby,
         rimraf: rimrafContainer.rimraf,
         tar
     });
-
-    const service = require('../../../../src/lib/microservices/backup-service/backup-service');
 
     const promise = service.backup();
 
@@ -402,14 +403,13 @@ test.serial(`"backup" shouldn't remove any old backups if there isn't enough`, a
 
     sandbox.spy(container, 'uploadFile');
 
-    proxyquire('../../../../src/lib/microservices/backup-service/backup-service', {
+    const service = proxyquire('../../../../src/lib/microservices/backup-service/backup-service', {
         '../../common/database/database': db,
         '../../common/storage/storage': storage,
         child_process, // eslint-disable-line camelcase
+        globby: globbyObject.globby,
         tar
     });
-
-    const service = require('../../../../src/lib/microservices/backup-service/backup-service');
 
     const promise = service.backup();
 
@@ -450,14 +450,13 @@ test.serial('"backup" should remove old backups', async (t: TestContext) => {
 
     sandbox.spy(container, 'uploadFile');
 
-    proxyquire('../../../../src/lib/microservices/backup-service/backup-service', {
+    const service = proxyquire('../../../../src/lib/microservices/backup-service/backup-service', {
         '../../common/database/database': db,
         '../../common/storage/storage': storage,
         child_process, // eslint-disable-line camelcase
+        globby: globbyObject.globby,
         tar
     });
-
-    const service = require('../../../../src/lib/microservices/backup-service/backup-service');
 
     const promise = service.backup();
 
@@ -498,14 +497,13 @@ test.serial('"weeklyBackup" should copy the most recent backup', async (t: TestC
     sandbox.stub(weeklyContainer, 'getBlobs').resolves([]);
     const dailyContainerCopyBlobSpy = sandbox.spy(dailyContainer, 'copyBlob');
 
-    proxyquire('../../../../src/lib/microservices/backup-service/backup-service', {
+    const service = proxyquire('../../../../src/lib/microservices/backup-service/backup-service', {
         '../../common/database/database': db,
         '../../common/storage/storage': storage,
         child_process, // eslint-disable-line camelcase
+        globby: globbyObject.globby,
         tar
     });
-
-    const service = require('../../../../src/lib/microservices/backup-service/backup-service');
 
     await service.weeklyBackup();
 
@@ -533,14 +531,13 @@ test.serial('if "weeklyBackup" fails nothgin should be copied', async (t: TestCo
     const weeklyContainerGetBlobsSpy = sandbox.spy(weeklyContainer, 'getBlobs');
     const dailyContainerCopyBlobSpy = sandbox.spy(dailyContainer, 'copyBlob');
 
-    proxyquire('../../../../src/lib/microservices/backup-service/backup-service', {
+    const service = proxyquire('../../../../src/lib/microservices/backup-service/backup-service', {
         '../../common/database/database': db,
         '../../common/storage/storage': storage,
         child_process, // eslint-disable-line camelcase
+        globby: globbyObject.globby,
         tar
     });
-
-    const service = require('../../../../src/lib/microservices/backup-service/backup-service');
 
     t.plan(2);
     await service.weeklyBackup();
@@ -579,14 +576,13 @@ test.serial(`"weeklyBackup" shouldn't remove any old backups if there isn't enou
     const weeklyContainerDeleteBlobSpy = sandbox.spy(weeklyContainer, 'deleteBlob');
     const dailyContainerCopyBlobSpy = sandbox.spy(dailyContainer, 'copyBlob');
 
-    proxyquire('../../../../src/lib/microservices/backup-service/backup-service', {
+    const service = proxyquire('../../../../src/lib/microservices/backup-service/backup-service', {
         '../../common/database/database': db,
         '../../common/storage/storage': storage,
         child_process, // eslint-disable-line camelcase
+        globby: globbyObject.globby,
         tar
     });
-
-    const service = require('../../../../src/lib/microservices/backup-service/backup-service');
 
     await service.weeklyBackup();
 
@@ -628,14 +624,13 @@ test.serial(`"weeklyBackup" should remove old backups`, async (t: TestContext) =
     sandbox.spy(dailyContainer, 'copyBlob');
     const weeklyContainerDeleteBlobSpy = sandbox.spy(weeklyContainer, 'deleteBlob');
 
-    proxyquire('../../../../src/lib/microservices/backup-service/backup-service', {
+    const service = proxyquire('../../../../src/lib/microservices/backup-service/backup-service', {
         '../../common/database/database': db,
         '../../common/storage/storage': storage,
         child_process, // eslint-disable-line camelcase
+        globby: globbyObject.globby,
         tar
     });
-
-    const service = require('../../../../src/lib/microservices/backup-service/backup-service');
 
     await service.weeklyBackup();
 
@@ -670,14 +665,13 @@ test.serial('"monthlyBackup" should copy the most recent backup', async (t: Test
     ]);
     const dailyContainerCopyBlob = sandbox.spy(dailyContainer, 'copyBlob');
 
-    proxyquire('../../../../src/lib/microservices/backup-service/backup-service', {
+    const service = proxyquire('../../../../src/lib/microservices/backup-service/backup-service', {
         '../../common/database/database': db,
         '../../common/storage/storage': storage,
         child_process, // eslint-disable-line camelcase
+        globby: globbyObject.globby,
         tar
     });
-
-    const service = require('../../../../src/lib/microservices/backup-service/backup-service');
 
     await service.monthlyBackup();
 

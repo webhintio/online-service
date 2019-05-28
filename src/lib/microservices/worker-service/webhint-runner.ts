@@ -2,9 +2,7 @@
 
 import { URL } from 'url';
 
-import { Engine } from 'hint/dist/src/lib/engine';
-import * as resourceLoader from 'hint/dist/src/lib/utils/resource-loader';
-import { Configuration } from 'hint/dist/src/lib/config';
+import { Configuration, Engine, utils } from 'hint';
 
 import { IJob, JobResult } from '../../types';
 import * as logger from '../../utils/logging';
@@ -75,7 +73,7 @@ const run = async (job: IJob) => {
 
     try {
         const config = Configuration.fromConfig(job.config[0]);
-        const resources = resourceLoader.loadResources(config);
+        const resources = utils.loadResources(config);
 
         engine = new Engine(config, resources);
 

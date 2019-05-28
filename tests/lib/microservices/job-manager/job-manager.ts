@@ -49,7 +49,7 @@ type Hint = {
 
 const hint: Hint = { meta: { docs: { category: 'category' } } };
 
-const resourceLoader = {
+const utils = {
     loadHint(): Hint {
         return hint;
     }
@@ -68,7 +68,7 @@ proxyquire('../../../../src/lib/microservices/job-manager/job-manager', {
     '../../common/ntp/ntp': ntp,
     '../../common/queue/queue': queueObject,
     '../config-manager/config-manager': configManager,
-    'hint/dist/src/lib/utils/resource-loader': resourceLoader
+    hint: { utils }
 });
 
 import * as jobManager from '../../../../src/lib/microservices/job-manager/job-manager';
@@ -167,7 +167,7 @@ test.beforeEach(async (t: TestContext) => {
     t.context.databaseJobUpdateSpy = sandbox.spy(database.job, 'update');
     t.context.configManagerActiveStub = sandbox.stub(configManager, 'active').resolves(activeConfig);
     t.context.queueMethodsGetMessagesCountSpy = sandbox.spy(queueMethods, 'getMessagesCount');
-    t.context.resourceLoaderLoadHintStub = sandbox.stub(resourceLoader, 'loadHint').returns(hint);
+    t.context.resourceLoaderLoadHintStub = sandbox.stub(utils, 'loadHint').returns(hint);
 
     t.context.jobs = JSON.parse(await readFileAsync(path.join(__dirname, 'fixtures', 'jobs.json')));
 
