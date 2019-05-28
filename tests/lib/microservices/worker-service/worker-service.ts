@@ -240,11 +240,7 @@ test.serial(`If there is a problem running webhint, the job sent to the queue ha
 test.serial(`If a message is too big for Service Bus, we should send the hint with just one common error message`, async (t: TestContext) => {
     const sandbox = t.context.sandbox;
     const job = {
-        config: [{
-            hints: [
-                'axe'
-            ]
-        }],
+        config: [{ hints: { axe: 'error' } }],
         hints: [
             {
                 name: 'axe',
@@ -311,10 +307,10 @@ test.serial(`If there is no problem running webhint, it should send to the queue
     const sandbox = t.context.sandbox;
     const job = {
         config: [{
-            hints: [
-                'axe:warning',
-                'content-type'
-            ]
+            hints: {
+                axe: 'warning',
+                'content-type': 'error'
+            }
         }],
         hints: [
             {
@@ -380,10 +376,10 @@ test.serial(`If there is no problem running webhint, it should send to the queue
 
     const job = {
         config: [{
-            hints: [
-                'axe:warning',
-                'content-type'
-            ]
+            hints: {
+                axe: 'warning',
+                'content-type': 'error'
+            }
         }],
         hints: [
             {
@@ -441,10 +437,10 @@ test.serial(`If there is no problem running webhint, it should send a "Too many 
 
     const job = {
         config: [{
-            hints: [
-                'axe:warning',
-                'content-type'
-            ]
+            hints: {
+                axe: 'warning',
+                'content-type': 'error'
+            }
         }],
         hints: [
             {

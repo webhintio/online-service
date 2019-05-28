@@ -47,7 +47,7 @@ export class IssueReporter {
     private addIssueComment(issue, issueData: IssueData) {
         return this.octokit.issues.createComment({
             body: this.getErrorMessage(issueData),
-            number: issue.number,
+            number: issue.issue_number,
             owner: this.GITHUB_OWNER,
             repo: this.GITHUB_REPO
         });
@@ -56,7 +56,7 @@ export class IssueReporter {
 
     private async closeIssue(issue: IssuesUpdateParams) {
         await this.editIssue({
-            number: issue.number,
+            number: issue.issue_number,
             state: 'closed'
         });
     }
@@ -213,7 +213,7 @@ ${issueData.log}
     private async updateIssueLabels(issue: IssuesUpdateParams, labels: string[]) {
         await this.editIssue({
             labels,
-            number: issue.number
+            number: issue.issue_number
         });
     }
 }

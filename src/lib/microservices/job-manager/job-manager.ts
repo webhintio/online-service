@@ -1,8 +1,6 @@
 import * as _ from 'lodash';
 import * as moment from 'moment';
-import { UserConfig } from 'hint/dist/src/lib/types';
-import normalizeHints from 'hint/dist/src/lib/config/normalize-hints';
-import { loadHint } from 'hint/dist/src/lib/utils/resource-loader';
+import { UserConfig, utils } from 'hint';
 
 import * as database from '../../common/database/database';
 import * as configManager from '../config-manager/config-manager';
@@ -35,14 +33,13 @@ const createNewJob = async (url: string, configs: Array<UserConfig>, jobRunTime:
     let hints: Array<Hint> = [];
 
     configs.forEach((config) => {
-        const normalizedHints = normalizeHints(config.hints);
-        const partialHints: Array<Hint> = Object.entries(normalizedHints).reduce((total, [key, value]) => {
+        const partialHints: Array<Hint> = Object.entries(config.hints).reduce((total, [key, value]) => {
             if (value === HintStatus.off) {
                 return total;
             }
 
             total.push({
-                category: loadHint(key, []).meta.docs.category,
+                category: utils.loadHint(key, []).meta.docs.category,
                 messages: [],
                 name: key,
                 status: HintStatus.pending

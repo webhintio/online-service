@@ -2,7 +2,7 @@
 
 import { launch, Page } from 'puppeteer';
 
-import { Problem } from 'hint/dist/src/lib/types';
+import { Problem } from 'hint';
 
 import { IJob, JobResult } from '../../types';
 import * as logger from '../../utils/logging';

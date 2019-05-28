@@ -1,7 +1,6 @@
 import * as _ from 'lodash';
 import { fork, ChildProcess } from 'child_process';
-import { Problem, Severity } from 'hint/dist/src/lib/types';
-import normalizeHints from 'hint/dist/src/lib/config/normalize-hints';
+import { Problem, Severity } from 'hint';
 import * as path from 'path';
 
 import * as pkill from 'pkill';
@@ -426,7 +425,7 @@ export const run = async () => {
         const job = messages[0].data;
 
         logger.log(generateLog('Processing Job', job), moduleName);
-        const normalizedHints = normalizeHints(job.config[0].hints);
+        const configuredHints = job.config[0].hints;
 
         try {
             job.webhintVersion = webhintVersion;
@@ -443,14 +442,14 @@ export const run = async () => {
                 value: Date.now() - webhintStart
             });
 
-            parseResult(job, result, normalizedHints);
+            parseResult(job, result, configuredHints);
 
             job.finished = await getConsistentTime(job.started);
             job.status = JobStatus.finished;
 
             debug(`Sending job result with status: ${job.status}`);
 
-            await sendResults(queueResults, job, normalizedHints);
+            await sendResults(queueResults, job, configuredHints);
 
             logger.log(generateLog('Processed Job', job), moduleName);
 
@@ -466,7 +465,7 @@ export const run = async () => {
 
             debug(err);
 
-            setHintsToError(job, normalizedHints, err);
+            setHintsToError(job, configuredHints, err);
 
             await sendErrorMessage(err, queueResults, job);
 

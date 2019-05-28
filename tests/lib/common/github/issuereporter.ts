@@ -47,7 +47,7 @@ test.serial('If no error and no issue, nothing happens', async (t) => {
 test.serial('If no error but issue exists, it should close the issue', async (t) => {
     const sandbox = sinon.createSandbox();
 
-    const octokitSearchIssuesStub = sandbox.stub<OctokitSearch, 'issues'>(Octokit.prototype.search, 'issues').resolves({ data: { items: [{ number: 1 }] } });
+    const octokitSearchIssuesStub = sandbox.stub<OctokitSearch, 'issues'>(Octokit.prototype.search, 'issues').resolves({ data: { items: [{ issue_number: 1 }] } }); // eslint-disable-line camelcase
     const octokitIssuesUpdateStub = sandbox.stub(Octokit.prototype.issues, 'update').resolves();
     const octokitIssuesCreateSpy = sandbox.spy(Octokit.prototype.issues, 'create');
     const issueReporter = new IssueReporter();
@@ -104,8 +104,8 @@ test.serial(`If there is an error and issue exists, it should create a comment`,
     const octokitSearchIssuesStub = sandbox.stub<OctokitSearch, 'issues'>(Octokit.prototype.search, 'issues').resolves({
         data: {
             items: [{
-                labels: [{ name: 'error:crash' }],
-                number: 1
+                issue_number: 1, // eslint-disable-line camelcase
+                labels: [{ name: 'error:crash' }]
             }]
         }
     });
