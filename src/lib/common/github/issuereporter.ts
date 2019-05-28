@@ -47,7 +47,7 @@ export class IssueReporter {
     private addIssueComment(issue, issueData: IssueData) {
         return this.octokit.issues.createComment({
             body: this.getErrorMessage(issueData),
-            number: issue.number,
+            number: issue.issue_number,
             owner: this.GITHUB_OWNER,
             repo: this.GITHUB_REPO
         });
