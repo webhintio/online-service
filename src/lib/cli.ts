@@ -13,7 +13,6 @@ import { options } from './cli/options';
 import { Microservice } from './enums/microservice';
 import * as configManagerServer from './microservices/config-manager/config-manager-server';
 import * as configManagerCLI from './microservices/config-manager/config-manager-cli';
-import * as jobManagerServer from './microservices/job-manager/job-manager-server';
 import { CLIOptions } from './types';
 import * as logger from './utils/logging';
 import { loadJSONFile } from './utils/misc';
@@ -45,9 +44,6 @@ export const execute = async (args: string | Array<string> | object): Promise<nu
         const microservices = [];
         const microservice = currentOptions.microservice;
 
-        if (microservice === Microservice.jobManager || microservice === Microservice.all) {
-            microservices.push(jobManagerServer.run());
-        }
         if (microservice === Microservice.configManager) {
             microservices.push(configManagerCLI.run(currentOptions));
         }
