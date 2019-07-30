@@ -11,7 +11,6 @@ import * as path from 'path';
 
 import { options } from './cli/options';
 import { Microservice } from './enums/microservice';
-import * as backupService from './microservices/backup-service/backup-service';
 import * as configManagerServer from './microservices/config-manager/config-manager-server';
 import * as configManagerCLI from './microservices/config-manager/config-manager-cli';
 import * as jobManagerServer from './microservices/job-manager/job-manager-server';
@@ -57,9 +56,6 @@ export const execute = async (args: string | Array<string> | object): Promise<nu
         }
         if (microservice === Microservice.worker || microservice === Microservice.all) {
             microservices.push(worker.run());
-        }
-        if (microservice === Microservice.backup || microservice === Microservice.all) {
-            microservices.push(backupService.run());
         }
 
         await Promise.all(microservices);
