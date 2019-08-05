@@ -13,7 +13,7 @@
     "@hint/configuration-progressive-web-apps": "^5.1.1",
     "@hint/configuration-web-recommended": "^6.2.2",
     "@hint/hint-https-only": "^2.2.2",
-    "@hint/hint-image-optimization-cloudinary": "^3.0.2",
+    "@hint/hint-image-optimization-cloudinary": "^3.1.2",
     "@hint/hint-minified-js": "^2.2.2",
     "@hint/hint-no-broken-links": "^4.0.2",
     "@hint/hint-no-p3p": "^3.1.2",
