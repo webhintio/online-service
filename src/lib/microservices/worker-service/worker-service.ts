@@ -13,6 +13,7 @@ import { JobStatus, HintStatus } from '../../enums/status';
 import * as logger from '../../utils/logging';
 import { generateLog } from '../../utils/misc';
 import { getTime } from '../../common/ntp/ntp';
+import { getHintsFromConfiguration, HintsConfigObject } from '@hint/utils';
 
 const { queue: queueConnectionString, environment } = process.env; // eslint-disable-line no-process-env
 const appInsightClient = appInsight.getClient();
@@ -27,7 +28,7 @@ const runnerFile: string = `${environment === 'browser' ? 'browser' : 'webhint'}
  * @param {IJob} job - Job to write the result.
  * @param normalizedHints - Normalized job hints.
  */
-const parseResult = (job: IJob, result: Array<Problem>, normalizedHints) => {
+const parseResult = (job: IJob, result: Array<Problem>, normalizedHints: HintsConfigObject) => {
     const hints: Array<Hint> = job.hints;
     const groupedData: _.Dictionary<Array<Problem>> = _.groupBy(result, 'hintId');
 
@@ -425,7 +426,7 @@ export const run = async () => {
         const job = messages[0].data;
 
         logger.log(generateLog('Processing Job', job), moduleName);
-        const configuredHints = job.config[0].hints;
+        const configuredHints = getHintsFromConfiguration(job.config[0]);
 
         try {
             job.webhintVersion = webhintVersion;
