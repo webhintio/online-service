@@ -18,7 +18,7 @@
     "@hint/hint-no-broken-links": "^4.1.3",
     "@hint/hint-no-p3p": "^3.2.3",
     "@hint/hint-performance-budget": "^2.3.3",
-    "@hint/parser-javascript": "^3.0.2",
+    "@hint/parser-javascript": "^3.0.7",
     "@octokit/rest": "^16.28.7",
     "applicationinsights": "^1.4.1",
     "azure-sb": "^0.11.1",
