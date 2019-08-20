@@ -11,6 +11,7 @@ import * as logger from '../../../utils/logging';
 
 const debug: debug.IDebugger = d(__filename);
 let db: mongoose.Connection;
+let dbPromise;
 const lockName: string = 'index';
 const moduleName: string = 'Database:common';
 
@@ -56,12 +57,20 @@ export const unlock = async (dbLock) => {
  */
 export const connect = async (connectionString: string) => {
     try {
-        db = (await mongoose.connect(connectionString, {
-            connectTimeoutMS: 30000,
-            keepAlive: 1000,
-            poolSize: 10,
-            useNewUrlParser: true
-        })).connection;
+        if (!dbPromise) {
+            dbPromise = mongoose.connect(connectionString, {
+                connectTimeoutMS: 30000,
+                keepAlive: 1000,
+                poolSize: 10,
+                useNewUrlParser: true
+            });
+        }
+
+        if (db) {
+            return;
+        }
+
+        db = (await dbPromise).connection;
         debug('Connected to database');
 
         const indexLock = createLock(lockName);
