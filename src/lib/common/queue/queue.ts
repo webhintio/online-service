@@ -67,7 +67,7 @@ export class Queue {
     /**
      * Send a message to service bus.
      * @param {any} message - Message to send to the queue.
-     * */
+     */
     public sendMessage(message: any) {
         debug('Sending message to queue');
 
@@ -78,7 +78,7 @@ export class Queue {
 
     /**
      * Get a message from service bus.
-     * */
+     */
     public async getMessage(remove?: boolean) {
         try {
             debug(`Getting message in queue ${this.name}`);

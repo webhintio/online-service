@@ -27,13 +27,12 @@ const ntp = {
     }
 };
 
-proxyquire('../../../../src/lib/microservices/worker-service/worker-service', {
+const worker = proxyquire('../../../../src/lib/microservices/worker-service/worker-service', {
     '../../common/ntp/ntp': ntp,
     '../../common/queue/queue': queueObject,
     child_process: childProcess // eslint-disable-line camelcase
 });
 
-import * as worker from '../../../../src/lib/microservices/worker-service/worker-service';
 import { JobStatus, HintStatus } from '../../../../src/lib/enums/status';
 import { delay } from '../../../../src/lib/utils/misc';
 

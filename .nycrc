@@ -1,0 +1,21 @@
+{
+    "branches": 80,
+    "cache": true,
+    "check-coverage": true,
+    "exclude": [
+        "**/dist/tests/**"
+    ],
+    "extension": [
+        ".ts",
+        ".tsx"
+    ],
+    "functions": 80,
+    "instrument": true,
+    "lines": 80,
+    "reporter": [
+        "lcov",
+        "text"
+    ],
+    "sourceMap": true,
+    "statements": 80
+}

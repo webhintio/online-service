@@ -142,9 +142,11 @@ const getLastLogLines = (log: string, numberOfLines = 5): string => {
  */
 const runWebhint = (job: IJob): Promise<Array<Problem>> => {
     return new Promise((resolve, reject) => {
-        // if we don't set execArgv to [], when the process is created, the execArgv
-        // has the same parameters as his father so if we are debugging, the child
-        // process try to debug in the same port, and that throws an error.
+        /*
+         * if we don't set execArgv to [], when the process is created, the execArgv
+         * has the same parameters as his father so if we are debugging, the child
+         * process try to debug in the same port, and that throws an error.
+         */
         const runner: ChildProcess = fork(path.join(__dirname, runnerFile), ['--debug'], { execArgv: [], stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
         let timeoutId: NodeJS.Timer;
 
@@ -210,7 +212,8 @@ const getWebhintVersion = (): string => {
     return pkg.version;
 };
 
-/** Directly removes the messages for a hint with a "Too many errors" message.
+/**
+ * Directly removes the messages for a hint with a "Too many errors" message.
  * @param {Hint} hint The hint to clean.
  */
 const tooManyErrorsMessage = (hint: Hint): Hint => {

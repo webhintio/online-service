@@ -14,15 +14,19 @@ export const debug = (filePath: string): d.IDebugger => {
     let dirPath: string = path.dirname(filePath);
     let currentDir: string = path.basename(dirPath);
 
-    // The debug message is generated from the file path, e.g.:
-    //
-    //  * src/lib/microservices/job-manager/job-manager-server.ts => online-service:microservices:job-manager:job-manager-server
-    //  * src/lib/microservices/job-manager/job-manager.ts => online-service:microservices:job-manager
+    /*
+     * The debug message is generated from the file path, e.g.:
+     *
+     *  * src/lib/microservices/job-manager/job-manager-server.ts => online-service:microservices:job-manager:job-manager-server
+     *  * src/lib/microservices/job-manager/job-manager.ts => online-service:microservices:job-manager
+     */
 
     while (currentDir && currentDir !== 'lib') {
 
-        // If the file is in a directory with the same name, do not add
-        // its parent directory (this is the case for microservices & common).
+        /*
+         * If the file is in a directory with the same name, do not add
+         * its parent directory (this is the case for microservices & common).
+         */
 
         if (currentDir !== output) {
             output = `${currentDir}:${output}`;

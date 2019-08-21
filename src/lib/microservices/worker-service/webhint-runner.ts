@@ -41,8 +41,10 @@ process.once('unhandledRejection', (reason: any) => {
     const source = reason.error ? reason.error : reason;
 
     console.log(source);
-    // reason can not be an instance of Error, but its behavior with JSON.stringify is the same, returns {}
-    // Creating a new Error we ensure that reason is going to be an instance of Error.
+    /*
+     * `reason` can not be an instance of Error, but its behavior with JSON.stringify is the same, returns {}
+     * Creating a new Error we ensure that reason is going to be an instance of Error.
+     */
     process.send(createErrorResult(new Error(source)));
     process.exit(1);
 });
@@ -74,6 +76,13 @@ const run = async (job: IJob) => {
     try {
         const config = Configuration.fromConfig(job.config[0]);
         const resources = utils.loadResources(config);
+
+        if (resources.missing.length > 0 || resources.incompatible.length > 0) {
+            throw new Error(`Missing resources:
+    ${resources.missing.join(', ')}
+Incompatible resources:
+    ${resources.incompatible.join(', ')}`);
+        }
 
         engine = new Engine(config, resources);
 

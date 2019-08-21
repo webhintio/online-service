@@ -43,8 +43,10 @@ process.once('unhandledRejection', (reason: any) => {
     const source = reason.error ? reason.error : reason;
 
     console.log(source);
-    // reason can not be an instance of Error, but its behavior with JSON.stringify is the same, returns {}
-    // Creating a new Error we ensure that reason is going to be an instance of Error.
+    /*
+     * `reason` can not be an instance of Error, but its behavior with JSON.stringify is the same, returns {}
+     * Creating a new Error we ensure that reason is going to be an instance of Error.
+     */
     process.send(createErrorResult(new Error(source)));
     process.exit(1);
 });
@@ -114,7 +116,7 @@ const getProblemsFromResults = (results: Results): Problem[] => {
 const stubExtensionAPIs = (page: Page): Promise<Results> => {
     return page.evaluate(() => {
         return new Promise<Results>((resolve) => {
-            let onMessage: ((events: Events) => void) = () => {};
+            let onMessage: ((events: Events) => void) = () => { };
 
             window.chrome = {
                 runtime: {
@@ -122,7 +124,7 @@ const stubExtensionAPIs = (page: Page): Promise<Results> => {
                         addListener: (fn: () => void) => {
                             onMessage = fn;
                         },
-                        removeListener: () => {}
+                        removeListener: () => { }
                     },
                     sendMessage: async (event: Events) => {
                         if (event.requestConfig) {
@@ -155,10 +157,12 @@ const runBundle = async (url: string): Promise<Problem[]> => {
 
         generateFetchEvents(page);
 
-        // Forward console logs from the page for debugging.
-        // page.on('console', (message) => {
-        //     console.debug(message.text());
-        // });
+        /*
+         * Forward console logs from the page for debugging.
+         * page.on('console', (message) => {
+         *     console.debug(message.text());
+         * });
+         */
 
         await page.goto(url);
 

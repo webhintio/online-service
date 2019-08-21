@@ -1,87 +1,110 @@
-import test, { ExecutionContext } from 'ava';
+import anyTest, { TestInterface } from 'ava';
 import * as sinon from 'sinon';
 import * as proxyquire from 'proxyquire';
+import { validateConfig } from 'hint/dist/src/lib/config/config-validator';
 
-type MultiPartyObject = {
-    parse: () => void;
-};
+type ConfigValidator = {
+    validateConfig: () => boolean;
+}
 
-type Multipoarty = {
-    Form: () => MultiPartyObject;
-};
+type Utils = {
+    normalizeHints: () => any;
+}
 
-const multipartyObject: MultiPartyObject = { parse(): void { } };
-
-const multiparty: Multipoarty = {
-    Form() {
-        return multipartyObject;
-    }
-};
-
-type MiscTestContext = {
+type MiscContext = {
+    configValidator: ConfigValidator;
     sandbox: sinon.SinonSandbox;
-    multipartyFormStub: sinon.SinonStub;
+    utils: Utils;
+}
+
+const test = anyTest as TestInterface<MiscContext>;
+
+const loadScript = (context: MiscContext) => {
+    return proxyquire('../../../src/lib/utils/misc', {
+        '@hint/utils': context.utils,
+        'hint/dist/src/lib/config/config-validator': context.configValidator
+    });
 };
 
-type TestContext = ExecutionContext<MiscTestContext>;
+test.beforeEach((t) => {
+    t.context.sandbox = sinon.createSandbox();
 
-proxyquire('../../../src/lib/utils/misc', { multiparty });
-
-import { getDataFromRequest } from '../../../src/lib/utils/misc';
-
-test.beforeEach((t: TestContext) => {
-    const sandbox = sinon.createSandbox();
-    const stub = sandbox.stub(multiparty, 'Form').returns(multipartyObject);
-
-    t.context.multipartyFormStub = stub;
-    t.context.sandbox = sandbox;
+    t.context.utils = { normalizeHints() { } };
+    t.context.configValidator = {
+        validateConfig() {
+            return false;
+        }
+    };
 });
 
-test.afterEach.always((t: TestContext) => {
+test.afterEach.always((t) => {
     t.context.sandbox.restore();
 });
 
-test.serial('getDataFromRequest should fail if there is an error parsing', async (t: TestContext) => {
+test('validateServiceConfig should fail if at least one of the configuration is not valid', (t) => {
     const sandbox = t.context.sandbox;
-    const errorMessage = 'error parsing data';
 
-    const multipartyObjectParseStub = sandbox.stub(multipartyObject, 'parse').callsArgWith(1, errorMessage);
+    const validateConfigStub = sandbox.stub(t.context.configValidator, 'validateConfig');
+    const normalizehintsStub = sandbox.stub(t.context.utils, 'normalizeHints').returns({
+        hint1: '',
+        hint2: ''
+    });
 
-    t.plan(3);
-    try {
-        await getDataFromRequest({} as any);
-    } catch (err) {
-        t.true(t.context.multipartyFormStub.calledOnce);
-        t.true(multipartyObjectParseStub.calledOnce);
-        t.is(err, errorMessage);
-    }
+    validateConfigStub
+        .onFirstCall()
+        .returns(true)
+        .onSecondCall()
+        .returns(false);
 
-    multipartyObjectParseStub.restore();
+    const misc = loadScript(t.context);
+
+    t.throws(() => {
+        misc.validateServiceConfig([{}, {}]);
+    });
+    t.true(validateConfigStub.calledTwice);
+    t.true(normalizehintsStub.calledOnce);
 });
 
-test.serial('getDataFromRequest should return and object with the properties fields and files', async (t: TestContext) => {
+test('validateServiceConfig should fail if configurations has repeated hints', (t) => {
     const sandbox = t.context.sandbox;
-    const fields = {
-        hints: [],
-        source: ['manual'],
-        url: ['http://url.com']
-    };
 
-    const files = {
-        'config-file': {
-            path: 'path/to/file',
-            size: 15
-        }
-    };
+    const validateConfigStub = sandbox.stub(t.context.configValidator, 'validateConfig').returns(true);
+    const normalizehintsStub = sandbox.stub(t.context.utils, 'normalizeHints').returns({
+        hint1: '',
+        hint2: ''
+    });
 
-    const errorMessage = 'error parsing data';
+    const misc = loadScript(t.context);
 
-    const multipartyObjectParseStub = sandbox.stub(multipartyObject, 'parse').callsArgWith(1, null, fields, files);
+    t.throws(() => {
+        misc.validateServiceConfig([{}, {}]);
+    }, 'Hint hint1 repeated');
+    t.true(validateConfigStub.calledTwice);
+    t.true(normalizehintsStub.calledTwice);
+});
 
-    const data = await getDataFromRequest({} as any);
+test('validateServiceConfig works if all configurations are valid', (t) => {
+    const sandbox = t.context.sandbox;
 
-    t.deepEqual(data.fields, fields);
-    t.deepEqual(data.files, files);
+    const validateConfigStub = sandbox.stub(t.context.configValidator, 'validateConfig').returns(true);
+    const normalizehintsStub = sandbox.stub(t.context.utils, 'normalizeHints');
 
-    multipartyObjectParseStub.restore();
+    normalizehintsStub
+        .onFirstCall()
+        .returns({
+            hint1: '',
+            hint2: ''
+        })
+        .onSecondCall()
+        .returns({
+            hint3: '',
+            hint4: ''
+        });
+
+    const misc = loadScript(t.context);
+
+    misc.validateServiceConfig([{}, {}]);
+
+    t.true(validateConfigStub.calledTwice);
+    t.true(normalizehintsStub.calledTwice);
 });

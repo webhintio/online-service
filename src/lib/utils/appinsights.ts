@@ -2,6 +2,7 @@ import * as appInsights from 'applicationinsights';
 
 let appInsightsClient;
 
+/* istanbul ignore next */
 if (process.env.APP_INSIGHTS_KEY) { // eslint-disable-line no-process-env
     appInsights.setup(process.env.APP_INSIGHTS_KEY) // eslint-disable-line no-process-env
         .setAutoDependencyCorrelation(true)
