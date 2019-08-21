@@ -50,16 +50,6 @@
     "ts-node": "^8.3.0",
     "typescript": "^3.5.3"
   },
-  "greenkeeper": {
-    "commitMessages": {
-      "dependencyUpdate": "Chore: Update `${dependency}` to `v${version}`",
-      "devDependencyUpdate": "Chore: Update `${dependency}` to `v${version}`",
-      "lockfileUpdate": "Chore: Update lockfile ${lockfilePath}"
-    },
-    "ignore": [
-      "@types/node"
-    ]
-  },
   "main": "./dist/src/index.js",
   "private": true,
   "scripts": {
