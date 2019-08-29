@@ -6,7 +6,7 @@ RUN apt-get upgrade -y
 RUN apt-get install -y curl apt-transport-https
 
 # Install nodejs
-RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
+RUN curl -sL https://deb.nodesource.com/setup_10.x | bash -
 RUN apt-get install -y nodejs build-essential
 
 # Install mongodb
