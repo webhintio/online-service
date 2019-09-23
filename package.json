@@ -19,7 +19,7 @@
     "@hint/hint-no-p3p": "^3.2.5",
     "@hint/hint-performance-budget": "^2.3.5",
     "@hint/parser-javascript": "^3.0.8",
-    "@octokit/rest": "^16.28.9",
+    "@octokit/rest": "^16.30.0",
     "applicationinsights": "^1.4.2",
     "azure-sb": "^0.11.1",
     "azure-storage": "^2.10.3",
