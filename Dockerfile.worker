@@ -29,7 +29,7 @@ RUN if [ $mode = "test" ]; then \
     else \
       echo "Production mode detected. Ignoring git and yarn."; \
     fi
-      
+
 
 
 WORKDIR /app

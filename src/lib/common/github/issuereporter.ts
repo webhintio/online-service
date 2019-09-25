@@ -1,11 +1,15 @@
 import * as Octokit from '@octokit/rest';
-import { IssuesUpdateParams } from '@octokit/rest';
 
 import { IssueData } from '../../types/issuedata';
 
 const { NODE_ENV, environment } = process.env; // eslint-disable-line no-process-env
 
 const production = NODE_ENV !== 'development';
+
+type GithubData = {
+    owner: string;
+    repo: string;
+}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -15,17 +19,17 @@ export class IssueReporter {
     private GITHUB_API_TOKEN = process.env.GITHUB_API_TOKEN;
     private GITHUB_OWNER = process.env.GITHUB_OWNER;
     private GITHUB_REPO = process.env.GITHUB_REPO;
-    private GITHUB_DATA;
+    private GITHUB_DATA: GithubData;
     /* eslint-enable no-process-env */
 
-    private octokit;
+    private octokit: Octokit;
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     public constructor() {
         this.GITHUB_DATA = {
-            owner: this.GITHUB_OWNER,
-            repo: this.GITHUB_REPO
+            owner: this.GITHUB_OWNER!,
+            repo: this.GITHUB_REPO!
         };
         this.octokit = new Octokit({
             baseUrl: 'https://api.github.com',
@@ -37,36 +41,36 @@ export class IssueReporter {
         });
 
         this.octokit.authenticate({
-            token: this.GITHUB_API_TOKEN,
+            token: this.GITHUB_API_TOKEN as string,
             type: 'oauth'
         });
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    private addIssueComment(issue, issueData: IssueData) {
+    private addIssueComment(issue: Octokit.SearchIssuesResponseItemsItem, issueData: IssueData) {
         return this.octokit.issues.createComment({
             body: this.getErrorMessage(issueData),
-            number: issue.issue_number,
-            owner: this.GITHUB_OWNER,
-            repo: this.GITHUB_REPO
+            issue_number: issue.number, // eslint-disable-line camelcase
+            owner: this.GITHUB_OWNER!,
+            repo: this.GITHUB_REPO!
         });
 
     }
 
-    private async closeIssue(issue: IssuesUpdateParams) {
+    private async closeIssue(issue: Octokit.SearchIssuesResponseItemsItem) {
         await this.editIssue({
-            number: issue.issue_number,
+            issue_number: issue.number, // eslint-disable-line camelcase
             state: 'closed'
         });
     }
 
-    private editIssue(configs) {
-        return this.octokit.issues.update(Object.assign(
+    private editIssue(configs: Partial<Octokit.IssuesUpdateParams>) {
+        return this.octokit.issues.update((Object.assign(
             {},
             this.GITHUB_DATA,
             configs
-        ));
+        ) as Octokit.IssuesUpdateParams));
     }
 
     private getErrorMessage(issueData: IssueData) {
@@ -126,18 +130,22 @@ ${issueData.log}
     }
 
     private async openIssue(issueData: IssueData) {
-        const labels: Array<string> = [
+        const labels = [
             this.getScanLabel(issueData.scan),
-            this.getErrorTypeLabel(issueData.errorType)
+            this.getErrorTypeLabel(issueData.errorType!)
         ];
 
+        /* istanbul ignore else */
         if (production) {
             labels.push('production');
         }
 
+        /* istanbul ignore if */
         if (environment === 'browser') {
             labels.push('browser');
         }
+
+        const env = environment === undefined ? ' ' : ` [${environment}] `;
 
         await this.octokit.issues.create(Object.assign(
             {},
@@ -145,7 +153,7 @@ ${issueData.log}
             {
                 body: this.getErrorMessage(issueData),
                 labels,
-                title: `[${this.getEmoji(issueData.errorType)}] [${environment}] ${issueData.url}`
+                title: `[${this.getEmoji(issueData.errorType!)}]${env}${issueData.url}`
             }
         ));
     }
@@ -210,10 +218,10 @@ ${issueData.log}
         await this.openIssue(issueData);
     }
 
-    private async updateIssueLabels(issue: IssuesUpdateParams, labels: string[]) {
+    private async updateIssueLabels(issue: Octokit.SearchIssuesResponseItemsItem, labels: string[]) {
         await this.editIssue({
-            labels,
-            number: issue.issue_number
+            issue_number: issue.number, // eslint-disable-line camelcase
+            labels
         });
     }
 }
