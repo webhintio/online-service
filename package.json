@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@destinationstransfers/ntp": "^2.0.0",
-    "@hint/configuration-progressive-web-apps": "^6.0.7",
+    "@hint/configuration-progressive-web-apps": "^6.0.9",
     "@hint/configuration-web-recommended": "^7.1.0",
     "@hint/hint-https-only": "^2.3.9",
     "@hint/hint-image-optimization-cloudinary": "^3.1.9",
