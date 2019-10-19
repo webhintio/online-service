@@ -12,7 +12,7 @@
     "@destinationstransfers/ntp": "^2.0.0",
     "@hint/configuration-progressive-web-apps": "^6.0.10",
     "@hint/configuration-web-recommended": "^7.2.4",
-    "@hint/hint-https-only": "^2.3.9",
+    "@hint/hint-https-only": "^2.3.10",
     "@hint/hint-image-optimization-cloudinary": "^3.1.10",
     "@hint/hint-minified-js": "^2.3.10",
     "@hint/hint-no-broken-links": "^4.1.10",
