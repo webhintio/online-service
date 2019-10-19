@@ -30,7 +30,7 @@
     "express-session": "^1.17.0",
     "globby": "^10.0.1",
     "handlebars": "^4.4.3",
-    "hint": "^5.3.1",
+    "hint": "^5.3.3",
     "lodash": "^4.17.15",
     "mdn-browser-compat-data": "0.0.96",
     "method-override": "^3.0.0",
