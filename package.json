@@ -32,7 +32,7 @@
     "handlebars": "^4.4.3",
     "hint": "^5.3.3",
     "lodash": "^4.17.15",
-    "mdn-browser-compat-data": "0.0.97",
+    "mdn-browser-compat-data": "0.0.98",
     "method-override": "^3.0.0",
     "moment": "^2.24.0",
     "mongodb-lock": "^1.0.1",
