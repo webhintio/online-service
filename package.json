@@ -15,7 +15,7 @@
     "@hint/hint-https-only": "^2.3.11",
     "@hint/hint-image-optimization-cloudinary": "^3.1.11",
     "@hint/hint-minified-js": "^2.3.11",
-    "@hint/hint-no-broken-links": "^4.1.10",
+    "@hint/hint-no-broken-links": "^4.1.11",
     "@hint/hint-no-p3p": "^3.2.11",
     "@hint/hint-performance-budget": "^2.3.11",
     "@hint/parser-javascript": "^3.1.0",
