@@ -11,7 +11,7 @@
   "dependencies": {
     "@destinationstransfers/ntp": "^2.0.0",
     "@hint/configuration-progressive-web-apps": "^6.0.11",
-    "@hint/configuration-web-recommended": "^7.2.6",
+    "@hint/configuration-web-recommended": "^7.2.7",
     "@hint/hint-https-only": "^2.3.11",
     "@hint/hint-image-optimization-cloudinary": "^3.1.11",
     "@hint/hint-minified-js": "^2.3.10",
