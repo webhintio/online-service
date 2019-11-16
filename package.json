@@ -77,7 +77,7 @@
     "rimraf": "^3.0.0",
     "shelljs": "^0.8.3",
     "sinon": "^7.5.0",
-    "ts-node": "^8.4.1",
+    "ts-node": "^8.5.2",
     "typescript": "^3.7.2"
   },
   "greenkeeper": {
