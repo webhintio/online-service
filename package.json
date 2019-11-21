@@ -11,7 +11,7 @@
   "dependencies": {
     "@destinationstransfers/ntp": "^2.0.0",
     "@hint/configuration-all": "^1.0.7",
-    "@octokit/rest": "^16.30.1",
+    "@octokit/rest": "^16.35.0",
     "applicationinsights": "^1.4.2",
     "azure-sb": "^0.11.1",
     "azure-storage": "^2.10.3",
